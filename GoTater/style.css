@@ -1,0 +1,110 @@
+body {
+  background-color: #0f0f12; /* Darker, "space" background */
+  color: #d1d1d1;
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+h1 {
+  color: #ffffff;
+  font-size: 3rem;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+}
+
+/* --- SECTION HEADERS --- */
+/* Restricting width to match the grid so they align perfectly on the left */
+h2 {
+  width: 100%;
+  max-width: 1000px;
+  margin-top: 40px;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+  color: #ffffff;
+  border-bottom: 1px solid #333; /* Clean separator line */
+  padding-bottom: 10px;
+}
+
+/* --- THE GRID LAYOUT --- */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 1000px;
+}
+
+/* --- BASE CARD STYLING --- */
+.game-card {
+  background: #1e1e24;
+  padding: 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #333;
+  transition: all 0.3s ease;
+
+  /* Adds a subtle inner highlight to the cards */
+  background-image: radial-gradient(circle at top right, rgba(255,255,255,0.03), transparent 50%);
+}
+
+.game-card h3 {
+  margin: 0 0 10px 0;
+  color: #ffffff;
+  transition: color 0.3s ease;
+}
+
+.game-card p {
+  font-size: 0.9rem;
+  margin: 0;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+/* --- HOVER EFFECTS & THEMES --- */
+
+/* Default / Games Theme (Purple Glow) */
+.game-card:hover {
+  transform: translateY(-5px);
+  border-color: #bb86fc;
+  box-shadow: 0 10px 20px rgba(187, 134, 252, 0.1);
+}
+.game-card:hover h3 {
+  color: #bb86fc;
+}
+
+/* School Theme (Teal Glow) */
+.school:hover {
+  border-color: #03dac6;
+  box-shadow: 0 10px 20px rgba(3, 218, 198, 0.1);
+}
+.school:hover h3 {
+  color: #03dac6;
+}
+
+/* Tools Theme (Amber/Orange Glow) */
+.tool:hover {
+  border-color: #ffb74d;
+  box-shadow: 0 10px 20px rgba(255, 183, 77, 0.1);
+}
+.tool:hover h3 {
+  color: #ffb74d;
+}
+footer {
+  margin-top: 80px;
+  padding: 20px;
+  width: 100%;
+  text-align: center;
+  border-top: 1px solid #333;
+  opacity: 0.6;
+  font-size: 0.85rem;
+}
