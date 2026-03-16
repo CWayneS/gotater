@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOIDWAVE — Audio Visualizer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #00e5ff;
+    --accent2: #ff2d6a;
+    --text: #c8c8d4;
+    --text-dim: #66667a;
+    --text-bright: #eeeef4;
+    --glow: rgba(0, 229, 255, 0.3);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* === VISUALIZATION AREA === */
+  #vis-container {
+    flex: 1;
+    position: relative;
+    background: #000;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  #vis-canvas, #gl-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  #gl-canvas { z-index: 1; }
+  #vis-canvas { z-index: 2; }
+
+  .vis-label {
+    position: absolute;
+    top: 12px; left: 14px;
+    z-index: 10;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.7;
+    pointer-events: none;
+    text-shadow: 0 0 10px var(--glow);
+    transition: opacity 0.5s;
+  }
+
+  .fps-counter {
+    position: absolute;
+    top: 12px; right: 14px;
+    z-index: 10;
+    font-size: 10px;
+    color: var(--text-dim);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .drop-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background: rgba(0, 229, 255, 0.08);
+    border: 2px dashed var(--accent);
+    justify-content: center;
+    align-items: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 3px;
+  }
+
+  .drop-overlay.active { display: flex; }
+
+  /* === PLAYER BAR === */
+  #player-bar {
+    height: auto;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 0;
+    z-index: 50;
+    flex-shrink: 0;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    width: 100%;
+    height: 4px;
+    background: var(--surface2);
+    cursor: pointer;
+    position: relative;
+  }
+  .progress-wrap:hover { height: 6px; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    position: relative;
+    transition: none;
+  }
+
+  .player-main {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    gap: 14px;
+  }
+
+  .transport-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 36px; height: 36px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+  .btn-play { width: 44px; height: 44px; border-radius: 50%; font-size: 16px; }
+  .btn-play:hover { box-shadow: 0 0 14px var(--glow); }
+
+  .track-info {
+    flex: 1;
+    min-width: 0;
+    padding: 0 8px;
+  }
+  .track-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    color: var(--text-bright);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 1px;
+  }
+  .track-time {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .volume-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .vis-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Range inputs */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+  input[type="range"].vol-slider { width: 80px; }
+
+  /* === SIDE PANEL === */
+  #side-panel {
+    position: fixed;
+    top: 0; right: -380px;
+    width: 380px;
+    height: 100vh;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    z-index: 100;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #side-panel.open { right: 0; }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+  .panel-close {
+    background: none; border: none;
+    color: var(--text-dim); cursor: pointer; font-size: 18px;
+  }
+  .panel-close:hover { color: var(--text); }
+
+  .panel-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .panel-tab:hover { color: var(--text); }
+  .panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+  }
+
+  .panel-body::-webkit-scrollbar { width: 4px; }
+  .panel-body::-webkit-scrollbar-track { background: var(--surface); }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Panel content */
+  .control-group {
+    margin-bottom: 18px;
+  }
+  .control-group-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--accent2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .control-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 100px;
+  }
+  .control-row input[type="range"] {
+    flex: 1;
+    margin: 0 10px;
+  }
+  .control-value {
+    font-size: 10px;
+    color: var(--text-dim);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .style-select {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    outline: none;
+  }
+  .style-select:hover { border-color: var(--accent); }
+
+  .preset-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    transition: all 0.15s;
+  }
+  .preset-item:hover { border-color: var(--accent); background: var(--surface2); }
+  .preset-item.active { border-color: var(--accent); background: rgba(0,229,255,0.08); }
+  .preset-item .preset-name { color: var(--text-bright); }
+  .preset-item .preset-type { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
+
+  .preset-actions {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .btn-sm {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Playlist tab */
+  .playlist-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    margin-bottom: 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text);
+    transition: all 0.1s;
+  }
+  .playlist-item:hover { background: var(--surface2); }
+  .playlist-item.active { color: var(--accent); background: rgba(0,229,255,0.06); }
+  .playlist-item .pl-num { color: var(--text-dim); min-width: 28px; }
+  .playlist-item .pl-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .playlist-item .pl-dur { color: var(--text-dim); font-size: 10px; margin-left: 8px; }
+
+  .pl-empty {
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align: center;
+    padding: 30px 10px;
+    line-height: 1.8;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Fullscreen tweaks */
+  .fullscreen #player-bar { opacity: 0; transition: opacity 0.3s; }
+  .fullscreen #player-bar:hover { opacity: 1; }
+  .fullscreen .vis-label { opacity: 0; }
+  .fullscreen .fps-counter { opacity: 0; }
+  .fullscreen #vis-container:hover .vis-label { opacity: 0.7; }
+  .fullscreen #vis-container:hover .fps-counter { opacity: 0.5; }
+
+  /* Name input modal */
+  .name-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(0,0,0,0.7);
+    justify-content: center;
+    align-items: center;
+  }
+  .name-modal.show { display: flex; }
+  .name-modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .name-modal-box input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-bright);
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    width: 240px;
+    outline: none;
+    margin: 14px 0;
+    display: block;
+  }
+  .name-modal-box input:focus { border-color: var(--accent); }
+  .name-modal-btns { display: flex; gap: 8px; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Visualization area -->
+  <div id="vis-container">
+    <canvas id="gl-canvas"></canvas>
+    <canvas id="vis-canvas"></canvas>
+    <div class="vis-label" id="vis-label">SPECTRUM BARS</div>
+    <div class="fps-counter" id="fps-counter">60 FPS</div>
+    <div class="drop-overlay" id="drop-overlay">DROP AUDIO FILES</div>
+  </div>
+
+  <!-- Player bar -->
+  <div id="player-bar">
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="player-main">
+      <div class="transport-controls">
+        <button class="btn" id="btn-prev" title="Previous (Shift+Left)">⏮</button>
+        <button class="btn btn-play" id="btn-play" title="Play/Pause (Space)">▶</button>
+        <button class="btn" id="btn-stop" title="Stop (S)">⏹</button>
+        <button class="btn" id="btn-next" title="Next (Shift+Right)">⏭</button>
+      </div>
+      <div class="track-info">
+        <div class="track-title" id="track-title">NO TRACK LOADED</div>
+        <div class="track-time"><span id="time-current">0:00</span> / <span id="time-total">0:00</span></div>
+      </div>
+      <div class="volume-group">
+        <span style="font-size:12px;color:var(--text-dim)">🔊</span>
+        <input type="range" class="vol-slider" id="vol-slider" min="0" max="1" step="0.01" value="0.8">
+      </div>
+      <div class="vis-controls">
+        <button class="btn" id="btn-vis-prev" title="Prev Visualization (Left)">◀</button>
+        <button class="btn" id="btn-vis-next" title="Next Visualization (Right)">▶</button>
+        <button class="btn" id="btn-settings" title="Settings (M)">⚙</button>
+        <button class="btn" id="btn-fullscreen" title="Fullscreen (F)">⛶</button>
+        <button class="btn" id="btn-files" title="Load Files">+</button>
+        <input type="file" id="file-input" accept="audio/*" multiple hidden>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Side Panel -->
+<div id="side-panel">
+  <div class="panel-header">
+    <span>SETTINGS</span>
+    <button class="panel-close" id="panel-close">✕</button>
+  </div>
+  <div class="panel-tabs">
+    <button class="panel-tab active" data-tab="flux">FLUX</button>
+    <button class="panel-tab" data-tab="presets">PRESETS</button>
+    <button class="panel-tab" data-tab="playlist">PLAYLIST</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<!-- Preset name modal -->
+<div class="name-modal" id="name-modal">
+  <div class="name-modal-box">
+    <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);letter-spacing:2px;">SAVE PRESET</div>
+    <input type="text" id="preset-name-input" placeholder="Preset name..." maxlength="40">
+    <div class="name-modal-btns">
+      <button class="btn-sm" id="preset-save-confirm">SAVE</button>
+      <button class="btn-sm" id="preset-save-cancel">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// VOIDWAVE — Winamp-style Audio Visualizer
+// ============================================================
+
+(() => {
+'use strict';
+
+// ---- STATE ----
+const state = {
+  playing: false,
+  currentTrack: -1,
+  playlist: [],           // { name, file, duration }
+  visMode: 0,
+  autoAdvanceVis: false,
+  autoAdvanceTimer: null,
+  fluxParams: null,   // current manual params
+  customPresets: [],       // user-saved
+  activePresetIdx: -1,    // -1 = manual
+  panelOpen: false,
+  panelTab: 'flux',
+  fullscreen: false,
+};
+
+// ---- VIS MODES ----
+const visModes = [
+  { name: 'SPECTRUM BARS', type: 'canvas' },
+  { name: 'OSCILLOSCOPE', type: 'canvas' },
+  { name: 'CIRCULAR SCOPE', type: 'canvas' },
+  { name: 'MIRRORED SPECTRUM', type: 'canvas' },
+  { name: 'PARTICLE FOUNTAIN', type: 'canvas' },
+  { name: 'STARFIELD', type: 'canvas' },
+  { name: 'FLUX — COSMIC SPIRAL', type: 'flux', preset: 0 },
+  { name: 'FLUX — BASS TUNNEL', type: 'flux', preset: 1 },
+  { name: 'FLUX — KALEIDOSCOPE', type: 'flux', preset: 2 },
+  { name: 'FLUX — NEBULA FLOW', type: 'flux', preset: 3 },
+  { name: 'FLUX — HYPERDRIVE', type: 'flux', preset: 4 },
+  { name: 'FLUX — ACID POOL', type: 'flux', preset: 5 },
+  { name: 'FLUX — MANUAL', type: 'flux', preset: -1 },
+];
+
+// ---- DEFAULT FLUX PARAMS ----
+function defaultParams() {
+  return {
+    zoomSpeed: 0.02, rotation: 0.0, warpIntensity: 0.4, warpStyle: 0,
+    colorSpeed: 0.3, hueOffset: 0, saturation: 0.8, decay: 0.94, invert: 0,
+    bassInfluence: 0.7, midInfluence: 0.4, trebleInfluence: 0.3,
+    beatSensitivity: 0.6, gain: 1.0,
+    overlayType: 0, overlayThickness: 2.0, overlayBrightness: 0.8,
+  };
+}
+
+// ---- CURATED PRESETS ----
+const curatedPresets = [
+  { name:'Cosmic Spiral', params:{...defaultParams(), zoomSpeed:0.025, rotation:0.12, warpIntensity:0.5, warpStyle:0, colorSpeed:0.5, hueOffset:0, decay:0.93, bassInfluence:0.8, overlayType:1 }},
+  { name:'Bass Tunnel', params:{...defaultParams(), zoomSpeed:0.06, rotation:0.0, warpIntensity:0.3, warpStyle:1, colorSpeed:0.2, hueOffset:180, decay:0.90, bassInfluence:1.0, midInfluence:0.2, overlayType:0 }},
+  { name:'Kaleidoscope', params:{...defaultParams(), zoomSpeed:0.01, rotation:0.05, warpIntensity:0.7, warpStyle:2, colorSpeed:0.8, hueOffset:90, decay:0.95, bassInfluence:0.5, overlayType:2 }},
+  { name:'Nebula Flow', params:{...defaultParams(), zoomSpeed:-0.01, rotation:0.02, warpIntensity:0.25, warpStyle:1, colorSpeed:0.15, hueOffset:30, saturation:0.6, decay:0.97, bassInfluence:0.4, overlayType:1, overlayBrightness:0.4 }},
+  { name:'Hyperdrive', params:{...defaultParams(), zoomSpeed:-0.04, rotation:0.01, warpIntensity:0.15, warpStyle:0, colorSpeed:0.15, hueOffset:210, saturation:0.5, decay:0.88, bassInfluence:1.0, midInfluence:0.3, trebleInfluence:0.5, gain:1.2, overlayType:2, overlayThickness:3.0, overlayBrightness:1.0 }},
+  { name:'Acid Pool', params:{...defaultParams(), zoomSpeed:0.0, rotation:0.04, warpIntensity:0.6, warpStyle:3, colorSpeed:0.6, hueOffset:120, saturation:1.0, decay:0.96, bassInfluence:0.6, overlayType:2, overlayBrightness:0.7 }},
+];
+
+state.fluxParams = { ...defaultParams() };
+
+// ---- AUDIO ENGINE ----
+let audioCtx, analyser, gainNode, sourceNode, audioElement;
+let freqData, timeData;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0.8;
+  gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0.8;
+  analyser.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+
+  freqData = new Uint8Array(analyser.frequencyBinCount);
+  timeData = new Uint8Array(analyser.frequencyBinCount);
+
+  audioElement = new Audio();
+  audioElement.crossOrigin = 'anonymous';
+  audioElement.addEventListener('ended', onTrackEnded);
+  audioElement.addEventListener('loadedmetadata', onMetadataLoaded);
+}
+
+function connectSource() {
+  if (sourceNode) { try { sourceNode.disconnect(); } catch(e){} }
+  sourceNode = audioCtx.createMediaElementSource(audioElement);
+  sourceNode.connect(analyser);
+}
+
+function getAudioLevels() {
+  analyser.getByteFrequencyData(freqData);
+  analyser.getByteTimeDomainData(timeData);
+  const len = freqData.length;
+  const third = Math.floor(len / 3);
+  let bass = 0, mid = 0, treb = 0;
+  for (let i = 0; i < third; i++) bass += freqData[i];
+  for (let i = third; i < third*2; i++) mid += freqData[i];
+  for (let i = third*2; i < len; i++) treb += freqData[i];
+  bass = bass / third / 255;
+  mid = mid / third / 255;
+  treb = treb / (len - third*2) / 255;
+  return { bass, mid, treb };
+}
+
+// ---- PLAYLIST / TRANSPORT ----
+function loadFiles(files) {
+  const audioFiles = Array.from(files).filter(f => f.type.startsWith('audio/'));
+  if (!audioFiles.length) return;
+  for (const f of audioFiles) {
+    state.playlist.push({ name: f.name.replace(/\.[^.]+$/, ''), file: f, duration: 0 });
+  }
+  if (state.currentTrack === -1) loadTrack(0);
+  if (state.panelTab === 'playlist') renderPanel();
+  toast(`${audioFiles.length} track${audioFiles.length > 1 ? 's' : ''} added`);
+}
+
+function loadTrack(idx) {
+  if (idx < 0 || idx >= state.playlist.length) return;
+  state.currentTrack = idx;
+  const track = state.playlist[idx];
+  const url = URL.createObjectURL(track.file);
+  const needsSource = !sourceNode;
+  audioElement.src = url;
+  if (needsSource) connectSource();
+  document.getElementById('track-title').textContent = track.name;
+  document.getElementById('progress-fill').style.width = '0%';
+  if (state.panelTab === 'playlist') renderPanel();
+}
+
+function playPause() {
+  if (!audioElement.src) return;
+  audioCtx.resume();
+  if (state.playing) {
+    audioElement.pause();
+    state.playing = false;
+    document.getElementById('btn-play').textContent = '▶';
+  } else {
+    audioElement.play();
+    state.playing = true;
+    document.getElementById('btn-play').textContent = '⏸';
+  }
+}
+
+function stop() {
+  audioElement.pause();
+  audioElement.currentTime = 0;
+  state.playing = false;
+  document.getElementById('btn-play').textContent = '▶';
+  document.getElementById('progress-fill').style.width = '0%';
+}
+
+function prevTrack() { if (state.currentTrack > 0) { loadTrack(state.currentTrack - 1); if (state.playing) audioElement.play(); } }
+function nextTrack() { if (state.currentTrack < state.playlist.length - 1) { loadTrack(state.currentTrack + 1); if (state.playing) audioElement.play(); } }
+
+function onTrackEnded() { nextTrack(); }
+function onMetadataLoaded() {
+  if (state.playlist[state.currentTrack]) {
+    state.playlist[state.currentTrack].duration = audioElement.duration;
+    document.getElementById('time-total').textContent = fmtTime(audioElement.duration);
+  }
+}
+
+function fmtTime(s) {
+  if (!s || isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
+// ---- CANVAS 2D VISUALIZATIONS ----
+const canvas2d = document.getElementById('vis-canvas');
+const ctx = canvas2d.getContext('2d');
+let particles = [];
+let stars = [];
+
+function resizeCanvases() {
+  const c = document.getElementById('vis-container');
+  const w = c.clientWidth, h = c.clientHeight;
+  canvas2d.width = w; canvas2d.height = h;
+  glCanvas.width = w; glCanvas.height = h;
+  if (gl) {
+    gl.viewport(0, 0, w, h);
+    initFramebuffers();
+  }
+}
+
+// Vis 0: Spectrum Bars
+function drawSpectrumBars(w, h) {
+  const barCount = 64;
+  const step = Math.floor(freqData.length / barCount);
+  const barW = w / barCount - 2;
+  for (let i = 0; i < barCount; i++) {
+    const val = freqData[i * step] / 255;
+    const barH = val * h * 0.85;
+    const hue = (i / barCount) * 280;
+    ctx.fillStyle = `hsla(${hue}, 90%, 55%, 0.9)`;
+    ctx.fillRect(i * (barW + 2), h - barH, barW, barH);
+    // Reflection
+    ctx.fillStyle = `hsla(${hue}, 90%, 55%, 0.15)`;
+    ctx.fillRect(i * (barW + 2), h, barW, barH * 0.3);
+  }
+}
+
+// Vis 1: Oscilloscope
+function drawOscilloscope(w, h) {
+  ctx.strokeStyle = 'rgba(0,229,255,0.9)';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = 'rgba(0,229,255,0.5)';
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  const sl = timeData.length;
+  for (let i = 0; i < sl; i++) {
+    const x = (i / sl) * w;
+    const y = (timeData[i] / 255) * h;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+// Vis 2: Circular Scope
+function drawCircularScope(w, h) {
+  const cx = w / 2, cy = h / 2;
+  const radius = Math.min(w, h) * 0.3;
+  const sl = timeData.length;
+  ctx.strokeStyle = 'rgba(255,45,106,0.85)';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = 'rgba(255,45,106,0.4)';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  for (let i = 0; i <= sl; i++) {
+    const angle = (i / sl) * Math.PI * 2 - Math.PI / 2;
+    const val = (timeData[i % sl] - 128) / 128;
+    const r = radius + val * radius * 0.6;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  // Inner ring
+  ctx.strokeStyle = 'rgba(0,229,255,0.25)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 0.4, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+// Vis 3: Mirrored Spectrum
+function drawMirroredSpectrum(w, h) {
+  const barCount = 48;
+  const step = Math.floor(freqData.length / barCount);
+  const halfW = w / 2;
+  const barW = halfW / barCount - 1;
+  for (let i = 0; i < barCount; i++) {
+    const val = freqData[i * step] / 255;
+    const barH = val * h * 0.8;
+    const hue = 180 + (i / barCount) * 80;
+    ctx.fillStyle = `hsla(${hue}, 80%, 55%, 0.85)`;
+    ctx.fillRect(halfW + i * (barW + 1), h / 2 - barH / 2, barW, barH);
+    ctx.fillRect(halfW - (i + 1) * (barW + 1), h / 2 - barH / 2, barW, barH);
+  }
+}
+
+// Vis 4: Particle Fountain
+function drawParticles(w, h, levels) {
+  // Spawn
+  const spawnCount = Math.floor(levels.bass * 12);
+  for (let i = 0; i < spawnCount; i++) {
+    particles.push({
+      x: w / 2 + (Math.random() - 0.5) * 60,
+      y: h * 0.75,
+      vx: (Math.random() - 0.5) * 6,
+      vy: -(2 + Math.random() * 5 + levels.bass * 6),
+      life: 1,
+      hue: Math.random() * 360,
+      size: 1.5 + Math.random() * 3,
+    });
+  }
+  // Update & draw
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.12;
+    p.life -= 0.012;
+    if (p.life <= 0 || p.y > h + 20) { particles.splice(i, 1); continue; }
+    ctx.fillStyle = `hsla(${p.hue}, 90%, 60%, ${p.life})`;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  if (particles.length > 1500) particles.splice(0, 500);
+}
+
+// Vis 5: Starfield
+function drawStarfield(w, h, levels) {
+  if (stars.length < 400) {
+    for (let i = stars.length; i < 400; i++) {
+      stars.push({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 0.8 + 0.01 });
+    }
+  }
+  const speed = 0.012 + levels.bass * 0.05 + levels.mid * 0.025;
+  const cx = w / 2, cy = h / 2;
+  for (const s of stars) {
+    s.z -= speed;
+    if (s.z <= 0.005) { s.x = Math.random() * 2 - 1; s.y = Math.random() * 2 - 1; s.z = 1; }
+    const sx = cx + (s.x / s.z) * cx * 0.5;
+    const sy = cy + (s.y / s.z) * cy * 0.5;
+    const r = Math.max(1, (1 - s.z) * 4.5);
+    const alpha = Math.min(1, (1 - s.z) * 1.8);
+    const hue = 200 + levels.treb * 160;
+    ctx.fillStyle = `hsla(${hue}, 70%, 85%, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, Math.PI * 2);
+    ctx.fill();
+    // Draw streak for close stars
+    if (s.z < 0.4) {
+      const streakLen = (1 - s.z) * 12;
+      const dx = (s.x / s.z) * cx * 0.5;
+      const dy = (s.y / s.z) * cy * 0.5;
+      const mag = Math.sqrt(dx*dx + dy*dy) || 1;
+      ctx.strokeStyle = `hsla(${hue}, 70%, 85%, ${alpha * 0.4})`;
+      ctx.lineWidth = r * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx - (dx/mag) * streakLen, sy - (dy/mag) * streakLen);
+      ctx.stroke();
+    }
+  }
+}
+
+// Canvas draw dispatch
+function drawCanvas(w, h, levels) {
+  canvas2d.style.display = 'block';
+  switch (state.visMode) {
+    case 0: ctx.clearRect(0,0,w,h); drawSpectrumBars(w, h); break;
+    case 1:
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(0, 0, w, h);
+      drawOscilloscope(w, h);
+      break;
+    case 2: ctx.clearRect(0,0,w,h); drawCircularScope(w, h); break;
+    case 3: ctx.clearRect(0,0,w,h); drawMirroredSpectrum(w, h); break;
+    case 4:
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.fillRect(0, 0, w, h);
+      drawParticles(w, h, levels);
+      break;
+    case 5:
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      ctx.fillRect(0, 0, w, h);
+      drawStarfield(w, h, levels);
+      break;
+  }
+}
+
+// ============================================================
+// WEBGL FLUX ENGINE
+// ============================================================
+const glCanvas = document.getElementById('gl-canvas');
+let gl, pgmFeedback, pgmScreen;
+let fbA, fbB, texA, texB;
+let quadVAO, quadBuf;
+let uTimeFB, uResFB, uPrevFB, uBassFB, uMidFB, uTrebFB;
+let uZoomFB, uRotFB, uWarpFB, uWarpStyleFB, uColorSpeedFB;
+let uHueOffFB, uSatFB, uDecayFB, uInvertFB, uGainFB;
+let uOverlayFB, uOverlayThickFB, uOverlayBrightFB;
+let uFreqDataFB, freqTexture;
+let uTimeDataFB, timeTexture;
+let uTimeSC, uResSC, uTexSC;
+
+const VERT_SRC = `#version 300 es
+in vec2 aPos;
+out vec2 vUv;
+void main(){
+  vUv = aPos * 0.5 + 0.5;
+  gl_Position = vec4(aPos, 0.0, 1.0);
+}`;
+
+const FRAG_FEEDBACK = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uRes;
+uniform sampler2D uPrev;
+uniform sampler2D uFreqData;
+uniform sampler2D uTimeData;
+uniform float uBass, uMid, uTreb;
+uniform float uZoom, uRot, uWarp, uColorSpeed, uHueOff;
+uniform float uSat, uDecay, uGain, uInvert;
+uniform int uWarpStyle, uOverlay;
+uniform float uOverlayThick, uOverlayBright;
+
+vec3 hsv2rgb(vec3 c){
+  vec4 K=vec4(1.,2./3.,1./3.,3.);
+  vec3 p=abs(fract(c.xxx+K.xyz)*6.-K.www);
+  return c.z*mix(K.xxx,clamp(p-K.xxx,0.,1.),c.y);
+}
+
+vec2 applyWarp(vec2 uv, vec2 center, float intensity, float t){
+  vec2 d = uv - center;
+  float dist = length(d);
+  float angle = atan(d.y, d.x);
+
+  if(uWarpStyle == 0){ // Spiral
+    float twist = intensity * 2.0 * (1.0 - dist);
+    angle += twist * (1.0 + uBass*0.5);
+    return center + dist * vec2(cos(angle), sin(angle));
+  }
+  else if(uWarpStyle == 1){ // Ripple
+    float ripple = sin(dist * 12.0 - t * 3.0) * intensity * 0.06;
+    return uv + normalize(d + 0.001) * ripple;
+  }
+  else if(uWarpStyle == 2){ // Kaleidoscope
+    float segments = 6.0;
+    float a = mod(angle + 3.14159, 6.28318 / segments);
+    a = abs(a - 3.14159 / segments);
+    vec2 kd = dist * vec2(cos(a), sin(a));
+    return center + mix(d, kd, intensity);
+  }
+  else { // Horizontal wave
+    float wave = sin(uv.y * 10.0 + t * 2.0) * intensity * 0.04;
+    float wave2 = cos(uv.x * 8.0 + t * 1.5) * intensity * 0.03;
+    return uv + vec2(wave, wave2);
+  }
+}
+
+void main(){
+  vec2 center = vec2(0.5);
+  vec2 uv = vUv;
+
+  // Apply zoom
+  float zoomAmt = 1.0 - (uZoom + uBass * uZoom * uGain);
+  uv = center + (uv - center) * zoomAmt;
+
+  // Apply rotation
+  float rotAmt = uRot + uBass * uRot * 0.5 * uGain;
+  vec2 d = uv - center;
+  float ca = cos(rotAmt), sa = sin(rotAmt);
+  uv = center + vec2(d.x*ca - d.y*sa, d.x*sa + d.y*ca);
+
+  // Apply warp
+  uv = applyWarp(uv, center, uWarp * (1.0 + uBass * uGain * 0.5), uTime);
+
+  // Sample previous frame
+  vec4 prev = texture(uPrev, clamp(uv, 0.0, 1.0));
+
+  // Decay
+  prev.rgb *= uDecay;
+
+  // Color shift — proper Rodrigues rotation around (1,1,1)/sqrt(3)
+  float hShift = uColorSpeed * 0.003 + uTreb * 0.002 * uGain;
+  float cosH = cos(hShift), sinH = sin(hShift);
+  float oneMinusCos = 1.0 - cosH;
+  float k = 0.57735; // 1/sqrt(3)
+  float ks = k * sinH;
+  float kk = k * k * oneMinusCos;
+  mat3 hueRot = mat3(
+    cosH + kk,    kk - ks,      kk + ks,
+    kk + ks,      cosH + kk,    kk - ks,
+    kk - ks,      kk + ks,      cosH + kk
+  );
+  // Preserve luminance: normalize so max channel sum stays <= 1
+  vec3 rotated = hueRot * prev.rgb;
+  float maxC = max(max(rotated.r, rotated.g), rotated.b);
+  float prevMax = max(max(prev.r, prev.g), prev.b);
+  if(maxC > 0.001 && prevMax > 0.001) {
+    rotated *= prevMax / maxC;
+  }
+  prev.rgb = clamp(rotated, 0.0, 1.0);
+
+  // Overlay: draw new audio-reactive content (scaled small to prevent blowout)
+  vec3 overlay = vec3(0.0);
+  float hue = fract(uHueOff / 360.0 + uTime * uColorSpeed * 0.05);
+  vec3 baseColor = hsv2rgb(vec3(hue, uSat, 1.0));
+  float overlayScale = 0.32; // per-frame contribution — builds up via feedback
+
+  if(uOverlay == 0){ // Frequency bars at bottom
+    float freq = texture(uFreqData, vec2(vUv.x, 0.5)).r;
+    float barH = freq * 0.35 * uGain;
+    if(vUv.y < barH){
+      float intensity = 1.0 - (vUv.y / barH);
+      overlay = baseColor * freq * uOverlayBright * overlayScale * intensity;
+    }
+  }
+  else if(uOverlay == 1){ // Waveform line
+    float wave = texture(uTimeData, vec2(vUv.x, 0.5)).r;
+    float waveY = wave;
+    float dist = abs(vUv.y - waveY);
+    float thick = uOverlayThick * 0.004;
+    if(dist < thick){
+      float alpha = 1.0 - dist / thick;
+      overlay = baseColor * alpha * uOverlayBright * overlayScale;
+    }
+  }
+  else if(uOverlay == 2){ // Center shape
+    vec2 cd = vUv - vec2(0.5);
+    float angle = atan(cd.y, cd.x);
+    float idx = (angle / 6.28318 + 0.5);
+    float freq = texture(uFreqData, vec2(idx, 0.5)).r;
+    float r = 0.05 + freq * 0.15 * uGain;
+    float dist = length(cd);
+    if(abs(dist - r) < uOverlayThick * 0.003){
+      overlay = baseColor * uOverlayBright * overlayScale;
+    }
+  }
+  // uOverlay == 3 => none
+
+  vec3 color = prev.rgb + overlay;
+  // Soft ceiling to prevent runaway accumulation
+  color = color / (1.0 + color * 0.03);
+
+  if(uInvert > 0.5) color = vec3(1.0) - color;
+
+  fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+}`;
+
+const FRAG_SCREEN = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uTex;
+void main(){
+  fragColor = texture(uTex, vUv);
+}`;
+
+function initGL() {
+  gl = glCanvas.getContext('webgl2', { antialias: false, preserveDrawingBuffer: false });
+  if (!gl) { console.warn('WebGL2 not available'); return; }
+
+  // Compile shaders
+  pgmFeedback = createProgram(VERT_SRC, FRAG_FEEDBACK);
+  pgmScreen = createProgram(VERT_SRC, FRAG_SCREEN);
+
+  // Get uniform locations - feedback
+  uTimeFB = gl.getUniformLocation(pgmFeedback, 'uTime');
+  uResFB = gl.getUniformLocation(pgmFeedback, 'uRes');
+  uPrevFB = gl.getUniformLocation(pgmFeedback, 'uPrev');
+  uBassFB = gl.getUniformLocation(pgmFeedback, 'uBass');
+  uMidFB = gl.getUniformLocation(pgmFeedback, 'uMid');
+  uTrebFB = gl.getUniformLocation(pgmFeedback, 'uTreb');
+  uZoomFB = gl.getUniformLocation(pgmFeedback, 'uZoom');
+  uRotFB = gl.getUniformLocation(pgmFeedback, 'uRot');
+  uWarpFB = gl.getUniformLocation(pgmFeedback, 'uWarp');
+  uWarpStyleFB = gl.getUniformLocation(pgmFeedback, 'uWarpStyle');
+  uColorSpeedFB = gl.getUniformLocation(pgmFeedback, 'uColorSpeed');
+  uHueOffFB = gl.getUniformLocation(pgmFeedback, 'uHueOff');
+  uSatFB = gl.getUniformLocation(pgmFeedback, 'uSat');
+  uDecayFB = gl.getUniformLocation(pgmFeedback, 'uDecay');
+  uInvertFB = gl.getUniformLocation(pgmFeedback, 'uInvert');
+  uGainFB = gl.getUniformLocation(pgmFeedback, 'uGain');
+  uOverlayFB = gl.getUniformLocation(pgmFeedback, 'uOverlay');
+  uOverlayThickFB = gl.getUniformLocation(pgmFeedback, 'uOverlayThick');
+  uOverlayBrightFB = gl.getUniformLocation(pgmFeedback, 'uOverlayBright');
+  uFreqDataFB = gl.getUniformLocation(pgmFeedback, 'uFreqData');
+  uTimeDataFB = gl.getUniformLocation(pgmFeedback, 'uTimeData');
+
+  // Screen program
+  uTimeSC = gl.getUniformLocation(pgmScreen, 'uTime');
+  uResSC = gl.getUniformLocation(pgmScreen, 'uRes');
+  uTexSC = gl.getUniformLocation(pgmScreen, 'uTex');
+
+  // Quad
+  const verts = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+  quadBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+
+  // Audio data textures
+  freqTexture = createDataTexture(analyser.frequencyBinCount);
+  timeTexture = createDataTexture(analyser.frequencyBinCount);
+
+  initFramebuffers();
+}
+
+function createShader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(s));
+    gl.deleteShader(s);
+    return null;
+  }
+  return s;
+}
+
+function createProgram(vSrc, fSrc) {
+  const v = createShader(gl.VERTEX_SHADER, vSrc);
+  const f = createShader(gl.FRAGMENT_SHADER, fSrc);
+  const p = gl.createProgram();
+  gl.attachShader(p, v);
+  gl.attachShader(p, f);
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(p));
+    return null;
+  }
+  return p;
+}
+
+function createDataTexture(width) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, width, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return tex;
+}
+
+function createFBTexture(w, h) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return tex;
+}
+
+function initFramebuffers() {
+  if (!gl) return;
+  const w = glCanvas.width, h = glCanvas.height;
+  if (w === 0 || h === 0) return;
+
+  // Cleanup old
+  if (fbA) gl.deleteFramebuffer(fbA);
+  if (fbB) gl.deleteFramebuffer(fbB);
+  if (texA) gl.deleteTexture(texA);
+  if (texB) gl.deleteTexture(texB);
+
+  texA = createFBTexture(w, h);
+  fbA = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbA);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texA, 0);
+
+  texB = createFBTexture(w, h);
+  fbB = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbB);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texB, 0);
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+let glFrame = 0;
+function drawFlux(w, h, levels, time) {
+  if (!gl || !pgmFeedback) return;
+  canvas2d.style.display = 'none';
+
+  const p = state.fluxParams;
+
+  // Update frequency data texture
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, freqTexture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, freqData.length, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, freqData);
+
+  // Update time data texture
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, timeTexture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, timeData.length, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, timeData);
+
+  // ---- Feedback pass: render to target FB ----
+  const srcTex = (glFrame % 2 === 0) ? texA : texB;
+  const dstFB = (glFrame % 2 === 0) ? fbB : fbA;
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dstFB);
+  gl.viewport(0, 0, w, h);
+  gl.useProgram(pgmFeedback);
+
+  // Bind previous frame
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, srcTex);
+  gl.uniform1i(uPrevFB, 0);
+  gl.uniform1i(uFreqDataFB, 1);
+  gl.uniform1i(uTimeDataFB, 2);
+
+  gl.uniform1f(uTimeFB, time);
+  gl.uniform2f(uResFB, w, h);
+  gl.uniform1f(uBassFB, levels.bass * p.bassInfluence);
+  gl.uniform1f(uMidFB, levels.mid * p.midInfluence);
+  gl.uniform1f(uTrebFB, levels.treb * p.trebleInfluence);
+  gl.uniform1f(uZoomFB, p.zoomSpeed);
+  gl.uniform1f(uRotFB, p.rotation);
+  gl.uniform1f(uWarpFB, p.warpIntensity);
+  gl.uniform1i(uWarpStyleFB, p.warpStyle);
+  gl.uniform1f(uColorSpeedFB, p.colorSpeed);
+  gl.uniform1f(uHueOffFB, p.hueOffset);
+  gl.uniform1f(uSatFB, p.saturation);
+  gl.uniform1f(uDecayFB, p.decay);
+  gl.uniform1f(uInvertFB, p.invert);
+  gl.uniform1f(uGainFB, p.gain);
+  gl.uniform1i(uOverlayFB, p.overlayType);
+  gl.uniform1f(uOverlayThickFB, p.overlayThickness);
+  gl.uniform1f(uOverlayBrightFB, p.overlayBrightness);
+
+  drawQuad(pgmFeedback);
+
+  // ---- Screen pass: render result to screen ----
+  const resultTex = (glFrame % 2 === 0) ? texB : texA;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, w, h);
+  gl.useProgram(pgmScreen);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, resultTex);
+  gl.uniform1i(uTexSC, 0);
+  drawQuad(pgmScreen);
+
+  glFrame++;
+}
+
+function drawQuad(pgm) {
+  const aPos = gl.getAttribLocation(pgm, 'aPos');
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+// ============================================================
+// RENDER LOOP
+// ============================================================
+let lastTime = 0, frameCount = 0, fpsTime = 0, currentFps = 60;
+
+function render(timestamp) {
+  requestAnimationFrame(render);
+
+  // FPS
+  frameCount++;
+  if (timestamp - fpsTime > 500) {
+    currentFps = Math.round(frameCount / ((timestamp - fpsTime) / 1000));
+    document.getElementById('fps-counter').textContent = currentFps + ' FPS';
+    frameCount = 0;
+    fpsTime = timestamp;
+  }
+
+  // Update progress
+  if (state.playing && audioElement.duration) {
+    const pct = (audioElement.currentTime / audioElement.duration) * 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('time-current').textContent = fmtTime(audioElement.currentTime);
+  }
+
+  // Audio data
+  const levels = getAudioLevels();
+  // Determine current mode: built-in or custom preset
+  const isCustomPreset = state.visMode >= visModes.length;
+  const mode = isCustomPreset ? { type: 'flux', preset: -1 } : visModes[state.visMode];
+  const w = canvas2d.width, h = canvas2d.height;
+  const time = timestamp / 1000;
+
+  if (mode.type === 'canvas') {
+    canvas2d.style.display = 'block';
+    if (gl) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+    drawCanvas(w, h, levels);
+  } else {
+    // Flux mode
+    if (isCustomPreset) {
+      const cpIdx = state.visMode - visModes.length;
+      Object.assign(state.fluxParams, state.customPresets[cpIdx].params);
+    } else if (mode.preset >= 0 && mode.preset < curatedPresets.length) {
+      // Use curated preset params
+      Object.assign(state.fluxParams, curatedPresets[mode.preset].params);
+    }
+    // If preset === -1, use current manual params (already in state.fluxParams)
+    drawFlux(glCanvas.width, glCanvas.height, levels, time);
+  }
+}
+
+// ============================================================
+// SIDE PANEL RENDERING
+// ============================================================
+function renderPanel() {
+  const body = document.getElementById('panel-body');
+  if (state.panelTab === 'flux') renderFluxPanel(body);
+  else if (state.panelTab === 'presets') renderPresetsPanel(body);
+  else if (state.panelTab === 'playlist') renderPlaylistPanel(body);
+}
+
+function renderFluxPanel(el) {
+  const p = state.fluxParams;
+  el.innerHTML = `
+    <div class="control-group">
+      <div class="control-group-title">WARP / MOTION</div>
+      ${slider('zoomSpeed', 'Zoom Speed', -0.1, 0.15, 0.001, p.zoomSpeed)}
+      ${slider('rotation', 'Rotation', -0.3, 0.3, 0.005, p.rotation)}
+      ${slider('warpIntensity', 'Warp Amount', 0, 1.5, 0.01, p.warpIntensity)}
+      <div class="control-row">
+        <span class="control-label">Warp Style</span>
+        <select class="style-select" data-param="warpStyle">
+          <option value="0" ${p.warpStyle===0?'selected':''}>Spiral</option>
+          <option value="1" ${p.warpStyle===1?'selected':''}>Ripple</option>
+          <option value="2" ${p.warpStyle===2?'selected':''}>Kaleidoscope</option>
+          <option value="3" ${p.warpStyle===3?'selected':''}>Wave</option>
+        </select>
+      </div>
+    </div>
+    <div class="control-group">
+      <div class="control-group-title">COLOR</div>
+      ${slider('colorSpeed', 'Color Speed', 0, 2, 0.01, p.colorSpeed)}
+      ${slider('hueOffset', 'Hue Offset', 0, 360, 1, p.hueOffset)}
+      ${slider('saturation', 'Saturation', 0, 1, 0.01, p.saturation)}
+      ${slider('decay', 'Decay / Trail', 0.8, 1.0, 0.005, p.decay)}
+      <div class="control-row">
+        <span class="control-label">Invert</span>
+        <label style="cursor:pointer;color:var(--text-dim);font-size:11px;">
+          <input type="checkbox" data-param="invert" ${p.invert?'checked':''} style="cursor:pointer;"> ${p.invert?'ON':'OFF'}
+        </label>
+      </div>
+    </div>
+    <div class="control-group">
+      <div class="control-group-title">AUDIO REACTIVITY</div>
+      ${slider('bassInfluence', 'Bass Influence', 0, 1.5, 0.01, p.bassInfluence)}
+      ${slider('midInfluence', 'Mid Influence', 0, 1.5, 0.01, p.midInfluence)}
+      ${slider('trebleInfluence', 'Treble Influence', 0, 1.5, 0.01, p.trebleInfluence)}
+      ${slider('gain', 'Gain / Intensity', 0.2, 2, 0.01, p.gain)}
+    </div>
+    <div class="control-group">
+      <div class="control-group-title">OVERLAY</div>
+      <div class="control-row">
+        <span class="control-label">Overlay Type</span>
+        <select class="style-select" data-param="overlayType">
+          <option value="0" ${p.overlayType===0?'selected':''}>Freq Bars</option>
+          <option value="1" ${p.overlayType===1?'selected':''}>Waveform</option>
+          <option value="2" ${p.overlayType===2?'selected':''}>Center Ring</option>
+          <option value="3" ${p.overlayType===3?'selected':''}>None</option>
+        </select>
+      </div>
+      ${slider('overlayThickness', 'Thickness', 0.5, 5, 0.1, p.overlayThickness)}
+      ${slider('overlayBrightness', 'Brightness', 0, 1.5, 0.01, p.overlayBrightness)}
+    </div>
+    <div style="margin-top:10px;">
+      <button class="btn-sm" id="btn-randomize">RANDOMIZE</button>
+      <button class="btn-sm" id="btn-reset-params">RESET</button>
+    </div>
+  `;
+  attachSliderEvents(el);
+}
+
+function slider(param, label, min, max, step, val) {
+  return `<div class="control-row">
+    <span class="control-label">${label}</span>
+    <input type="range" min="${min}" max="${max}" step="${step}" value="${val}" data-param="${param}">
+    <span class="control-value" data-val="${param}">${typeof val === 'number' ? val.toFixed(step < 0.01 ? 3 : 2) : val}</span>
+  </div>`;
+}
+
+function attachSliderEvents(el) {
+  el.querySelectorAll('input[type="range"][data-param]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const param = inp.dataset.param;
+      const val = parseFloat(inp.value);
+      state.fluxParams[param] = val;
+      const disp = el.querySelector(`[data-val="${param}"]`);
+      if (disp) disp.textContent = val.toFixed(parseFloat(inp.step) < 0.01 ? 3 : 2);
+      // Switch to manual mode if not already
+      ensureManualMode();
+    });
+  });
+  el.querySelectorAll('select[data-param]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      state.fluxParams[sel.dataset.param] = parseInt(sel.value);
+      ensureManualMode();
+    });
+  });
+  el.querySelectorAll('input[type="checkbox"][data-param]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      state.fluxParams[cb.dataset.param] = cb.checked ? 1 : 0;
+      const label = cb.parentElement;
+      label.innerHTML = `<input type="checkbox" data-param="${cb.dataset.param}" ${cb.checked?'checked':''} style="cursor:pointer;"> ${cb.checked?'ON':'OFF'}`;
+      attachSliderEvents(el); // rebind
+      ensureManualMode();
+    });
+  });
+
+  const btnRand = el.querySelector('#btn-randomize');
+  if (btnRand) btnRand.addEventListener('click', randomizeParams);
+  const btnReset = el.querySelector('#btn-reset-params');
+  if (btnReset) btnReset.addEventListener('click', () => {
+    state.fluxParams = defaultParams();
+    renderPanel();
+    ensureManualMode();
+  });
+}
+
+function ensureManualMode() {
+  const manualIdx = visModes.findIndex(v => v.type === 'flux' && v.preset === -1);
+  if (state.visMode !== manualIdx) {
+    state.visMode = manualIdx;
+    document.getElementById('vis-label').textContent = visModes[manualIdx].name;
+  }
+}
+
+function randomizeParams() {
+  const p = state.fluxParams;
+  p.zoomSpeed = (Math.random() - 0.4) * 0.12;
+  p.rotation = (Math.random() - 0.5) * 0.25;
+  p.warpIntensity = Math.random() * 1.0;
+  p.warpStyle = Math.floor(Math.random() * 4);
+  p.colorSpeed = Math.random() * 1.5;
+  p.hueOffset = Math.random() * 360;
+  p.saturation = 0.4 + Math.random() * 0.6;
+  p.decay = 0.85 + Math.random() * 0.13;
+  p.bassInfluence = 0.2 + Math.random() * 1.0;
+  p.midInfluence = Math.random() * 0.8;
+  p.trebleInfluence = Math.random() * 0.8;
+  p.gain = 0.6 + Math.random() * 1.0;
+  p.overlayType = Math.floor(Math.random() * 4);
+  p.overlayThickness = 1 + Math.random() * 3;
+  p.overlayBrightness = 0.3 + Math.random() * 0.8;
+  renderPanel();
+  ensureManualMode();
+  toast('Randomized!');
+}
+
+// ---- Presets panel ----
+function renderPresetsPanel(el) {
+  const curated = curatedPresets.map((p, i) =>
+    `<div class="preset-item ${state.activePresetIdx === i ? 'active' : ''}" data-curated="${i}">
+      <div><span class="preset-name">${p.name}</span><br><span class="preset-type">CURATED</span></div>
+    </div>`
+  ).join('');
+
+  const custom = state.customPresets.map((p, i) =>
+    `<div class="preset-item ${state.activePresetIdx === -(i+1) ? 'active' : ''}" data-custom="${i}">
+      <div><span class="preset-name">${p.name}</span><br><span class="preset-type">CUSTOM</span></div>
+      <button class="btn-sm" data-delete-custom="${i}" style="padding:3px 8px;font-size:9px;">DEL</button>
+    </div>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="preset-actions">
+      <button class="btn-sm" id="btn-save-preset">SAVE CURRENT</button>
+      <button class="btn-sm" id="btn-export-presets">EXPORT</button>
+      <button class="btn-sm" id="btn-import-presets">IMPORT</button>
+      <input type="file" id="import-file" accept=".json" hidden>
+      <button class="btn-sm" id="btn-export-single">EXPORT CURRENT</button>
+    </div>
+    <div class="control-group">
+      <div class="control-group-title">CURATED</div>
+      ${curated}
+    </div>
+    ${state.customPresets.length ? `<div class="control-group">
+      <div class="control-group-title">CUSTOM</div>
+      ${custom}
+    </div>` : ''}
+  `;
+
+  // Events
+  el.querySelectorAll('[data-curated]').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('[data-delete-custom]')) return;
+      const idx = parseInt(item.dataset.curated);
+      state.fluxParams = { ...curatedPresets[idx].params };
+      state.activePresetIdx = idx;
+      ensureManualMode();
+      renderPanel();
+    });
+  });
+
+  el.querySelectorAll('[data-custom]').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('[data-delete-custom]')) return;
+      const idx = parseInt(item.dataset.custom);
+      state.fluxParams = { ...state.customPresets[idx].params };
+      state.activePresetIdx = -(idx + 1);
+      ensureManualMode();
+      renderPanel();
+    });
+  });
+
+  el.querySelectorAll('[data-delete-custom]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.deleteCustom);
+      state.customPresets.splice(idx, 1);
+      saveCustomPresetsLocal();
+      renderPanel();
+      toast('Preset deleted');
+    });
+  });
+
+  document.getElementById('btn-save-preset')?.addEventListener('click', showSaveModal);
+  document.getElementById('btn-export-presets')?.addEventListener('click', exportAllPresets);
+  document.getElementById('btn-export-single')?.addEventListener('click', exportCurrentPreset);
+  document.getElementById('btn-import-presets')?.addEventListener('click', () => document.getElementById('import-file').click());
+  document.getElementById('import-file')?.addEventListener('change', importPresets);
+}
+
+// ---- Playlist panel ----
+function renderPlaylistPanel(el) {
+  if (state.playlist.length === 0) {
+    el.innerHTML = `<div class="pl-empty">No tracks loaded.<br><br>Drag & drop audio files onto the<br>visualizer, or click the + button.</div>`;
+    return;
+  }
+  el.innerHTML = state.playlist.map((t, i) =>
+    `<div class="playlist-item ${i === state.currentTrack ? 'active' : ''}" data-track="${i}">
+      <span class="pl-num">${i + 1}.</span>
+      <span class="pl-name">${t.name}</span>
+      <span class="pl-dur">${fmtTime(t.duration)}</span>
+    </div>`
+  ).join('');
+
+  el.querySelectorAll('[data-track]').forEach(item => {
+    item.addEventListener('click', () => {
+      const idx = parseInt(item.dataset.track);
+      loadTrack(idx);
+      if (!state.playing) playPause();
+      else audioElement.play();
+      renderPanel();
+    });
+  });
+}
+
+// ============================================================
+// PRESET SAVE / EXPORT / IMPORT
+// ============================================================
+function showSaveModal() {
+  document.getElementById('name-modal').classList.add('show');
+  const input = document.getElementById('preset-name-input');
+  input.value = '';
+  input.focus();
+}
+
+document.getElementById('preset-save-confirm').addEventListener('click', () => {
+  const name = document.getElementById('preset-name-input').value.trim() || 'Untitled Preset';
+  state.customPresets.push({
+    name,
+    version: 1,
+    params: { ...state.fluxParams },
+  });
+  saveCustomPresetsLocal();
+  document.getElementById('name-modal').classList.remove('show');
+  if (state.panelTab === 'presets') renderPanel();
+  toast(`Saved: ${name}`);
+});
+
+document.getElementById('preset-save-cancel').addEventListener('click', () => {
+  document.getElementById('name-modal').classList.remove('show');
+});
+
+document.getElementById('preset-name-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('preset-save-confirm').click();
+  if (e.key === 'Escape') document.getElementById('preset-save-cancel').click();
+});
+
+function exportAllPresets() {
+  if (state.customPresets.length === 0) { toast('No custom presets to export'); return; }
+  downloadJSON(state.customPresets, 'voidwave-presets.json');
+  toast(`Exported ${state.customPresets.length} presets`);
+}
+
+function exportCurrentPreset() {
+  const preset = { name: 'Custom Preset', version: 1, params: { ...state.fluxParams } };
+  downloadJSON([preset], 'voidwave-preset.json');
+  toast('Current settings exported');
+}
+
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importPresets(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      const presets = Array.isArray(data) ? data : [data];
+      let count = 0;
+      for (const p of presets) {
+        if (p.params && typeof p.params === 'object') {
+          state.customPresets.push({
+            name: p.name || 'Imported Preset',
+            version: p.version || 1,
+            params: { ...defaultParams(), ...p.params },
+          });
+          count++;
+        }
+      }
+      saveCustomPresetsLocal();
+      if (state.panelTab === 'presets') renderPanel();
+      toast(`Imported ${count} preset${count !== 1 ? 's' : ''}`);
+    } catch (err) {
+      toast('Invalid preset file');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// Local storage for custom presets persistence
+function saveCustomPresetsLocal() {
+  try { localStorage.setItem('voidwave-custom-presets', JSON.stringify(state.customPresets)); } catch(e){}
+}
+function loadCustomPresetsLocal() {
+  try {
+    const d = localStorage.getItem('voidwave-custom-presets');
+    if (d) state.customPresets = JSON.parse(d);
+  } catch(e){}
+}
+
+// ============================================================
+// UI WIRING
+// ============================================================
+
+// Panel tabs
+document.querySelectorAll('.panel-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.panelTab = tab.dataset.tab;
+    renderPanel();
+  });
+});
+
+// Transport
+document.getElementById('btn-play').addEventListener('click', () => { audioCtx.resume(); playPause(); });
+document.getElementById('btn-stop').addEventListener('click', stop);
+document.getElementById('btn-prev').addEventListener('click', prevTrack);
+document.getElementById('btn-next').addEventListener('click', nextTrack);
+document.getElementById('vol-slider').addEventListener('input', (e) => { gainNode.gain.value = parseFloat(e.target.value); });
+
+// Progress seek
+document.getElementById('progress-wrap').addEventListener('click', (e) => {
+  if (!audioElement.duration) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  audioElement.currentTime = pct * audioElement.duration;
+});
+
+// Vis cycling
+document.getElementById('btn-vis-prev').addEventListener('click', () => cycleVis(-1));
+document.getElementById('btn-vis-next').addEventListener('click', () => cycleVis(1));
+
+function cycleVis(dir) {
+  const totalModes = visModes.length + state.customPresets.length;
+  state.visMode = (state.visMode + dir + totalModes) % totalModes;
+  // Update label
+  if (state.visMode < visModes.length) {
+    document.getElementById('vis-label').textContent = visModes[state.visMode].name;
+  } else {
+    const cpIdx = state.visMode - visModes.length;
+    document.getElementById('vis-label').textContent = 'FLUX — ' + state.customPresets[cpIdx].name.toUpperCase();
+  }
+  // Clear canvas for clean transitions
+  ctx.clearRect(0, 0, canvas2d.width, canvas2d.height);
+  particles = [];
+  stars = [];
+}
+
+// Settings panel
+document.getElementById('btn-settings').addEventListener('click', togglePanel);
+document.getElementById('panel-close').addEventListener('click', togglePanel);
+
+function togglePanel() {
+  state.panelOpen = !state.panelOpen;
+  document.getElementById('side-panel').classList.toggle('open', state.panelOpen);
+  if (state.panelOpen) renderPanel();
+}
+
+// File loading
+document.getElementById('btn-files').addEventListener('click', () => document.getElementById('file-input').click());
+document.getElementById('file-input').addEventListener('change', (e) => loadFiles(e.target.files));
+
+// Fullscreen
+document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+document.getElementById('vis-container').addEventListener('dblclick', toggleFullscreen);
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.getElementById('app').requestFullscreen();
+    document.getElementById('app').classList.add('fullscreen');
+    state.fullscreen = true;
+  } else {
+    document.exitFullscreen();
+    document.getElementById('app').classList.remove('fullscreen');
+    state.fullscreen = false;
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    document.getElementById('app').classList.remove('fullscreen');
+    state.fullscreen = false;
+  }
+});
+
+// Drag & drop
+const visCont = document.getElementById('vis-container');
+const dropOverlay = document.getElementById('drop-overlay');
+let dragCounter = 0;
+
+document.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; dropOverlay.classList.add('active'); });
+document.addEventListener('dragleave', (e) => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dropOverlay.classList.remove('active'); dragCounter = 0; } });
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.remove('active');
+  if (e.dataTransfer.files.length) loadFiles(e.dataTransfer.files);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  switch (e.key) {
+    case ' ': e.preventDefault(); audioCtx.resume(); playPause(); break;
+    case 'ArrowLeft':
+      if (e.shiftKey) prevTrack();
+      else cycleVis(-1);
+      break;
+    case 'ArrowRight':
+      if (e.shiftKey) nextTrack();
+      else cycleVis(1);
+      break;
+    case 's': case 'S': stop(); break;
+    case 'f': case 'F': toggleFullscreen(); break;
+    case 'm': case 'M': togglePanel(); break;
+    case 'r': case 'R': randomizeParams(); break;
+    case 'Escape':
+      if (state.panelOpen) togglePanel();
+      break;
+  }
+});
+
+// Window resize
+window.addEventListener('resize', resizeCanvases);
+
+// Toast
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  initAudio();
+  loadCustomPresetsLocal();
+  resizeCanvases();
+  initGL();
+  requestAnimationFrame(render);
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>

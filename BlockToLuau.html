@@ -123,9 +123,12 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font-ui); backgr
 .canvas-block.leaf .block-header { border-radius: var(--radius); }
 .nested-block { position: relative; margin: 4px 0; border-radius: var(--radius); font-size: 12px; }
 .nested-block .block-header { padding: 6px 10px; border-radius: var(--radius); }
+.nested-block.nested-container > .block-header { border-radius: var(--radius) var(--radius) 0 0; }
 .nested-block .delete-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 3px; font-size: 12px; opacity: 0; transition: all var(--transition); }
-.nested-block:hover .delete-btn { opacity: 1; }
+.nested-block:hover > .delete-btn, .nested-block:hover > .block-header > .delete-btn { opacity: 1; }
 .nested-block .delete-btn:hover { background: var(--danger); color: #fff; }
+.nested-block.nested-container > .block-body { min-height: 36px; padding: 6px; border-radius: 0 0 var(--radius) var(--radius); border: 1px dashed var(--border); border-top: none; background: var(--drop-zone); transition: background var(--transition), border-color var(--transition); }
+.nested-block.nested-container > .block-body.drag-over { background: var(--drop-zone-active); border-color: var(--accent); }
 
 .canvas-block[data-category="event"] .block-header, .nested-block[data-category="event"] .block-header { background: var(--event-bg); border: 1px solid var(--event-border); color: var(--event-color); }
 .canvas-block[data-category="event"].selected .block-header { box-shadow: 0 0 0 2px var(--event-color); }
@@ -583,6 +586,7 @@ function handleBodyDrop(e, pid) {
 
 /* ═══════ Canvas Block Dragging ═══════ */
 let canvasDrag = null;
+let hoverBody = null;
 function startBlockDrag(e, id) {
   if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) return;
   e.stopPropagation();
@@ -604,8 +608,63 @@ function onBlockDrag(e) {
   canvasDrag.el.style.left = x+'px'; canvasDrag.el.style.top = y+'px';
   const node = findNode(canvasDrag.id);
   if (node) { node.x = x; node.y = y; }
+  /* Highlight drop zones when hovering */
+  if (hoverBody) { hoverBody.classList.remove('drag-over'); hoverBody = null; }
+  canvasDrag.el.style.pointerEvents = 'none';
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  canvasDrag.el.style.pointerEvents = '';
+  if (under) {
+    const body = under.closest('.block-body');
+    if (body) {
+      const parentBlock = body.parentElement;
+      const parentId = parentBlock ? parseInt(parentBlock.dataset.id) : null;
+      if (parentId && parentId !== canvasDrag.id && !isDescendant(canvasDrag.id, parentId)) {
+        body.classList.add('drag-over');
+        hoverBody = body;
+      }
+    }
+  }
 }
-function endBlockDrag() { if (canvasDrag) { saveState(); canvasDrag=null; } document.removeEventListener('mousemove',onBlockDrag); document.removeEventListener('mouseup',endBlockDrag); }
+function endBlockDrag(e) {
+  if (canvasDrag) {
+    /* Check if dropped over a container body */
+    let reparented = false;
+    if (e) {
+      canvasDrag.el.style.pointerEvents = 'none';
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      canvasDrag.el.style.pointerEvents = '';
+      if (under) {
+        const body = under.closest('.block-body');
+        if (body) {
+          const parentBlock = body.parentElement;
+          const parentId = parentBlock ? parseInt(parentBlock.dataset.id) : null;
+          if (parentId && parentId !== canvasDrag.id && !isDescendant(canvasDrag.id, parentId)) {
+            const parentNode = findNode(parentId);
+            const dragIdx = logicTree.findIndex(n => n.id === canvasDrag.id);
+            if (parentNode && dragIdx !== -1) {
+              const moved = logicTree.splice(dragIdx, 1)[0];
+              parentNode.children.push(moved);
+              reparented = true;
+            }
+          }
+        }
+      }
+    }
+    if (hoverBody) { hoverBody.classList.remove('drag-over'); hoverBody = null; }
+    if (reparented) render();
+    saveState();
+    canvasDrag = null;
+  }
+  document.removeEventListener('mousemove', onBlockDrag);
+  document.removeEventListener('mouseup', endBlockDrag);
+}
+/* Prevent circular nesting: check if possibleChild is inside possibleParent's tree */
+function isDescendant(parentId, childId) {
+  const parent = findNode(parentId);
+  if (!parent) return false;
+  function walk(nodes) { for (const n of nodes) { if (n.id === childId) return true; if (walk(n.children)) return true; } return false; }
+  return walk(parent.children);
+}
 
 /* ═══════ Node Helpers ═══════ */
 function createNode(type, x, y) {
@@ -643,7 +702,7 @@ function createBlockElement(node, nested) {
   const el = document.createElement('div');
   el.dataset.id = node.id; el.dataset.category = def.category;
   if (!nested) { el.className = 'canvas-block '+(isCon?'container':'leaf')+(node.id===selectedBlockId?' selected':''); el.style.left=node.x+'px'; el.style.top=node.y+'px'; }
-  else { el.className = 'nested-block'; }
+  else { el.className = 'nested-block'+(isCon?' nested-container':''); }
   let label = def.label;
   if (def.params.length>0) { const mp=node.params[def.params[0].key]; if(mp&&mp!==def.params[0].default) label+=': '+truncate(mp,18); }
   const header = document.createElement('div'); header.className='block-header';
@@ -651,12 +710,12 @@ function createBlockElement(node, nested) {
   if (!nested) header.addEventListener('mousedown', e=>startBlockDrag(e,node.id));
   header.addEventListener('click', e=>{e.stopPropagation();selectBlock(node.id);});
   el.appendChild(header);
-  if (isCon && !nested) {
+  if (isCon) {
     const body = document.createElement('div'); body.className='block-body';
     body.setAttribute('ondragover','handleBodyDragOver(event,'+node.id+')');
     body.setAttribute('ondragleave','handleBodyDragLeave(event)');
     body.setAttribute('ondrop','handleBodyDrop(event,'+node.id+')');
-    if (!node.children.length) body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:11px;padding:12px 0;pointer-events:none;">Drop blocks here</div>';
+    if (!node.children.length) body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:11px;padding:'+(!nested?'12':'8')+'px 0;pointer-events:none;">Drop blocks here</div>';
     else for (const child of node.children) body.appendChild(createBlockElement(child, true));
     el.appendChild(body);
   }
@@ -728,7 +787,7 @@ function resolveTemplate(tmpl, params) { let r=tmpl; for(const[k,v] of Object.en
 function renderCode() {
   const output = document.getElementById('code-output');
   if (!logicTree.length) { output.innerHTML='<div class="code-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span>Your Luau code will<br>appear here live</span></div>'; return; }
-  let raw = '-- Generated by Block-to-Luau\n-- https://gotater.pages.dev\n\n' + transpile(logicTree, 0);
+  let raw = '-- Generated by Block-to-Luau\n-- https://block-to-luau.pages.dev\n\n' + transpile(logicTree, 0);
   output.innerHTML = '<pre>'+highlightLuau(raw)+'</pre>';
 }
 function highlightLuau(code) {

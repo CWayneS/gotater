@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Road Survivor</title>
+    <title>Out Driving</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; overflow: hidden; background-color: #064e3b; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -48,7 +48,7 @@
 <div id="ui-layer">
     <div class="flex justify-between w-full max-w-5xl mx-auto">
         <div class="w-1/3">
-            <div class="text-white font-bold text-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">ARMOR: <span id="hp-text">100/100</span></div>
+            <div class="text-white font-bold text-lg drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">ARMOR: <span id="hp-text">150/150</span></div>
             <div class="bar-bg"><div id="hp-fill" class="bar-fill" style="width: 100%;"></div></div>
         </div>
         <div class="w-1/3 text-center">
@@ -69,8 +69,8 @@
 <!-- Main Menu -->
 <div id="menu-screen" class="screen">
     <div class="panel max-w-md w-full">
-        <h1 class="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 drop-shadow-lg italic">AUTO DRIVE</h1>
-        <h2 class="text-xl font-bold mb-6 text-gray-400 tracking-widest">Out Driving</h2>
+        <h1 class="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 drop-shadow-lg italic">OUT DRIVING</h1>
+        <h2 class="text-xl font-bold mb-6 text-gray-400 tracking-widest">HIGHWAY SURVIVAL</h2>
         <div class="mb-6 text-sm text-left bg-black/60 p-4 rounded-lg border border-gray-700 text-gray-300 leading-relaxed">
             <p class="mb-2">🚗 <b>DRIVE:</b> WASD / Arrows / Touch</p>
             <p class="mb-2">🔫 <b>COMBAT:</b> Weapons auto-target.</p>
@@ -276,11 +276,13 @@ class Player {
         this.vx = 0; this.vy = 0;
         this.angle = 0;
 
-        this.maxHp = 100; this.hp = 100;
-        this.level = 1; this.xp = 0; this.xpNeeded = 10;
+        // Eased Difficulty: Higher base HP and starting armor
+        this.maxHp = 150; this.hp = 150;
+        this.level = 1; this.xp = 0;
+        this.xpNeeded = 8; // Faster early leveling
         this.pickupRadius = 120;
         this.weapons = [];
-        this.stats = { damageMult: 1.0, fireRateMult: 1.0, speedMult: 1.0, armor: 0 };
+        this.stats = { damageMult: 1.0, fireRateMult: 1.0, speedMult: 1.0, armor: 1 };
         this.invulnTimer = 0;
     }
 
@@ -421,7 +423,7 @@ class Player {
 
     takeDamage(amount) {
         if (this.invulnTimer > 0) return;
-        let actualDmg = Math.max(1, amount - this.stats.armor);
+        let actualDmg = Math.max(1, amount - this.stats.armor); // Armor blocks damage
         this.hp -= actualDmg;
         this.invulnTimer = 0.5;
         audio.hit();
@@ -441,8 +443,8 @@ class Player {
 
     levelUp() {
         this.level++;
-        this.xpNeeded = Math.floor(this.xpNeeded * 1.5);
-        this.hp = Math.min(this.maxHp, this.hp + 20);
+        this.xpNeeded = Math.floor(this.xpNeeded * 1.4); // Slower scaling for easier leveling
+        this.hp = Math.min(this.maxHp, this.hp + 20); // Heal slightly on level up
         audio.levelUp();
         triggerLevelUp();
     }
@@ -466,7 +468,7 @@ class WeaponMachineGun extends Weapon {
         super(player);
         this.type = 'machinegun';
         this.baseCooldown = 0.35;
-        this.damage = 12;
+        this.damage = 15; // Increased base damage
         this.range = 350;
         this.level = 1;
     }
@@ -491,7 +493,7 @@ class WeaponShotgun extends Weapon {
         super(player);
         this.type = 'shotgun';
         this.baseCooldown = 1.0;
-        this.damage = 10;
+        this.damage = 15; // Increased base damage
         this.range = 250;
         this.level = 1;
     }
@@ -520,7 +522,7 @@ class WeaponAura extends Weapon {
         super(player);
         this.type = 'aura';
         this.baseCooldown = 0.5;
-        this.damage = 6;
+        this.damage = 8;
         this.range = 100;
         this.level = 1;
     }
@@ -582,7 +584,7 @@ class Projectile {
     }
 }
 
-// Enemies
+// Enemies - Easier Balance
 class Enemy {
     constructor(type, stageMult) {
         this.type = type;
@@ -593,25 +595,25 @@ class Enemy {
 
         if (type === 'bike') {
             this.hp = 15 * stageMult;
-            this.forwardSpeed = rand(550, 700); // Faster than camera (450)
-            this.y = height + 100; // Spawns behind
+            this.forwardSpeed = rand(500, 600); // Slower
+            this.y = height + 100;
             this.color = '#ef4444';
             this.w = 16; this.h = 30;
-            this.xpValue = 1; this.damage = 10;
+            this.xpValue = 1; this.damage = 5; // Reduced damage
         } else if (type === 'car') {
-            this.hp = 40 * stageMult;
-            this.forwardSpeed = rand(300, 400); // Slower than camera
-            this.y = -100; // Spawns ahead
+            this.hp = 30 * stageMult; // Reduced HP
+            this.forwardSpeed = rand(300, 400);
+            this.y = -100;
             this.color = '#8b5cf6';
             this.w = 30; this.h = 50;
-            this.xpValue = 3; this.damage = 20;
+            this.xpValue = 3; this.damage = 10; // Reduced damage
         } else if (type === 'truck') {
-            this.hp = 100 * stageMult;
-            this.forwardSpeed = rand(150, 250); // Much slower
+            this.hp = 80 * stageMult; // Reduced HP
+            this.forwardSpeed = rand(150, 250);
             this.y = -100;
             this.color = '#f59e0b';
             this.w = 44; this.h = 90;
-            this.xpValue = 8; this.damage = 30;
+            this.xpValue = 8; this.damage = 15; // Reduced damage
         }
         this.maxHp = this.hp;
 
@@ -657,7 +659,7 @@ class Enemy {
         // Player Collision
         if (!this.dead && Math.hypot(this.x - GAME.player.x, this.y - GAME.player.y) < (this.w/2 + GAME.player.w/2)) {
             GAME.player.takeDamage(this.damage);
-            this.takeDamage(this.hp + 1);
+            this.takeDamage(this.hp + 1); // Destroy self upon crashing
         }
     }
 
@@ -711,7 +713,8 @@ class Enemy {
             createExplosion(this.x, this.y, this.color, 15);
 
             GAME.pickups.push(new Pickup(this.x, this.y, 'xp', this.xpValue));
-            if (Math.random() < 0.08) GAME.pickups.push(new Pickup(this.x + rand(-20,20), this.y + rand(-20,20), 'hp', 25));
+            // Increased chance to drop health (from 8% to 15%)
+            if (Math.random() < 0.15) GAME.pickups.push(new Pickup(this.x + rand(-20,20), this.y + rand(-20,20), 'hp', 25));
         }
     }
 }
@@ -952,7 +955,8 @@ function drawEnvironment(ctx) {
  * CORE LOOP & MANAGEMENT
  */
 function spawnEnemies(dt) {
-    let rate = Math.max(0.4, 1.2 - (GAME.stage - 1) * 0.1);
+    // Easier spawn rate scaling
+    let rate = Math.max(0.7, 1.5 - (GAME.stage - 1) * 0.1);
     if (!GAME.enemyTimer) GAME.enemyTimer = 0;
     GAME.enemyTimer -= dt;
 
@@ -963,7 +967,7 @@ function spawnEnemies(dt) {
         if (r > 0.5) type = 'car';
         if (r > 0.85) type = 'truck';
 
-        let mult = 1 + (GAME.stage - 1) * 0.4;
+        let mult = 1 + (GAME.stage - 1) * 0.3; // Slower scaling for enemy HP
         if(GAME.endless) mult *= 1.5;
         GAME.enemies.push(new Enemy(type, mult));
     }
