@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SWINDLER</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;
+  --card-bg:#1a1a2e;
+  --card-border:#2a2a4a;
+  --gold:#d4a84b;
+  --gold-dim:#8a6a2a;
+  --red:#c44;
+  --red-glow:#f44;
+  --green:#4a8;
+  --blue:#48c;
+  --text:#d4cfc4;
+  --text-dim:#6a6a7a;
+  --monster:#8a2a2a;
+  --weapon:#2a4a8a;
+  --potion:#2a6a4a;
+  --heart:#c44a4a;
+  --diamond:#4a7acc;
+  --club:#7a7a9a;
+  --spade:#8a8aaa;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Crimson Text',serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+  -webkit-user-select:none;
+}
+
+/* TORCH FLICKER BACKGROUND */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at 50% 40%,rgba(212,168,75,0.03) 0%,transparent 60%);
+  pointer-events:none;
+  animation:flicker 4s ease-in-out infinite alternate;
+}
+@keyframes flicker{
+  0%{opacity:0.6} 25%{opacity:1} 50%{opacity:0.8} 75%{opacity:1} 100%{opacity:0.7}
+}
+
+/* TITLE SCREEN */
+#title-screen{
+  display:flex;flex-direction:column;align-items:center;gap:24px;
+  animation:fadeIn 1s ease;
+}
+#title-screen h1{
+  font-family:'Cinzel',serif;font-size:clamp(48px,10vw,80px);font-weight:900;
+  letter-spacing:0.15em;color:var(--gold);
+  text-shadow:0 0 40px rgba(212,168,75,0.3),0 4px 8px rgba(0,0,0,0.8);
+}
+#title-screen .subtitle{
+  font-size:clamp(14px,2.5vw,18px);letter-spacing:0.3em;text-transform:uppercase;
+  color:var(--text-dim);margin-top:-12px;
+}
+#title-screen .credits{
+  font-size:13px;color:var(--text-dim);font-style:italic;margin-top:8px;
+}
+.btn{
+  font-family:'Cinzel',serif;font-size:18px;font-weight:700;
+  padding:14px 48px;border:2px solid var(--gold-dim);
+  background:transparent;color:var(--gold);cursor:pointer;
+  letter-spacing:0.1em;text-transform:uppercase;
+  transition:all 0.3s;position:relative;overflow:hidden;
+}
+.btn:hover{
+  border-color:var(--gold);background:rgba(212,168,75,0.08);
+  box-shadow:0 0 30px rgba(212,168,75,0.1);
+  transform:translateY(-1px);
+}
+.btn:active{transform:translateY(1px)}
+.btn-small{font-size:13px;padding:8px 20px}
+
+/* GAME SCREEN */
+#game-screen{
+  display:none;width:100%;max-width:800px;height:100%;
+  flex-direction:column;padding:12px 16px;gap:8px;
+}
+
+/* TOP BAR */
+.top-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;border-bottom:1px solid rgba(212,168,75,0.15);
+  flex-shrink:0;
+}
+.top-bar .title{
+  font-family:'Cinzel',serif;font-size:16px;font-weight:700;
+  color:var(--gold);letter-spacing:0.1em;
+}
+.hp-display{
+  display:flex;align-items:center;gap:8px;
+}
+.hp-bar-wrap{
+  width:140px;height:16px;background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;
+}
+.hp-bar{
+  height:100%;background:linear-gradient(90deg,var(--red),#c66);
+  transition:width 0.6s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:inset 0 -2px 4px rgba(0,0,0,0.3);
+}
+.hp-bar.healthy{background:linear-gradient(90deg,var(--green),#6c8)}
+.hp-bar.danger{background:linear-gradient(90deg,#c22,#f44);animation:pulse-danger 1s infinite}
+@keyframes pulse-danger{50%{opacity:0.7}}
+.hp-text{
+  font-family:'Cinzel',serif;font-size:14px;font-weight:700;
+  color:var(--text);min-width:50px;text-align:right;
+}
+.deck-count{
+  font-size:13px;color:var(--text-dim);
+}
+
+/* INFO ROW */
+.info-row{
+  display:flex;justify-content:space-between;align-items:center;
+  flex-shrink:0;min-height:28px;
+}
+.room-label{
+  font-family:'Cinzel',serif;font-size:13px;letter-spacing:0.15em;
+  text-transform:uppercase;color:var(--text-dim);
+}
+.message-area{
+  font-size:14px;color:var(--gold);font-style:italic;
+  text-align:center;flex:1;min-height:20px;
+  transition:opacity 0.3s;
+}
+
+/* WEAPON SLOT */
+.weapon-area{
+  display:flex;align-items:center;gap:12px;
+  padding:8px 12px;
+  background:rgba(42,74,138,0.08);
+  border:1px solid rgba(42,74,138,0.2);
+  border-radius:4px;flex-shrink:0;min-height:60px;
+}
+.weapon-label{
+  font-family:'Cinzel',serif;font-size:11px;letter-spacing:0.15em;
+  text-transform:uppercase;color:var(--blue);writing-mode:vertical-lr;
+  text-orientation:mixed;transform:rotate(180deg);
+}
+.weapon-slot{
+  width:52px;height:72px;
+  border:1px dashed rgba(74,122,204,0.3);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--text-dim);
+}
+.weapon-history{
+  display:flex;gap:4px;align-items:center;flex-wrap:wrap;flex:1;
+}
+.weapon-history .killed-tag{
+  font-size:11px;padding:2px 6px;
+  background:rgba(138,42,42,0.2);border:1px solid rgba(138,42,42,0.3);
+  border-radius:2px;color:#c88;
+}
+.weapon-info{
+  font-size:12px;color:var(--text-dim);
+  margin-left:auto;white-space:nowrap;
+}
+
+/* ROOM CARDS */
+.room-area{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+  min-height:0;
+}
+.room-cards{
+  display:flex;gap:clamp(8px,2vw,16px);justify-content:center;
+  flex-wrap:nowrap;
+}
+
+/* CARD STYLES */
+.card{
+  width:clamp(70px,18vw,110px);aspect-ratio:2.5/3.5;
+  background:var(--card-bg);
+  border:2px solid var(--card-border);
+  border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:all 0.25s cubic-bezier(0.4,0,0.2,1);
+  position:relative;overflow:hidden;
+  box-shadow:0 2px 12px rgba(0,0,0,0.4);
+}
+.card::before{
+  content:'';position:absolute;inset:3px;
+  border:1px solid rgba(255,255,255,0.04);border-radius:5px;
+  pointer-events:none;
+}
+.card:hover:not(.card-used):not(.card-disabled){
+  transform:translateY(-6px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.6);
+}
+.card.monster{border-color:rgba(138,42,42,0.5)}
+.card.monster:hover:not(.card-used){border-color:rgba(200,60,60,0.7);box-shadow:0 8px 24px rgba(138,42,42,0.3)}
+.card.weapon{border-color:rgba(42,74,138,0.5)}
+.card.weapon:hover:not(.card-used){border-color:rgba(74,122,204,0.7);box-shadow:0 8px 24px rgba(42,74,138,0.3)}
+.card.potion{border-color:rgba(42,106,74,0.5)}
+.card.potion:hover:not(.card-used){border-color:rgba(74,170,120,0.7);box-shadow:0 8px 24px rgba(42,106,74,0.3)}
+.card-used{
+  opacity:0.15;pointer-events:none;transform:scale(0.95);
+  filter:grayscale(1);
+}
+.card-disabled{opacity:0.5;cursor:not-allowed}
+.card-kept{
+  border-color:var(--gold-dim) !important;
+  box-shadow:0 0 12px rgba(212,168,75,0.15) !important;
+}
+.card .suit-icon{font-size:clamp(28px,7vw,42px);line-height:1}
+.card .card-value{
+  font-family:'Cinzel',serif;font-size:clamp(18px,4.5vw,28px);font-weight:900;
+  margin-top:2px;
+}
+.card .card-type{
+  font-size:clamp(9px,2vw,11px);text-transform:uppercase;
+  letter-spacing:0.1em;margin-top:2px;color:var(--text-dim);
+}
+.card.monster .suit-icon{color:#c66}
+.card.monster .card-value{color:#daa}
+.card.weapon .suit-icon{color:#68c}
+.card.weapon .card-value{color:#8ad}
+.card.potion .suit-icon{color:#6b8}
+.card.potion .card-value{color:#8ca}
+
+/* CARD DEAL ANIMATION */
+.card-enter{animation:cardDeal 0.35s cubic-bezier(0.2,0.8,0.3,1) both}
+@keyframes cardDeal{
+  from{opacity:0;transform:translateY(-30px) scale(0.8) rotateX(20deg)}
+  to{opacity:1;transform:translateY(0) scale(1) rotateX(0)}
+}
+
+/* ACTIONS */
+.actions{
+  display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+  flex-shrink:0;padding:4px 0;
+}
+.action-btn{
+  font-family:'Cinzel',serif;font-size:clamp(11px,2.5vw,13px);font-weight:700;
+  padding:10px clamp(12px,3vw,24px);
+  border:1px solid;background:transparent;
+  cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;
+  transition:all 0.2s;border-radius:3px;
+  display:flex;align-items:center;gap:6px;
+}
+.action-btn:disabled{opacity:0.25;cursor:not-allowed;transform:none !important}
+.action-btn.fight-bare{color:#c88;border-color:rgba(138,42,42,0.4)}
+.action-btn.fight-bare:not(:disabled):hover{background:rgba(138,42,42,0.15);border-color:rgba(200,60,60,0.6)}
+.action-btn.fight-weapon{color:#8ad;border-color:rgba(42,74,138,0.4)}
+.action-btn.fight-weapon:not(:disabled):hover{background:rgba(42,74,138,0.15);border-color:rgba(74,122,204,0.6)}
+.action-btn.equip{color:#8ad;border-color:rgba(42,74,138,0.4)}
+.action-btn.equip:not(:disabled):hover{background:rgba(42,74,138,0.15);border-color:rgba(74,122,204,0.6)}
+.action-btn.drink{color:#8ca;border-color:rgba(42,106,74,0.4)}
+.action-btn.drink:not(:disabled):hover{background:rgba(42,106,74,0.15);border-color:rgba(74,170,120,0.6)}
+.action-btn.flee{color:var(--gold);border-color:rgba(212,168,75,0.3)}
+.action-btn.flee:not(:disabled):hover{background:rgba(212,168,75,0.1);border-color:rgba(212,168,75,0.5)}
+
+/* DAMAGE FLASH */
+.damage-flash{animation:dmgFlash 0.4s ease}
+@keyframes dmgFlash{
+  0%{filter:brightness(1)} 20%{filter:brightness(2) hue-rotate(-20deg)} 100%{filter:brightness(1)}
+}
+.heal-flash{animation:healFlash 0.5s ease}
+@keyframes healFlash{
+  0%{filter:brightness(1)} 30%{filter:brightness(1.5) hue-rotate(80deg)} 100%{filter:brightness(1)}
+}
+
+/* GAME OVER OVERLAY */
+#overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(5,5,10,0.92);
+  flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  z-index:100;animation:fadeIn 0.5s ease;
+}
+#overlay h2{
+  font-family:'Cinzel',serif;font-size:clamp(32px,8vw,48px);font-weight:900;
+  letter-spacing:0.1em;
+}
+#overlay .victory{color:var(--gold);text-shadow:0 0 40px rgba(212,168,75,0.4)}
+#overlay .defeat{color:var(--red);text-shadow:0 0 40px rgba(200,60,60,0.4)}
+#overlay .score-line{font-size:18px;color:var(--text-dim)}
+#overlay .score-val{font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:var(--text)}
+
+/* RULES OVERLAY */
+#rules-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(5,5,10,0.95);
+  z-index:200;overflow-y:auto;
+  padding:40px 20px;
+}
+#rules-overlay .rules-content{
+  max-width:600px;margin:0 auto;
+}
+#rules-overlay h2{
+  font-family:'Cinzel',serif;font-size:28px;font-weight:700;
+  color:var(--gold);letter-spacing:0.1em;margin-bottom:20px;
+}
+#rules-overlay h3{
+  font-family:'Cinzel',serif;font-size:16px;font-weight:700;
+  color:var(--gold-dim);letter-spacing:0.08em;margin:16px 0 8px;
+}
+#rules-overlay p{
+  font-size:15px;line-height:1.7;color:var(--text);margin-bottom:8px;
+}
+#rules-overlay .close-rules{
+  position:fixed;top:16px;right:20px;
+  font-size:28px;color:var(--text-dim);cursor:pointer;
+  background:none;border:none;z-index:201;
+}
+#rules-overlay .close-rules:hover{color:var(--gold)}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* DAMAGE NUMBER FLOAT */
+.float-dmg{
+  position:fixed;pointer-events:none;
+  font-family:'Cinzel',serif;font-size:24px;font-weight:900;
+  animation:floatUp 1s ease-out forwards;z-index:50;
+  text-shadow:0 2px 8px rgba(0,0,0,0.8);
+}
+.float-dmg.hurt{color:#f66}
+.float-dmg.heal{color:#6e8}
+.float-dmg.block{color:#8af}
+@keyframes floatUp{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-60px) scale(0.8)}
+}
+</style>
+</head>
+<body>
+
+<!-- TITLE -->
+<div id="title-screen">
+  <h1>Swindler</h1>
+  <div class="subtitle">A Solo Dungeon Crawl</div>
+  <div class="credits">Based on the card game <a href="http://stfj.net/art/2011/Scoundrel.pdf" target="_blank" style="color:var(--gold-dim);text-decoration:underline">Scoundrel</a> by Zach Gage &amp; Kurt Bieg</div>
+  <button class="btn" onclick="startGame()">Enter the Dungeon</button>
+  <button class="btn btn-small" onclick="showRules()" style="margin-top:4px">How to Play</button>
+</div>
+
+<!-- GAME -->
+<div id="game-screen">
+  <div class="top-bar">
+    <div class="title">Swindler</div>
+    <div class="hp-display">
+      <div class="deck-count" id="deck-count">44 cards</div>
+      <div class="hp-bar-wrap"><div class="hp-bar healthy" id="hp-bar" style="width:100%"></div></div>
+      <div class="hp-text" id="hp-text">20 HP</div>
+    </div>
+  </div>
+
+  <div class="info-row">
+    <div class="room-label" id="room-label">Room 1</div>
+    <div class="message-area" id="message"></div>
+    <button class="btn btn-small" onclick="showRules()" style="font-size:11px;padding:4px 12px">?</button>
+  </div>
+
+  <div class="weapon-area" id="weapon-area">
+    <div class="weapon-label">Weapon</div>
+    <div class="weapon-slot" id="weapon-slot">None</div>
+    <div class="weapon-history" id="weapon-history"></div>
+    <div class="weapon-info" id="weapon-info"></div>
+  </div>
+
+  <div class="room-area">
+    <div class="room-cards" id="room-cards"></div>
+  </div>
+
+  <div class="actions" id="actions"></div>
+</div>
+
+<!-- GAME OVER -->
+<div id="overlay">
+  <h2 id="overlay-title"></h2>
+  <div class="score-line" id="overlay-subtitle"></div>
+  <div class="score-val" id="overlay-score"></div>
+  <button class="btn" onclick="startGame()">Brave Again</button>
+  <button class="btn btn-small" onclick="backToTitle()">Retreat</button>
+</div>
+
+<!-- RULES -->
+<div id="rules-overlay">
+  <button class="close-rules" onclick="hideRules()">&times;</button>
+  <div class="rules-content">
+    <h2>How to Play</h2>
+    <p>You are a swindler delving into a dungeon made of cards. Survive to win.</p>
+
+    <h3>Setup</h3>
+    <p>A 44-card deck is used (standard 52 minus red face cards and red aces). You start with 20 HP.</p>
+
+    <h3>The Dungeon</h3>
+    <p>Each room reveals 4 cards. You must play 3 of them in any order. The 4th card stays, and 3 new cards are dealt to form the next room.</p>
+
+    <h3>Card Types</h3>
+    <p><strong style="color:#c88">♣ ♠ Monsters</strong> — Black cards deal damage equal to their value (2–10, J=11, Q=12, K=13, A=14). Fight barehanded to take full damage, or use your weapon to reduce it.</p>
+    <p><strong style="color:#8ad">♦ Weapons</strong> — Equip a diamond card as your weapon. It reduces monster damage by its value. But each monster slain with a weapon must be strictly weaker than the last monster that weapon killed. Equipping a new weapon discards the old one.</p>
+    <p><strong style="color:#8ca">♥ Potions</strong> — Hearts heal you by their value (max 20 HP). Only the first potion per room has effect; additional potions are discarded with no healing.</p>
+
+    <h3>Fleeing</h3>
+    <p>At the start of a room (before playing any card), you may flee — shuffling all 4 cards back into the dungeon. You cannot flee two rooms in a row.</p>
+
+    <h3>Winning</h3>
+    <p>Clear every room to win. If your HP hits 0, you perish. Your final score is your remaining HP.</p>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// Card values
+const FACE_NAMES = {11:'J',12:'Q',13:'K',14:'A'};
+const valueName = v => FACE_NAMES[v] || String(v);
+const suitSymbol = s => ({clubs:'♣',spades:'♠',diamonds:'♦',hearts:'♥'}[s]);
+const suitColor = s => ({clubs:'#c66',spades:'#aab',diamonds:'#68c',hearts:'#c66'}[s]);
+
+// Game state
+let G = {};
+
+function createDeck() {
+  const deck = [];
+  // Clubs & Spades: 2-14 (full)
+  for (const s of ['clubs','spades']) {
+    for (let v = 2; v <= 14; v++) deck.push({suit:s, value:v});
+  }
+  // Diamonds: 2-10 only (red face cards + ace removed)
+  for (let v = 2; v <= 10; v++) deck.push({suit:'diamonds', value:v});
+  // Hearts: 2-10 only
+  for (let v = 2; v <= 10; v++) deck.push({suit:'hearts', value:v});
+  return deck;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function cardType(c) {
+  if (c.suit === 'clubs' || c.suit === 'spades') return 'monster';
+  if (c.suit === 'diamonds') return 'weapon';
+  return 'potion';
+}
+
+function startGame() {
+  G = {
+    deck: shuffle(createDeck()),
+    hp: 20,
+    maxHp: 20,
+    weapon: null,       // {value, lastKill:null}
+    weaponKills: [],    // values of monsters killed with current weapon
+    room: [],           // current 4 cards
+    roomUsed: [],       // indices of used cards
+    potionUsedThisRoom: false,
+    canFlee: true,
+    lastFled: false,
+    roomNum: 0,
+    selectedIdx: null,
+    cardsPlayedThisRoom: 0,
+    keptCard: null,     // card kept from previous room
+  };
+
+  $('title-screen').style.display = 'none';
+  $('game-screen').style.display = 'flex';
+  $('overlay').style.display = 'none';
+  hideRules();
+
+  dealRoom();
+}
+
+function dealRoom() {
+  G.roomNum++;
+  G.potionUsedThisRoom = false;
+  G.cardsPlayedThisRoom = 0;
+  G.selectedIdx = null;
+  G.roomUsed = [];
+  G.room = [];
+
+  // Keep card from previous room
+  if (G.keptCard) {
+    G.room.push(G.keptCard);
+    G.keptCard = null;
+  }
+
+  // Deal up to 4 cards
+  while (G.room.length < 4 && G.deck.length > 0) {
+    G.room.push(G.deck.pop());
+  }
+
+  // Check if dungeon is cleared
+  if (G.room.length === 0) {
+    gameOver(true);
+    return;
+  }
+
+  G.canFlee = !G.lastFled;
+  G.lastFled = false;
+
+  setMessage('');
+  render();
+}
+
+function render() {
+  // HP
+  const pct = Math.max(0, G.hp / G.maxHp * 100);
+  const bar = $('hp-bar');
+  bar.style.width = pct + '%';
+  bar.className = 'hp-bar ' + (pct <= 25 ? 'danger' : pct <= 50 ? '' : 'healthy');
+  $('hp-text').textContent = G.hp + ' HP';
+  $('deck-count').textContent = G.deck.length + ' cards';
+  $('room-label').textContent = 'Room ' + G.roomNum;
+
+  // Weapon
+  const ws = $('weapon-slot');
+  const wh = $('weapon-history');
+  const wi = $('weapon-info');
+  if (G.weapon) {
+    ws.innerHTML = renderMiniCard(G.weapon);
+    ws.style.border = 'none';
+    const kills = G.weaponKills;
+    wh.innerHTML = kills.map(v => `<span class="killed-tag">slew ${valueName(v)}</span>`).join('');
+    const limit = kills.length > 0 ? kills[kills.length-1] : null;
+    wi.textContent = limit ? `can slay < ${valueName(limit)}` : 'ready to strike';
+  } else {
+    ws.innerHTML = '<span style="color:var(--text-dim);font-size:11px">None</span>';
+    ws.style.border = '1px dashed rgba(74,122,204,0.3)';
+    wh.innerHTML = '';
+    wi.textContent = '';
+  }
+
+  // Room cards
+  const rc = $('room-cards');
+  rc.innerHTML = '';
+  G.room.forEach((card, i) => {
+    const used = G.roomUsed.includes(i);
+    const type = cardType(card);
+    const selected = G.selectedIdx === i;
+    const isKept = G.room.length <= (4 - G.cardsPlayedThisRoom) && G.cardsPlayedThisRoom === 3;
+
+    const el = document.createElement('div');
+    el.className = `card ${type} card-enter` + (used ? ' card-used' : '') + (selected ? ' card-kept' : '');
+    el.style.animationDelay = (i * 0.08) + 's';
+    if (selected && !used) {
+      el.style.transform = 'translateY(-8px)';
+      el.style.boxShadow = '0 8px 32px rgba(212,168,75,0.25)';
+    }
+
+    el.innerHTML = `
+      <div class="suit-icon">${suitSymbol(card.suit)}</div>
+      <div class="card-value">${valueName(card.value)}</div>
+      <div class="card-type">${type === 'monster' ? 'monster' : type === 'weapon' ? 'weapon' : 'potion'}</div>
+    `;
+
+    if (!used) {
+      el.addEventListener('click', () => selectCard(i));
+    }
+    rc.appendChild(el);
+  });
+
+  renderActions();
+}
+
+function renderMiniCard(wep) {
+  return `<div style="text-align:center;line-height:1.2">
+    <div style="font-size:20px;color:#68c">${suitSymbol('diamonds')}</div>
+    <div style="font-family:Cinzel,serif;font-size:16px;font-weight:900;color:#8ad">${valueName(wep.value)}</div>
+  </div>`;
+}
+
+function selectCard(i) {
+  if (G.roomUsed.includes(i)) return;
+  G.selectedIdx = (G.selectedIdx === i) ? null : i;
+  render();
+}
+
+function renderActions() {
+  const a = $('actions');
+  a.innerHTML = '';
+  const sel = G.selectedIdx;
+  const card = sel !== null ? G.room[sel] : null;
+  const type = card ? cardType(card) : null;
+  const remaining = G.room.length - G.roomUsed.length;
+
+  // How many cards must be played this room:
+  // Normal room (4 cards) = play 3, keep 1
+  // Short rooms (2-3 cards at end of dungeon) = play all but 1, keep 1
+  // 1 card room = play it, keep nothing
+  const mustPlay = G.room.length <= 1 ? G.room.length : G.room.length - 1;
+
+  // If we've played enough, keep the last card and advance
+  if (G.cardsPlayedThisRoom >= mustPlay && remaining > 0) {
+    const keptIdx = G.room.findIndex((_, i) => !G.roomUsed.includes(i));
+    if (keptIdx >= 0) {
+      G.keptCard = G.room[keptIdx];
+      setTimeout(() => {
+        setMessage(`Kept ${suitSymbol(G.keptCard.suit)}${valueName(G.keptCard.value)} for next room`);
+        setTimeout(dealRoom, 600);
+      }, 300);
+    }
+    return;
+  }
+
+  // If all cards used (1-card room or everything played)
+  if (remaining === 0) {
+    setTimeout(dealRoom, 400);
+    return;
+  }
+
+  // Flee button
+  if (G.cardsPlayedThisRoom === 0 && G.canFlee) {
+    addBtn('Flee Room', 'flee', doFlee);
+  }
+
+  const left = mustPlay - G.cardsPlayedThisRoom;
+  if (!card) {
+    if (G.cardsPlayedThisRoom === 0 && G.canFlee) return;
+    setMessage(G.cardsPlayedThisRoom === 0 ? 'Select a card to play' : `Play ${left} more`);
+    return;
+  }
+
+  if (type === 'monster') {
+    const dmgBare = card.value;
+    addBtn(`Fight Barehanded (−${dmgBare})`, 'fight-bare', () => fightBare(sel));
+
+    if (G.weapon) {
+      const lastKill = G.weaponKills.length > 0 ? G.weaponKills[G.weaponKills.length - 1] : Infinity;
+      const canUse = card.value < lastKill;
+      const dmgWeapon = Math.max(0, card.value - G.weapon.value);
+      const btn = addBtn(`Use Weapon (−${dmgWeapon})`, 'fight-weapon', () => fightWeapon(sel), !canUse);
+      if (!canUse) btn.title = `Weapon can only slay monsters < ${valueName(lastKill)}`;
+    }
+  } else if (type === 'weapon') {
+    const label = G.weapon ? `Equip (replace ♦${valueName(G.weapon.value)})` : 'Equip Weapon';
+    addBtn(label, 'equip', () => equipWeapon(sel));
+  } else if (type === 'potion') {
+    if (G.potionUsedThisRoom) {
+      addBtn(`Discard Potion (no effect)`, 'drink', () => usePotion(sel));
+    } else {
+      const heal = Math.min(card.value, G.maxHp - G.hp);
+      addBtn(`Drink Potion (+${heal})`, 'drink', () => usePotion(sel));
+    }
+  }
+}
+
+function addBtn(text, cls, fn, disabled) {
+  const b = document.createElement('button');
+  b.className = 'action-btn ' + cls;
+  b.textContent = text;
+  b.onclick = fn;
+  if (disabled) b.disabled = true;
+  $('actions').appendChild(b);
+  return b;
+}
+
+// ACTIONS
+
+function fightBare(idx) {
+  const card = G.room[idx];
+  const dmg = card.value;
+  takeDamage(dmg, idx);
+  playCard(idx);
+  setMessage(`Fought ${suitSymbol(card.suit)}${valueName(card.value)} barehanded — took ${dmg} damage`);
+}
+
+function fightWeapon(idx) {
+  const card = G.room[idx];
+  const dmg = Math.max(0, card.value - G.weapon.value);
+  const blocked = card.value - dmg;
+  G.weaponKills.push(card.value);
+
+  if (dmg > 0) takeDamage(dmg, idx);
+  else floatNumber(idx, 'Blocked!', 'block');
+
+  playCard(idx);
+  setMessage(`Struck ${suitSymbol(card.suit)}${valueName(card.value)} with weapon — ${dmg > 0 ? 'took ' + dmg + ' damage' : 'no damage!'}`);
+}
+
+function equipWeapon(idx) {
+  const card = G.room[idx];
+  G.weapon = {value: card.value};
+  G.weaponKills = [];
+  playCard(idx);
+  setMessage(`Equipped ♦${valueName(card.value)} weapon`);
+}
+
+function usePotion(idx) {
+  const card = G.room[idx];
+  if (!G.potionUsedThisRoom) {
+    const heal = Math.min(card.value, G.maxHp - G.hp);
+    G.hp += heal;
+    G.potionUsedThisRoom = true;
+    if (heal > 0) floatNumber(idx, '+' + heal, 'heal');
+    const hpBar = $('hp-bar');
+    hpBar.classList.add('heal-flash');
+    setTimeout(() => hpBar.classList.remove('heal-flash'), 500);
+    setMessage(heal > 0 ? `Drank potion — healed ${heal} HP` : 'Already at full health');
+  } else {
+    setMessage('Potion discarded — only one per room');
+  }
+  playCard(idx);
+}
+
+function doFlee() {
+  // Shuffle room cards back into deck
+  const roomCards = G.room.filter((_, i) => !G.roomUsed.includes(i));
+  G.deck = shuffle([...G.deck, ...roomCards]);
+  G.lastFled = true;
+  G.keptCard = null;
+  setMessage('Fled the room!');
+  setTimeout(dealRoom, 500);
+}
+
+function playCard(idx) {
+  G.roomUsed.push(idx);
+  G.cardsPlayedThisRoom++;
+  G.selectedIdx = null;
+
+  if (G.hp <= 0) {
+    setTimeout(() => gameOver(false), 600);
+    return;
+  }
+
+  render();
+}
+
+function takeDamage(dmg, cardIdx) {
+  G.hp = Math.max(0, G.hp - dmg);
+  floatNumber(cardIdx, '-' + dmg, 'hurt');
+  const bar = $('hp-bar');
+  bar.classList.add('damage-flash');
+  setTimeout(() => bar.classList.remove('damage-flash'), 400);
+}
+
+function floatNumber(cardIdx, text, type) {
+  const cards = document.querySelectorAll('.room-cards .card');
+  if (!cards[cardIdx]) return;
+  const rect = cards[cardIdx].getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'float-dmg ' + type;
+  el.textContent = text;
+  el.style.left = (rect.left + rect.width / 2 - 20) + 'px';
+  el.style.top = (rect.top - 10) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function setMessage(msg) {
+  const m = $('message');
+  m.style.opacity = 0;
+  setTimeout(() => { m.textContent = msg; m.style.opacity = 1; }, 150);
+}
+
+function gameOver(won) {
+  $('overlay').style.display = 'flex';
+  const t = $('overlay-title');
+  const sub = $('overlay-subtitle');
+  const sc = $('overlay-score');
+
+  if (won) {
+    t.textContent = 'DUNGEON CLEARED';
+    t.className = 'victory';
+    sub.textContent = 'You emerged from the depths alive.';
+    sc.textContent = G.hp + ' HP remaining';
+  } else {
+    t.textContent = 'YOU PERISHED';
+    t.className = 'defeat';
+    sub.textContent = `Fell in room ${G.roomNum}.`;
+    const remaining = G.deck.length + G.room.filter((_, i) => !G.roomUsed.includes(i)).length;
+    sc.textContent = remaining + ' cards remained in the dungeon';
+  }
+}
+
+function backToTitle() {
+  $('overlay').style.display = 'none';
+  $('game-screen').style.display = 'none';
+  $('title-screen').style.display = 'flex';
+}
+
+function showRules() {
+  $('rules-overlay').style.display = 'block';
+}
+function hideRules() {
+  $('rules-overlay').style.display = 'none';
+}
+</script>
+</body>
+</html>

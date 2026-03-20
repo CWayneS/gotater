@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CropStudio</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070f;--surface:#0e0e1b;--card:#151526;--border:#252540;
+  --accent:#00e5c8;--accent2:#7c5cfc;--text:#dde0f0;--muted:#4a4a6a;
+  --danger:#ff4477;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none;}
+
+/* ── HEADER ── */
+header{height:50px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0;z-index:10;}
+.logo{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;color:var(--accent);}
+.logo span{color:var(--text);}
+.logo-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-top:1px;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.btn{padding:6px 14px;border-radius:5px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;letter-spacing:.3px;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted);}
+.btn-primary{background:var(--accent);color:#07070f;}
+.btn-primary:hover{background:#00ffd8;}
+.btn-primary:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;}
+
+/* ── MAIN ── */
+main{flex:1;display:flex;overflow:hidden;}
+
+/* ── CANVAS AREA ── */
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:var(--bg);}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(37,37,64,.4) 1px,transparent 1px),linear-gradient(90deg,rgba(37,37,64,.4) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;}
+
+/* Upload zone */
+.upload-zone{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer;transition:background .2s;z-index:5;}
+.upload-zone.hidden{display:none;}
+.upload-zone.dragover{background:rgba(0,229,200,.04);}
+.upload-icon-ring{width:76px;height:76px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 40px rgba(0,229,200,.08);transition:box-shadow .2s;}
+.upload-zone:hover .upload-icon-ring{box-shadow:0 0 60px rgba(0,229,200,.16);}
+.upload-title{font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:3px;color:var(--text);}
+.upload-sub{font-size:12px;color:var(--muted);letter-spacing:.5px;}
+.upload-formats{display:flex;gap:6px;margin-top:4px;}
+.fmt-tag{font-family:'DM Mono',monospace;font-size:9px;padding:3px 7px;border-radius:3px;background:var(--card);border:1px solid var(--border);color:var(--muted);letter-spacing:1px;}
+
+/* Canvas wrapper */
+.canvas-wrap{position:relative;display:none;}
+.canvas-wrap.active{display:block;}
+#cropCanvas{display:block;cursor:crosshair;}
+
+/* ── SIDE PANEL ── */
+.panel{width:274px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.panel-top{padding:14px 14px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.panel-heading{font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:2.5px;color:var(--accent);margin-bottom:10px;}
+.search-wrap{position:relative;}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none;}
+.search-wrap input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:7px 10px 7px 30px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;transition:border-color .15s;}
+.search-wrap input::placeholder{color:var(--muted);}
+.search-wrap input:focus{border-color:rgba(0,229,200,.4);}
+
+/* Presets list */
+.presets-scroll{flex:1;overflow-y:auto;padding:6px 0 8px;}
+.presets-scroll::-webkit-scrollbar{width:3px;}
+.presets-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+.plat-group{margin-bottom:2px;}
+.plat-header{display:flex;align-items:center;gap:7px;padding:6px 14px;cursor:pointer;transition:background .1s;}
+.plat-header:hover{background:rgba(255,255,255,.02);}
+.plat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.plat-name{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);flex:1;transition:color .15s;}
+.plat-header:hover .plat-name{color:#8080a0;}
+.plat-chevron{font-size:9px;color:var(--muted);transition:transform .2s;}
+.plat-group.collapsed .plat-chevron{transform:rotate(-90deg);}
+.plat-group.collapsed .plat-items{display:none;}
+
+.plat-items{display:flex;flex-direction:column;gap:1px;padding:2px 8px 6px;}
+.preset-card{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:5px;cursor:pointer;border:1px solid transparent;transition:all .1s;}
+.preset-card:hover{background:var(--card);}
+.preset-card.active{background:rgba(0,229,200,.07);border-color:rgba(0,229,200,.22);}
+.ratio-box{flex-shrink:0;width:30px;height:30px;display:flex;align-items:center;justify-content:center;}
+.ratio-vis{background:var(--border);border-radius:2px;transition:background .15s;}
+.preset-card.active .ratio-vis{background:var(--accent);}
+.preset-info{flex:1;min-width:0;}
+.preset-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.preset-dims{font-family:'DM Mono',monospace;font-size:9.5px;color:var(--muted);margin-top:1px;}
+
+/* Footer */
+.panel-footer{border-top:1px solid var(--border);padding:13px 14px;flex-shrink:0;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:11px;}
+.info-cell{background:var(--card);border-radius:5px;padding:7px 9px;}
+.info-label{font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:3px;}
+.info-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--text);}
+.info-val.sm{font-size:10px;}
+
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:11px;cursor:pointer;}
+.tog-track{width:30px;height:17px;background:var(--border);border-radius:9px;position:relative;transition:background .2s;flex-shrink:0;}
+.tog-track.on{background:var(--accent);}
+.tog-thumb{position:absolute;top:2.5px;left:2.5px;width:12px;height:12px;background:#fff;border-radius:50%;transition:left .2s;}
+.tog-track.on .tog-thumb{left:15.5px;}
+.tog-label{font-size:11.5px;color:var(--muted);}
+
+#dlBtn{width:100%;padding:9px;font-size:13px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;}
+
+#fileInput{display:none;}
+
+/* no-image panel state */
+.panel-empty{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;}
+.panel-empty-txt{font-size:11px;color:var(--muted);line-height:1.7;}
+</style>
+</head>
+<body>
+<input type="file" id="fileInput" accept="image/*">
+
+<header>
+  <div>
+    <div class="logo">Crop<span>Studio</span></div>
+  </div>
+  <div class="logo-sub">IMAGE CROP TOOL</div>
+  <div class="header-right">
+    <button class="btn btn-ghost" id="newBtn">New Image</button>
+  </div>
+</header>
+
+<main>
+  <!-- Canvas area -->
+  <div class="canvas-area" id="canvasArea">
+    <div class="grid-bg"></div>
+
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon-ring">📷</div>
+      <div class="upload-title">Drop Image Here</div>
+      <div class="upload-sub">or click to browse</div>
+      <div class="upload-formats">
+        <span class="fmt-tag">PNG</span>
+        <span class="fmt-tag">JPG</span>
+        <span class="fmt-tag">WEBP</span>
+        <span class="fmt-tag">GIF</span>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="cropCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Side panel -->
+  <aside class="panel">
+    <div class="panel-top">
+      <div class="panel-heading">Presets</div>
+      <div class="search-wrap">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Search platforms & presets…">
+      </div>
+    </div>
+
+    <div class="presets-scroll" id="presetsScroll"></div>
+
+    <div class="panel-footer">
+      <div class="info-grid">
+        <div class="info-cell"><div class="info-label">Width</div><div class="info-val" id="iW">—</div></div>
+        <div class="info-cell"><div class="info-label">Height</div><div class="info-val" id="iH">—</div></div>
+        <div class="info-cell"><div class="info-label">Ratio</div><div class="info-val" id="iR">—</div></div>
+        <div class="info-cell"><div class="info-label">Preset</div><div class="info-val sm" id="iP" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Free</div></div>
+      </div>
+      <label class="toggle-row" id="freeCropRow">
+        <div class="tog-track" id="togTrack"><div class="tog-thumb"></div></div>
+        <span class="tog-label">Free crop (ignore ratio)</span>
+      </label>
+      <button class="btn btn-primary" id="dlBtn" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Crop
+      </button>
+    </div>
+  </aside>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+//  PLATFORM DATA
+// ═══════════════════════════════════════════════
+const PLATFORMS = [
+  { id:'instagram', name:'Instagram', color:'#e1306c', presets:[
+    { name:'Square Post',    dims:'1080 × 1080', ratio:1 },
+    { name:'Portrait Post',  dims:'1080 × 1350', ratio:4/5 },
+    { name:'Landscape Post', dims:'1080 × 566',  ratio:1.91 },
+    { name:'Story / Reel',   dims:'1080 × 1920', ratio:9/16 },
+    { name:'Profile Photo',  dims:'320 × 320',   ratio:1 },
+  ]},
+  { id:'twitter', name:'X / Twitter', color:'#e7e9ea', presets:[
+    { name:'In-Stream Photo', dims:'1600 × 900',  ratio:16/9 },
+    { name:'Header Banner',   dims:'1500 × 500',  ratio:3 },
+    { name:'Profile Photo',   dims:'400 × 400',   ratio:1 },
+  ]},
+  { id:'facebook', name:'Facebook', color:'#1877f2', presets:[
+    { name:'Feed Post',    dims:'1200 × 630',  ratio:1200/630 },
+    { name:'Square Post',  dims:'1200 × 1200', ratio:1 },
+    { name:'Cover Photo',  dims:'820 × 312',   ratio:820/312 },
+    { name:'Story',        dims:'1080 × 1920', ratio:9/16 },
+    { name:'Profile Photo',dims:'170 × 170',   ratio:1 },
+  ]},
+  { id:'linkedin', name:'LinkedIn', color:'#0a66c2', presets:[
+    { name:'Post Image',      dims:'1200 × 627', ratio:1200/627 },
+    { name:'Personal Banner', dims:'1584 × 396', ratio:4 },
+    { name:'Company Banner',  dims:'1128 × 191', ratio:1128/191 },
+    { name:'Profile Photo',   dims:'400 × 400',  ratio:1 },
+  ]},
+  { id:'tiktok', name:'TikTok', color:'#ff0050', presets:[
+    { name:'Video / Cover', dims:'1080 × 1920', ratio:9/16 },
+    { name:'Profile Photo', dims:'200 × 200',   ratio:1 },
+  ]},
+  { id:'youtube', name:'YouTube', color:'#ff0000', presets:[
+    { name:'Thumbnail',    dims:'1280 × 720',   ratio:16/9 },
+    { name:'Channel Art',  dims:'2560 × 1440',  ratio:16/9 },
+    { name:'Profile Photo',dims:'800 × 800',    ratio:1 },
+    { name:'Shorts',       dims:'1080 × 1920',  ratio:9/16 },
+  ]},
+  { id:'pinterest', name:'Pinterest', color:'#e60023', presets:[
+    { name:'Standard Pin', dims:'1000 × 1500', ratio:2/3 },
+    { name:'Square Pin',   dims:'1000 × 1000', ratio:1 },
+    { name:'Landscape Pin',dims:'1000 × 500',  ratio:2 },
+  ]},
+];
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let img = null;
+let scale = 1, offX = 0, offY = 0; // image-to-canvas transform
+let crop = {x:0,y:0,w:0,h:0};      // in image coords
+let aspectRatio = null;
+let freeCrop = false;
+let activePresetName = null;
+let drag = null; // {type, startCX, startCY, startCrop}
+
+const canvas = document.getElementById('cropCanvas');
+const ctx = canvas.getContext('2d');
+const HS = 9; // handle hit size half
+
+// ═══════════════════════════════════════════════
+//  PRESET RENDERING
+// ═══════════════════════════════════════════════
+function buildPresets() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const container = document.getElementById('presetsScroll');
+  container.innerHTML = '';
+
+  PLATFORMS.forEach(plat => {
+    const filtered = q
+      ? plat.presets.filter(p => p.name.toLowerCase().includes(q) || plat.name.toLowerCase().includes(q))
+      : plat.presets;
+    if (!filtered.length) return;
+
+    const group = document.createElement('div');
+    group.className = 'plat-group';
+    group.dataset.id = plat.id;
+
+    const header = document.createElement('div');
+    header.className = 'plat-header';
+    header.innerHTML = `<div class="plat-dot" style="background:${plat.color}"></div><div class="plat-name">${plat.name}</div><div class="plat-chevron">▾</div>`;
+    header.addEventListener('click', () => group.classList.toggle('collapsed'));
+
+    const items = document.createElement('div');
+    items.className = 'plat-items';
+
+    filtered.forEach(p => {
+      const r = p.ratio;
+      let bw, bh;
+      if (r >= 1) { bw = 26; bh = Math.max(6, Math.round(26/r)); }
+      else { bh = 26; bw = Math.max(6, Math.round(26*r)); }
+
+      const card = document.createElement('div');
+      card.className = 'preset-card';
+      card.dataset.ratio = r;
+      card.dataset.label = `${plat.name}: ${p.name}`;
+      card.innerHTML = `
+        <div class="ratio-box"><div class="ratio-vis" style="width:${bw}px;height:${bh}px"></div></div>
+        <div class="preset-info">
+          <div class="preset-name">${p.name}</div>
+          <div class="preset-dims">${p.dims}</div>
+        </div>`;
+      card.addEventListener('click', () => pickPreset(card));
+      items.appendChild(card);
+    });
+
+    group.appendChild(header);
+    group.appendChild(items);
+    container.appendChild(group);
+  });
+}
+
+function pickPreset(card) {
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  aspectRatio = parseFloat(card.dataset.ratio);
+  activePresetName = card.dataset.label;
+  freeCrop = false;
+  document.getElementById('togTrack').classList.remove('on');
+  if (img) { applyCropRatio(aspectRatio); render(); updateInfo(); }
+}
+
+// ═══════════════════════════════════════════════
+//  CROP HELPERS
+// ═══════════════════════════════════════════════
+function applyCropRatio(r) {
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  let nw, nh;
+  if (iw/ih > r) { nh = ih; nw = ih*r; } else { nw = iw; nh = iw/r; }
+  crop = { x:(iw-nw)/2, y:(ih-nh)/2, w:nw, h:nh };
+}
+
+function setupCanvas() {
+  const area = document.getElementById('canvasArea');
+  const aw = area.clientWidth - 56, ah = area.clientHeight - 56;
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  scale = Math.min(aw/iw, ah/ih, 1);
+  canvas.width  = Math.round(iw*scale);
+  canvas.height = Math.round(ih*scale);
+  offX = 0; offY = 0;
+}
+
+// coords
+const i2c = (ix, iy) => ({x: ix*scale+offX, y: iy*scale+offY});
+const c2i = (cx, cy) => ({x: (cx-offX)/scale, y: (cy-offY)/scale});
+
+// ═══════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════
+function render() {
+  if (!img) return;
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.drawImage(img, offX, offY, img.naturalWidth*scale, img.naturalHeight*scale);
+
+  const {x:cx1, y:cy1} = i2c(crop.x, crop.y);
+  const cw = crop.w*scale, ch = crop.h*scale;
+
+  // Dim
+  ctx.fillStyle = 'rgba(0,0,0,.58)';
+  ctx.fillRect(0,0,W,cy1);
+  ctx.fillRect(0,cy1+ch,W,H-cy1-ch);
+  ctx.fillRect(0,cy1,cx1,ch);
+  ctx.fillRect(cx1+cw,cy1,W-cx1-cw,ch);
+
+  // Thirds
+  ctx.strokeStyle='rgba(0,229,200,.18)'; ctx.lineWidth=.7;
+  for(let i=1;i<3;i++){
+    ctx.beginPath(); ctx.moveTo(cx1+cw*i/3,cy1); ctx.lineTo(cx1+cw*i/3,cy1+ch); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx1,cy1+ch*i/3); ctx.lineTo(cx1+cw,cy1+ch*i/3); ctx.stroke();
+  }
+
+  // Border
+  ctx.strokeStyle='#00e5c8'; ctx.lineWidth=1.5;
+  ctx.strokeRect(cx1,cy1,cw,ch);
+
+  // Corner accents
+  const L=14;
+  ctx.strokeStyle='#00e5c8'; ctx.lineWidth=3; ctx.lineCap='round';
+  [[cx1,cy1,1,1],[cx1+cw,cy1,-1,1],[cx1,cy1+ch,1,-1],[cx1+cw,cy1+ch,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x+dx*L,y); ctx.lineTo(x,y); ctx.lineTo(x,y+dy*L); ctx.stroke();
+  });
+  ctx.lineCap='butt';
+
+  // Handles
+  handles(cx1,cy1,cw,ch).forEach(h=>{
+    ctx.fillStyle='#00e5c8';
+    ctx.fillRect(h.x-HS*.6, h.y-HS*.6, HS*1.2, HS*1.2);
+    ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineWidth=.7;
+    ctx.strokeRect(h.x-HS*.6, h.y-HS*.6, HS*1.2, HS*1.2);
+  });
+
+  // Size label
+  ctx.font='bold 12px DM Mono,monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const label = `${Math.round(crop.w)} × ${Math.round(crop.h)}`;
+  const lw = ctx.measureText(label).width + 16;
+  const lx = cx1 + cw/2, ly = cy1 + ch/2;
+  ctx.fillStyle='rgba(0,0,0,.55)';
+  ctx.beginPath(); ctx.roundRect(lx-lw/2,ly-10,lw,20,4); ctx.fill();
+  ctx.fillStyle='rgba(0,229,200,.9)';
+  ctx.fillText(label, lx, ly);
+}
+
+function handles(cx,cy,cw,ch){
+  return [
+    {id:'TL',x:cx,      y:cy},
+    {id:'TC',x:cx+cw/2, y:cy},
+    {id:'TR',x:cx+cw,   y:cy},
+    {id:'ML',x:cx,      y:cy+ch/2},
+    {id:'MR',x:cx+cw,   y:cy+ch/2},
+    {id:'BL',x:cx,      y:cy+ch},
+    {id:'BC',x:cx+cw/2, y:cy+ch},
+    {id:'BR',x:cx+cw,   y:cy+ch},
+  ];
+}
+
+function hitHandle(cx,cy){
+  const {x:cx1,y:cy1}=i2c(crop.x,crop.y);
+  const cw=crop.w*scale, ch=crop.h*scale;
+  for(const h of handles(cx1,cy1,cw,ch)){
+    if(Math.abs(cx-h.x)<=HS && Math.abs(cy-h.y)<=HS) return h.id;
+  }
+  return null;
+}
+
+function inCrop(cx,cy){
+  const {x:cx1,y:cy1}=i2c(crop.x,crop.y);
+  const cw=crop.w*scale, ch=crop.h*scale;
+  return cx>=cx1&&cx<=cx1+cw&&cy>=cy1&&cy<=cy1+ch;
+}
+
+// ═══════════════════════════════════════════════
+//  MOUSE / TOUCH
+// ═══════════════════════════════════════════════
+const CUR = {TL:'nwse-resize',TR:'nesw-resize',BL:'nesw-resize',BR:'nwse-resize',TC:'ns-resize',BC:'ns-resize',ML:'ew-resize',MR:'ew-resize',move:'move',def:'crosshair'};
+
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('mousedown', onDown);
+window.addEventListener('mouseup', () => drag=null);
+
+canvas.addEventListener('touchstart', e=>{const t=e.touches[0]; simulateMouse('mousedown',t); e.preventDefault();},{passive:false});
+canvas.addEventListener('touchmove',  e=>{const t=e.touches[0]; simulateMouse('mousemove',t); e.preventDefault();},{passive:false});
+canvas.addEventListener('touchend',   e=>{drag=null; e.preventDefault();},{passive:false});
+
+function simulateMouse(type, t){
+  const rect=canvas.getBoundingClientRect();
+  const cx=t.clientX-rect.left, cy=t.clientY-rect.top;
+  if(type==='mousedown') doDown(cx,cy);
+  else if(type==='mousemove') doMove(cx,cy);
+}
+
+function onDown(e){
+  const rect=canvas.getBoundingClientRect();
+  doDown(e.clientX-rect.left, e.clientY-rect.top);
+}
+function onMove(e){
+  const rect=canvas.getBoundingClientRect();
+  doMove(e.clientX-rect.left, e.clientY-rect.top);
+}
+
+function doDown(cx,cy){
+  const h=hitHandle(cx,cy);
+  if(h){ drag={type:h, startCX:cx,startCY:cy,sc:{...crop}}; return; }
+  if(inCrop(cx,cy)){ drag={type:'move',startCX:cx,startCY:cy,sc:{...crop}}; return; }
+  // start new crop
+  const ip=c2i(cx,cy);
+  drag={type:'new',startIX:ip.x,startIY:ip.y};
+  crop={x:ip.x,y:ip.y,w:1,h:1};
+}
+
+function doMove(cx,cy){
+  if(!drag){ 
+    const h=hitHandle(cx,cy);
+    canvas.style.cursor = h ? CUR[h] : inCrop(cx,cy) ? CUR.move : CUR.def;
+    return; 
+  }
+  applyDrag(cx,cy);
+  render(); updateInfo();
+}
+
+function applyDrag(cx,cy){
+  const dxC=cx-drag.startCX, dyC=cy-drag.startCY;
+  const dxI=dxC/scale, dyI=dyC/scale;
+  const iw=img.naturalWidth, ih=img.naturalHeight;
+  const sc=drag.sc||{};
+
+  if(drag.type==='move'){
+    crop.x=Math.max(0,Math.min(iw-sc.w, sc.x+dxI));
+    crop.y=Math.max(0,Math.min(ih-sc.h, sc.y+dyI));
+    return;
+  }
+
+  if(drag.type==='new'){
+    const ip=c2i(cx,cy);
+    let x1=Math.min(drag.startIX,ip.x), y1=Math.min(drag.startIY,ip.y);
+    let x2=Math.max(drag.startIX,ip.x), y2=Math.max(drag.startIY,ip.y);
+    x1=Math.max(0,x1); y1=Math.max(0,y1);
+    x2=Math.min(iw,x2); y2=Math.min(ih,y2);
+    let nw=x2-x1, nh=y2-y1;
+    if(aspectRatio&&!freeCrop){
+      if(nw/nh>aspectRatio) nh=nw/aspectRatio; else nw=nh*aspectRatio;
+    }
+    crop={x:x1,y:y1,w:Math.max(nw,10),h:Math.max(nh,10)};
+    return;
+  }
+
+  // Handle resize
+  let {x,y,w,h}=sc;
+  let nx=x,ny=y,nw=w,nh=h;
+  const t=drag.type;
+  const ar=(!freeCrop&&aspectRatio)?aspectRatio:null;
+
+  if(t==='BR'){nw=w+dxI;nh=h+dyI;}
+  else if(t==='BL'){nw=w-dxI;nx=x+dxI;nh=h+dyI;}
+  else if(t==='TR'){nw=w+dxI;nh=h-dyI;ny=y+dyI;}
+  else if(t==='TL'){nw=w-dxI;nx=x+dxI;nh=h-dyI;ny=y+dyI;}
+  else if(t==='BC'){nh=h+dyI;}
+  else if(t==='TC'){nh=h-dyI;ny=y+dyI;}
+  else if(t==='MR'){nw=w+dxI;}
+  else if(t==='ML'){nw=w-dxI;nx=x+dxI;}
+
+  if(ar){
+    // For corner handles: anchor opposite corner, derive both from width
+    if(t==='BR'){nh=nw/ar;}
+    else if(t==='BL'){nh=nw/ar; nx=(x+w)-nw;}
+    else if(t==='TR'){nh=nw/ar; ny=(y+h)-nh;}
+    else if(t==='TL'){nh=nw/ar; nx=(x+w)-nw; ny=(y+h)-nh;}
+    else if(t==='BC'||t==='TC'){nw=nh*ar; nx=x+(w-nw)/2;}
+    else if(t==='MR'||t==='ML'){nh=nw/ar; ny=y+(h-nh)/2;}
+  } else {
+    // Recompute positions for non-ar modes
+    if(t==='TL'){nx=x+dxI;ny=y+dyI;}
+    else if(t==='TR'){ny=y+dyI;}
+    else if(t==='BL'){nx=x+dxI;}
+    else if(t==='TC'){ny=y+dyI;}
+    else if(t==='ML'){nx=x+dxI;}
+  }
+
+  nw=Math.max(20,nw); nh=Math.max(20,nh);
+  nx=Math.max(0,nx); ny=Math.max(0,ny);
+  if(nx+nw>iw) nw=iw-nx;
+  if(ny+nh>ih) nh=ih-ny;
+
+  crop={x:nx,y:ny,w:nw,h:nh};
+}
+
+// ═══════════════════════════════════════════════
+//  INFO
+// ═══════════════════════════════════════════════
+function updateInfo(){
+  const w=Math.round(crop.w), h=Math.round(crop.h);
+  document.getElementById('iW').textContent=w+'px';
+  document.getElementById('iH').textContent=h+'px';
+  const r=w/h;
+  document.getElementById('iR').textContent=r>=1?r.toFixed(2)+':1':'1:'+((1/r).toFixed(2));
+  document.getElementById('iP').textContent=activePresetName||'Free';
+}
+
+// ═══════════════════════════════════════════════
+//  FREE CROP TOGGLE
+// ═══════════════════════════════════════════════
+document.getElementById('freeCropRow').addEventListener('click',()=>{
+  freeCrop=!freeCrop;
+  document.getElementById('togTrack').classList.toggle('on',freeCrop);
+  if(freeCrop){
+    document.querySelectorAll('.preset-card').forEach(c=>c.classList.remove('active'));
+    activePresetName=null;
+    document.getElementById('iP').textContent='Free';
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  DOWNLOAD
+// ═══════════════════════════════════════════════
+document.getElementById('dlBtn').addEventListener('click',()=>{
+  if(!img) return;
+  const oc=document.createElement('canvas');
+  oc.width=Math.round(crop.w); oc.height=Math.round(crop.h);
+  oc.getContext('2d').drawImage(img, crop.x,crop.y,crop.w,crop.h, 0,0,oc.width,oc.height);
+  const a=document.createElement('a');
+  a.download=`crop_${oc.width}x${oc.height}.png`;
+  a.href=oc.toDataURL('image/png');
+  a.click();
+});
+
+// ═══════════════════════════════════════════════
+//  IMAGE LOADING
+// ═══════════════════════════════════════════════
+function loadFile(file){
+  if(!file||!file.type.startsWith('image/')) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const image=new Image();
+    image.onload=()=>{
+      img=image;
+      document.getElementById('uploadZone').classList.add('hidden');
+      document.getElementById('canvasWrap').classList.add('active');
+      document.getElementById('dlBtn').disabled=false;
+      setupCanvas();
+      if(aspectRatio&&!freeCrop) applyCropRatio(aspectRatio);
+      else { crop={x:0,y:0,w:img.naturalWidth,h:img.naturalHeight}; }
+      render(); updateInfo();
+    };
+    image.src=e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+document.getElementById('fileInput').addEventListener('change',e=>loadFile(e.target.files[0]));
+
+const zone=document.getElementById('uploadZone');
+const area=document.getElementById('canvasArea');
+zone.addEventListener('click',()=>document.getElementById('fileInput').click());
+area.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover');});
+area.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+area.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');loadFile(e.dataTransfer.files[0]);});
+
+// New Image
+document.getElementById('newBtn').addEventListener('click',()=>{
+  img=null;
+  document.getElementById('uploadZone').classList.remove('hidden');
+  document.getElementById('canvasWrap').classList.remove('active');
+  document.getElementById('dlBtn').disabled=true;
+  document.getElementById('fileInput').value='';
+  document.getElementById('iW').textContent='—';
+  document.getElementById('iH').textContent='—';
+  document.getElementById('iR').textContent='—';
+});
+
+// Resize
+window.addEventListener('resize',()=>{
+  if(!img) return;
+  setupCanvas();
+  if(aspectRatio&&!freeCrop) applyCropRatio(aspectRatio);
+  render(); updateInfo();
+});
+
+// ═══════════════════════════════════════════════
+//  KEYBOARD: arrow nudge
+// ═══════════════════════════════════════════════
+window.addEventListener('keydown',e=>{
+  if(!img) return;
+  const step = e.shiftKey ? 10 : 1;
+  const iw=img.naturalWidth, ih=img.naturalHeight;
+  if(e.key==='ArrowLeft')  crop.x=Math.max(0,crop.x-step);
+  else if(e.key==='ArrowRight') crop.x=Math.min(iw-crop.w,crop.x+step);
+  else if(e.key==='ArrowUp')   crop.y=Math.max(0,crop.y-step);
+  else if(e.key==='ArrowDown') crop.y=Math.min(ih-crop.h,crop.y+step);
+  else return;
+  e.preventDefault();
+  render(); updateInfo();
+});
+
+// Init
+buildPresets();
+document.getElementById('searchInput').addEventListener('input',buildPresets);
+</script>
+</body>
+</html>
