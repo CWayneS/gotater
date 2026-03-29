@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MenuCraft — Restaurant Menu Builder</title>
+<style>
+/* ═══════════════════════════════════════════════════
+   THEME DEFINITIONS
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  /* UI chrome colors (not theme) */
+  --ui-bg: #1a1a1e;
+  --ui-surface: #24242a;
+  --ui-border: #35353d;
+  --ui-text: #e0e0e4;
+  --ui-text-dim: #88889a;
+  --ui-accent: #c8956c;
+  --ui-accent-hover: #d9a67d;
+  --ui-danger: #c44;
+  --sidebar-w: 320px;
+  --toolbar-h: 52px;
+}
+
+/* Theme CSS vars applied to .menu-preview */
+[data-theme="classic-bistro"] {
+  --m-bg: #fffdf5; --m-bg2: #f7f3ea; --m-text: #2c1810; --m-heading: #5c2a0a;
+  --m-accent: #8b4513; --m-accent2: #c4843a; --m-border: #d4b896; --m-divider: #e0cdb5;
+  --m-font-heading: 'Georgia', 'Palatino', serif; --m-font-body: 'Garamond', 'Times New Roman', serif;
+  --m-font-price: 'Georgia', serif; --m-cover-bg: #3b1a08; --m-cover-text: #f0dcc0;
+  --m-cover-accent: #c4843a; --m-ornament: '✦';
+}
+[data-theme="modern-minimal"] {
+  --m-bg: #ffffff; --m-bg2: #f8f8f8; --m-text: #1a1a1a; --m-heading: #000000;
+  --m-accent: #000000; --m-accent2: #666666; --m-border: #e0e0e0; --m-divider: #f0f0f0;
+  --m-font-heading: 'Helvetica Neue', 'Arial', sans-serif; --m-font-body: 'Helvetica Neue', 'Arial', sans-serif;
+  --m-font-price: 'Helvetica Neue', sans-serif; --m-cover-bg: #0a0a0a; --m-cover-text: #ffffff;
+  --m-cover-accent: #ffffff; --m-ornament: '—';
+}
+[data-theme="italian-trattoria"] {
+  --m-bg: #faf6ef; --m-bg2: #f2ebe0; --m-text: #3a2e24; --m-heading: #7a2e1a;
+  --m-accent: #9e3b1e; --m-accent2: #c77d3c; --m-border: #d4c4a8; --m-divider: #e8dcc8;
+  --m-font-heading: 'Palatino Linotype', 'Book Antiqua', serif; --m-font-body: 'Palatino', 'Georgia', serif;
+  --m-font-price: 'Palatino', serif; --m-cover-bg: #5c1a0a; --m-cover-text: #f5e6cc;
+  --m-cover-accent: #d4a04a; --m-ornament: '❧';
+}
+[data-theme="japanese-izakaya"] {
+  --m-bg: #f5f0e8; --m-bg2: #ece5d8; --m-text: #2a2420; --m-heading: #1a1410;
+  --m-accent: #8b1a1a; --m-accent2: #c4573b; --m-border: #c4b8a4; --m-divider: #d8ccb8;
+  --m-font-heading: 'Didot', 'Bodoni MT', serif; --m-font-body: 'Optima', 'Candara', sans-serif;
+  --m-font-price: 'Didot', serif; --m-cover-bg: #1a1410; --m-cover-text: #e8dcc8;
+  --m-cover-accent: #8b1a1a; --m-ornament: '◆';
+}
+[data-theme="french-fine-dining"] {
+  --m-bg: #fcfaf6; --m-bg2: #f4f0ea; --m-text: #2a2824; --m-heading: #1a1814;
+  --m-accent: #8b7355; --m-accent2: #b8a080; --m-border: #d8d0c0; --m-divider: #e8e0d4;
+  --m-font-heading: 'Didot', 'Bodoni MT', 'Playfair Display', serif; --m-font-body: 'Baskerville', 'Georgia', serif;
+  --m-font-price: 'Didot', serif; --m-cover-bg: #1a1814; --m-cover-text: #f0e8d8;
+  --m-cover-accent: #b8a080; --m-ornament: '◇';
+}
+[data-theme="mexican-cantina"] {
+  --m-bg: #fdf6ee; --m-bg2: #f8eddc; --m-text: #3a2a18; --m-heading: #8b2500;
+  --m-accent: #c4451c; --m-accent2: #d4883c; --m-border: #d4b88c; --m-divider: #e8d4b4;
+  --m-font-heading: 'Rockwell', 'Courier New', serif; --m-font-body: 'Cambria', 'Georgia', serif;
+  --m-font-price: 'Rockwell', serif; --m-cover-bg: #5c1a00; --m-cover-text: #f8e8cc;
+  --m-cover-accent: #d4883c; --m-ornament: '✿';
+}
+[data-theme="seafood-harbor"] {
+  --m-bg: #f4f8fa; --m-bg2: #e8f0f4; --m-text: #1a2e3a; --m-heading: #0a3050;
+  --m-accent: #1a5a7a; --m-accent2: #3a8aaa; --m-border: #b4ccd8; --m-divider: #d0e0e8;
+  --m-font-heading: 'Trebuchet MS', 'Lucida Grande', sans-serif; --m-font-body: 'Lucida Grande', 'Verdana', sans-serif;
+  --m-font-price: 'Trebuchet MS', sans-serif; --m-cover-bg: #0a2a3a; --m-cover-text: #d8ecf4;
+  --m-cover-accent: #3a8aaa; --m-ornament: '⚓';
+}
+[data-theme="steakhouse-grill"] {
+  --m-bg: #f8f4f0; --m-bg2: #f0ebe4; --m-text: #2a2018; --m-heading: #1a1008;
+  --m-accent: #6a3a1a; --m-accent2: #a06030; --m-border: #c4a888; --m-divider: #d8c8b0;
+  --m-font-heading: 'Copperplate', 'Copperplate Gothic Bold', serif; --m-font-body: 'Book Antiqua', 'Palatino', serif;
+  --m-font-price: 'Copperplate', serif; --m-cover-bg: #1a1008; --m-cover-text: #e8d8c4;
+  --m-cover-accent: #a06030; --m-ornament: '◈';
+}
+[data-theme="art-deco-lounge"] {
+  --m-bg: #0e0e14; --m-bg2: #14141e; --m-text: #d4c8a8; --m-heading: #e8d8a4;
+  --m-accent: #c8a84c; --m-accent2: #e8c864; --m-border: #3a3828; --m-divider: #2a2820;
+  --m-font-heading: 'Copperplate', 'Didot', serif; --m-font-body: 'Baskerville', 'Georgia', serif;
+  --m-font-price: 'Copperplate', serif; --m-cover-bg: #08080c; --m-cover-text: #e8d8a4;
+  --m-cover-accent: #c8a84c; --m-ornament: '◆';
+}
+[data-theme="garden-cafe"] {
+  --m-bg: #f8faf4; --m-bg2: #eff4e8; --m-text: #2a3a20; --m-heading: #3a5a28;
+  --m-accent: #4a7a34; --m-accent2: #7aaa5c; --m-border: #b4c8a4; --m-divider: #d0dcc4;
+  --m-font-heading: 'Candara', 'Optima', sans-serif; --m-font-body: 'Candara', 'Optima', sans-serif;
+  --m-font-price: 'Candara', sans-serif; --m-cover-bg: #2a3a20; --m-cover-text: #e8f0dc;
+  --m-cover-accent: #7aaa5c; --m-ornament: '❀';
+}
+[data-theme="wine-bar"] {
+  --m-bg: #faf6f4; --m-bg2: #f4ece8; --m-text: #2a1a18; --m-heading: #5a1a2a;
+  --m-accent: #7a2040; --m-accent2: #a84060; --m-border: #d4b4b8; --m-divider: #e4ccd0;
+  --m-font-heading: 'Didot', 'Bodoni MT', serif; --m-font-body: 'Baskerville', 'Garamond', serif;
+  --m-font-price: 'Didot', serif; --m-cover-bg: #2a0a14; --m-cover-text: #f0dce0;
+  --m-cover-accent: #a84060; --m-ornament: '✧';
+}
+[data-theme="street-food"] {
+  --m-bg: #1a1a1e; --m-bg2: #222228; --m-text: #e8e4dc; --m-heading: #f0e8d0;
+  --m-accent: #e8a030; --m-accent2: #f0c060; --m-border: #3a3830; --m-divider: #2e2c28;
+  --m-font-heading: 'Impact', 'Haettenschweiler', sans-serif; --m-font-body: 'Verdana', 'Tahoma', sans-serif;
+  --m-font-price: 'Impact', sans-serif; --m-cover-bg: #0e0e10; --m-cover-text: #f0e8d0;
+  --m-cover-accent: #e8a030; --m-ornament: '★';
+}
+[data-theme="coastal-mediterranean"] {
+  --m-bg: #f8fbfc; --m-bg2: #eff6f8; --m-text: #1a3040; --m-heading: #0a4a6a;
+  --m-accent: #1874a0; --m-accent2: #48a4c8; --m-border: #a8ccd8; --m-divider: #c8dce4;
+  --m-font-heading: 'Century Gothic', 'Futura', sans-serif; --m-font-body: 'Gill Sans', 'Century Gothic', sans-serif;
+  --m-font-price: 'Century Gothic', sans-serif; --m-cover-bg: #0a3050; --m-cover-text: #e0f0f8;
+  --m-cover-accent: #48a4c8; --m-ornament: '○';
+}
+[data-theme="rustic-farmhouse"] {
+  --m-bg: #f6f0e4; --m-bg2: #ede4d4; --m-text: #3a3028; --m-heading: #4a3a28;
+  --m-accent: #7a6040; --m-accent2: #a08860; --m-border: #c4b498; --m-divider: #d8c8b0;
+  --m-font-heading: 'Courier New', 'Courier', monospace; --m-font-body: 'Georgia', 'Cambria', serif;
+  --m-font-price: 'Courier New', monospace; --m-cover-bg: #3a3028; --m-cover-text: #e8dcc8;
+  --m-cover-accent: #a08860; --m-ornament: '✻';
+}
+[data-theme="sushi-omakase"] {
+  --m-bg: #fafaf6; --m-bg2: #f0f0ea; --m-text: #1a1a18; --m-heading: #0a0a08;
+  --m-accent: #c8281a; --m-accent2: #e84830; --m-border: #d8d4c8; --m-divider: #e8e4dc;
+  --m-font-heading: 'Futura', 'Century Gothic', sans-serif; --m-font-body: 'Optima', 'Candara', sans-serif;
+  --m-font-price: 'Futura', sans-serif; --m-cover-bg: #0a0a08; --m-cover-text: #f0ece4;
+  --m-cover-accent: #c8281a; --m-ornament: '|';
+}
+[data-theme="bbq-smokehouse"] {
+  --m-bg: #f4ece0; --m-bg2: #ece0d0; --m-text: #2a2018; --m-heading: #1a1008;
+  --m-accent: #a04020; --m-accent2: #d06030; --m-border: #c4a080; --m-divider: #d4b898;
+  --m-font-heading: 'Rockwell', 'Courier New', serif; --m-font-body: 'Georgia', 'Cambria', serif;
+  --m-font-price: 'Rockwell', serif; --m-cover-bg: #1a1008; --m-cover-text: #f0dcc0;
+  --m-cover-accent: #d06030; --m-ornament: '▪';
+}
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════ */
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top toolbar */
+.toolbar {
+  height: var(--toolbar-h);
+  background: var(--ui-surface);
+  border-bottom: 1px solid var(--ui-border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+.toolbar-brand {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ui-accent);
+  letter-spacing: 1px;
+  margin-right: 16px;
+  user-select: none;
+}
+.toolbar-brand span { color: var(--ui-text-dim); font-weight: 400; }
+.toolbar-sep { width:1px; height:28px; background:var(--ui-border); margin:0 8px; }
+
+.tb-btn {
+  background: none; border: 1px solid var(--ui-border); color: var(--ui-text);
+  padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  transition: all .15s;
+}
+.tb-btn:hover { background: var(--ui-border); }
+.tb-btn.primary { background: var(--ui-accent); border-color: var(--ui-accent); color: #fff; }
+.tb-btn.primary:hover { background: var(--ui-accent-hover); }
+.tb-btn svg { width:16px; height:16px; }
+
+/* Main area */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--ui-surface);
+  border-right: 1px solid var(--ui-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--ui-border);
+  flex-shrink: 0;
+}
+.sidebar-tab {
+  flex: 1; padding: 10px 0; text-align: center; font-size: 12px;
+  font-weight: 600; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--ui-text-dim); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all .15s; background: none; border-top: none; border-left: none; border-right: none;
+}
+.sidebar-tab.active { color: var(--ui-accent); border-bottom-color: var(--ui-accent); }
+.sidebar-tab:hover { color: var(--ui-text); }
+
+.sidebar-content { flex: 1; overflow-y: auto; padding: 16px; }
+.sidebar-content::-webkit-scrollbar { width: 6px; }
+.sidebar-content::-webkit-scrollbar-thumb { background: var(--ui-border); border-radius: 3px; }
+
+/* Form controls */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block; font-size: 11px; font-weight: 600; color: var(--ui-text-dim);
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px;
+}
+.form-input, .form-textarea, .form-select {
+  width: 100%; background: var(--ui-bg); border: 1px solid var(--ui-border);
+  color: var(--ui-text); padding: 8px 10px; border-radius: 6px; font-size: 13px;
+  font-family: inherit; outline: none; transition: border-color .15s;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--ui-accent); }
+.form-textarea { resize: vertical; min-height: 60px; }
+.form-select { cursor: pointer; }
+.form-row { display: flex; gap: 8px; }
+.form-row > * { flex: 1; }
+
+.form-hint { font-size: 11px; color: var(--ui-text-dim); margin-top: 4px; }
+
+/* Image upload areas */
+.img-upload {
+  border: 2px dashed var(--ui-border); border-radius: 8px; padding: 20px;
+  text-align: center; cursor: pointer; transition: all .15s; position: relative;
+  overflow: hidden; min-height: 80px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.img-upload:hover { border-color: var(--ui-accent); background: rgba(200,149,108,.05); }
+.img-upload.has-image { padding: 0; border-style: solid; }
+.img-upload img { width: 100%; height: auto; display: block; border-radius: 6px; }
+.img-upload .upload-text { font-size: 12px; color: var(--ui-text-dim); }
+.img-upload .upload-hint { font-size: 10px; color: var(--ui-text-dim); opacity: .6; margin-top: 2px; }
+.img-upload .upload-icon { font-size: 24px; margin-bottom: 4px; }
+.img-upload .remove-img {
+  position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,.7);
+  color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px;
+  cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+}
+.img-upload input[type="file"] { display: none; }
+
+/* Theme grid */
+.theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* Item photo preview in editor */
+.item-photo-preview { margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+.item-photo-preview img { max-width: 80px; max-height: 50px; border-radius: 4px; object-fit: cover; }
+.item-photo-preview button { font-size: 11px; padding: 2px 8px; }
+.theme-card {
+  border: 2px solid var(--ui-border); border-radius: 8px; padding: 8px;
+  cursor: pointer; transition: all .15s; text-align: center;
+  background: var(--ui-bg);
+}
+.theme-card:hover { border-color: var(--ui-text-dim); }
+.theme-card.active { border-color: var(--ui-accent); background: rgba(200,149,108,.1); }
+.theme-swatch {
+  height: 32px; border-radius: 4px; margin-bottom: 6px;
+  display: flex; overflow: hidden;
+}
+.theme-swatch > div { flex: 1; }
+.theme-card-name { font-size: 10px; font-weight: 600; color: var(--ui-text); text-transform: uppercase; letter-spacing: .3px; }
+
+/* Section list */
+.section-list { display: flex; flex-direction: column; gap: 6px; }
+.section-item {
+  background: var(--ui-bg); border: 1px solid var(--ui-border); border-radius: 6px;
+  padding: 10px 12px; cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-item:hover { border-color: var(--ui-text-dim); }
+.section-item.active { border-color: var(--ui-accent); background: rgba(200,149,108,.1); }
+.section-item .drag-handle { cursor: grab; color: var(--ui-text-dim); font-size: 14px; user-select:none; }
+.section-item .section-name { flex: 1; font-size: 13px; }
+.section-item .section-count { font-size: 11px; color: var(--ui-text-dim); }
+.section-item .section-del {
+  background: none; border: none; color: var(--ui-text-dim); cursor: pointer;
+  font-size: 14px; padding: 2px 4px; border-radius: 4px;
+}
+.section-item .section-del:hover { color: var(--ui-danger); }
+
+/* Menu item editor */
+.item-card {
+  background: var(--ui-bg); border: 1px solid var(--ui-border); border-radius: 6px;
+  padding: 10px; margin-bottom: 8px; position: relative;
+}
+.item-card .item-header { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+.item-card .item-drag { cursor: grab; color: var(--ui-text-dim); user-select:none; }
+.item-card .item-del {
+  background: none; border: none; color: var(--ui-text-dim); cursor: pointer;
+  margin-left: auto; font-size: 13px;
+}
+.item-card .item-del:hover { color: var(--ui-danger); }
+
+.add-btn {
+  width: 100%; padding: 8px; background: none; border: 1px dashed var(--ui-border);
+  border-radius: 6px; color: var(--ui-text-dim); cursor: pointer; font-size: 12px;
+  transition: all .15s; margin-top: 8px;
+}
+.add-btn:hover { border-color: var(--ui-accent); color: var(--ui-accent); }
+
+/* Checkbox toggle */
+.toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.toggle-row label { font-size: 13px; color: var(--ui-text); cursor: pointer; }
+.toggle-row input[type="checkbox"] { accent-color: var(--ui-accent); cursor: pointer; }
+
+/* ═══════════════════════════════════════════════════
+   PREVIEW AREA
+   ═══════════════════════════════════════════════════ */
+
+.preview-area {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+  align-items: center; padding: 30px 20px; gap: 30px;
+  background: var(--ui-bg);
+}
+.preview-area::-webkit-scrollbar { width: 8px; }
+.preview-area::-webkit-scrollbar-thumb { background: var(--ui-border); border-radius: 4px; }
+
+.menu-page {
+  width: 595px; min-height: 842px; /* A4-ish */
+  position: relative; box-shadow: 0 4px 24px rgba(0,0,0,.4);
+  overflow: hidden; flex-shrink: 0;
+}
+
+/* Cover page styles */
+.cover-page {
+  background: var(--m-cover-bg);
+  color: var(--m-cover-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 50px;
+  position: relative;
+}
+.cover-page::before, .cover-page::after {
+  content: '';
+  position: absolute;
+  left: 30px; right: 30px;
+  height: 1px;
+  background: var(--m-cover-accent);
+  opacity: .4;
+}
+.cover-page::before { top: 30px; }
+.cover-page::after { bottom: 30px; }
+
+.cover-logo { max-width: 180px; max-height: 180px; margin-bottom: 28px; }
+.cover-logo img { max-width: 100%; max-height: 180px; object-fit: contain; }
+.cover-name {
+  font-family: var(--m-font-heading);
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+.cover-tagline {
+  font-family: var(--m-font-body);
+  font-size: 16px;
+  font-style: italic;
+  opacity: .8;
+  margin-bottom: 24px;
+}
+.cover-ornament {
+  font-size: 20px;
+  letter-spacing: 12px;
+  opacity: .5;
+  margin-bottom: 24px;
+}
+.cover-photo { width: 80%; max-height: 260px; overflow: hidden; border-radius: 4px; margin-bottom: 24px; }
+.cover-photo img { width: 100%; height: 100%; object-fit: cover; }
+.cover-details {
+  font-family: var(--m-font-body);
+  font-size: 12px;
+  opacity: .6;
+  line-height: 1.8;
+}
+
+/* Inner page styles */
+.inner-page {
+  background: var(--m-bg);
+  color: var(--m-text);
+  padding: 48px 50px;
+}
+.inner-page .page-header {
+  text-align: center;
+  margin-bottom: 30px;
+  font-family: var(--m-font-heading);
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--m-accent2);
+}
+
+.menu-section { margin-bottom: 32px; }
+.menu-section-title {
+  font-family: var(--m-font-heading);
+  font-size: 22px;
+  color: var(--m-heading);
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+}
+.menu-section-subtitle {
+  font-family: var(--m-font-body);
+  font-size: 12px;
+  color: var(--m-accent2);
+  text-align: center;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+.section-divider {
+  text-align: center;
+  margin-bottom: 18px;
+  color: var(--m-accent2);
+  font-size: 14px;
+  letter-spacing: 8px;
+  opacity: .5;
+}
+
+.menu-item { margin-bottom: 12px; }
+.menu-item-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.menu-item-name {
+  font-family: var(--m-font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--m-text);
+}
+.menu-item-dots {
+  flex: 1;
+  border-bottom: 1px dotted var(--m-divider);
+  margin: 0 4px;
+  min-width: 20px;
+  position: relative;
+  top: -3px;
+}
+.menu-item-price {
+  font-family: var(--m-font-price);
+  font-size: 14px;
+  color: var(--m-accent);
+  white-space: nowrap;
+}
+.menu-item-desc {
+  font-family: var(--m-font-body);
+  font-size: 11px;
+  color: var(--m-accent2);
+  font-style: italic;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.menu-item-tags {
+  display: flex; gap: 4px; margin-top: 3px;
+}
+.menu-item-tag {
+  font-size: 9px; padding: 1px 6px; border-radius: 3px;
+  border: 1px solid var(--m-border); color: var(--m-accent2);
+  font-family: var(--m-font-body); text-transform: uppercase; letter-spacing: .3px;
+}
+
+.menu-item-photo { margin-top: 6px; }
+.menu-item-photo img { max-width: 100%; max-height: 120px; border-radius: 4px; object-fit: cover; }
+
+.page-footer {
+  text-align: center; margin-top: auto; padding-top: 20px;
+  font-family: var(--m-font-body); font-size: 10px; color: var(--m-accent2);
+  font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════════ */
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: none; align-items: center; justify-content: center; z-index: 500;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--ui-surface); border: 1px solid var(--ui-border);
+  border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;
+  max-height: 80vh; overflow-y: auto;
+}
+.modal h3 { margin-bottom: 16px; font-size: 16px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+/* ═══════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════ */
+
+@media print {
+  body { background: white !important; }
+  .toolbar, .sidebar { display: none !important; }
+  .preview-area {
+    padding: 0 !important; overflow: visible !important; background: white !important;
+  }
+  .menu-page {
+    box-shadow: none !important; page-break-after: always; margin: 0 !important;
+    width: 100% !important;
+  }
+  .menu-page:last-child { page-break-after: auto; }
+}
+
+/* Page number */
+.page-number {
+  position: absolute; bottom: 16px; right: 20px;
+  font-family: var(--m-font-body); font-size: 10px; color: var(--m-accent2); opacity: .5;
+}
+.cover-page .page-number { color: var(--m-cover-accent); }
+
+/* No dots variant */
+[data-dots="none"] .menu-item-dots { border: none; }
+[data-dots="solid"] .menu-item-dots { border-bottom-style: solid; }
+
+/* Centered layout variant */
+[data-layout="centered"] .menu-item-row { justify-content: center; flex-wrap: wrap; }
+[data-layout="centered"] .menu-item-dots { display: none; }
+[data-layout="centered"] .menu-item-name { text-align: center; }
+[data-layout="centered"] .menu-item-price { margin-left: 8px; }
+[data-layout="centered"] .menu-item-desc { text-align: center; }
+
+/* Two column layout */
+[data-layout="two-col"] .section-items { columns: 2; column-gap: 24px; }
+[data-layout="two-col"] .menu-item { break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════ TOOLBAR ════════════════ -->
+<div class="toolbar">
+  <div class="toolbar-brand">MENUCRAFT <span>— builder</span></div>
+  <div class="toolbar-sep"></div>
+  <button class="tb-btn" onclick="saveProject()" title="Save to file">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+    Save
+  </button>
+  <button class="tb-btn" onclick="loadProject()" title="Load from file">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    Load
+  </button>
+  <div class="toolbar-sep"></div>
+  <button class="tb-btn primary" onclick="window.print()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Print / PDF
+  </button>
+</div>
+
+<!-- ════════════════ MAIN ════════════════ -->
+<div class="main">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" data-tab="design" onclick="switchTab('design')">Design</button>
+      <button class="sidebar-tab" data-tab="cover" onclick="switchTab('cover')">Cover</button>
+      <button class="sidebar-tab" data-tab="content" onclick="switchTab('content')">Content</button>
+    </div>
+    <div class="sidebar-content" id="sidebar-content"></div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-area" id="preview-area"></div>
+
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="file-logo" accept="image/*" onchange="handleImageUpload(event,'logo')">
+<input type="file" id="file-cover-photo" accept="image/*" onchange="handleImageUpload(event,'coverPhoto')">
+<input type="file" id="file-item-photo" accept="image/*">
+<input type="file" id="file-load" accept=".json" onchange="handleLoadFile(event)">
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════════
+
+const THEMES = [
+  { id:'classic-bistro', name:'Classic Bistro', colors:['#3b1a08','#8b4513','#f7f3ea','#c4843a'] },
+  { id:'modern-minimal', name:'Modern Minimal', colors:['#0a0a0a','#000000','#ffffff','#666666'] },
+  { id:'italian-trattoria', name:'Italian Trattoria', colors:['#5c1a0a','#9e3b1e','#faf6ef','#c77d3c'] },
+  { id:'japanese-izakaya', name:'Japanese Izakaya', colors:['#1a1410','#8b1a1a','#f5f0e8','#c4573b'] },
+  { id:'french-fine-dining', name:'French Fine Dining', colors:['#1a1814','#8b7355','#fcfaf6','#b8a080'] },
+  { id:'mexican-cantina', name:'Mexican Cantina', colors:['#5c1a00','#c4451c','#fdf6ee','#d4883c'] },
+  { id:'seafood-harbor', name:'Seafood Harbor', colors:['#0a2a3a','#1a5a7a','#f4f8fa','#3a8aaa'] },
+  { id:'steakhouse-grill', name:'Steakhouse Grill', colors:['#1a1008','#6a3a1a','#f8f4f0','#a06030'] },
+  { id:'art-deco-lounge', name:'Art Deco Lounge', colors:['#08080c','#c8a84c','#0e0e14','#e8c864'] },
+  { id:'garden-cafe', name:'Garden Café', colors:['#2a3a20','#4a7a34','#f8faf4','#7aaa5c'] },
+  { id:'wine-bar', name:'Wine Bar', colors:['#2a0a14','#7a2040','#faf6f4','#a84060'] },
+  { id:'street-food', name:'Street Food', colors:['#0e0e10','#e8a030','#1a1a1e','#f0c060'] },
+  { id:'coastal-mediterranean', name:'Coastal Med', colors:['#0a3050','#1874a0','#f8fbfc','#48a4c8'] },
+  { id:'rustic-farmhouse', name:'Rustic Farmhouse', colors:['#3a3028','#7a6040','#f6f0e4','#a08860'] },
+  { id:'sushi-omakase', name:'Sushi Omakase', colors:['#0a0a08','#c8281a','#fafaf6','#e84830'] },
+  { id:'bbq-smokehouse', name:'BBQ Smokehouse', colors:['#1a1008','#a04020','#f4ece0','#d06030'] },
+];
+
+function _id() { return Math.random().toString(36).substr(2,9); }
+
+function makeDefaultState() {
+  return {
+    theme: 'classic-bistro',
+    dotStyle: 'dotted',
+    layout: 'standard',
+    showPageNumbers: true,
+    currency: '$',
+    cover: {
+      restaurantName: 'THE GOLDEN TABLE',
+      tagline: 'Fine dining since 1998',
+      logo: null,
+      photo: null,
+      address: '123 Culinary Lane, Downtown',
+      phone: '(555) 123-4567',
+      hours: 'Mon\u2013Sat 5pm\u201311pm',
+      showCover: true,
+    },
+    footerText: '',
+    sections: [
+      {
+        id: _id(), name: 'Starters', subtitle: 'Begin your journey',
+        items: [
+          { id:_id(), name:'Roasted Beet Carpaccio', desc:'with goat cheese mousse & walnut vinaigrette', price:'16', tags:['V','GF'], photo:null },
+          { id:_id(), name:'Seared Scallops', desc:'pan-seared diver scallops, cauliflower pur\u00e9e, crispy pancetta', price:'22', tags:['GF'], photo:null },
+          { id:_id(), name:'Burrata', desc:'heirloom tomatoes, basil oil, aged balsamic', price:'18', tags:['V'], photo:null },
+        ]
+      },
+      {
+        id: _id(), name: 'Main Courses', subtitle: 'Chef\'s finest selections',
+        items: [
+          { id:_id(), name:'Pan-Roasted Salmon', desc:'wild-caught, lemon beurre blanc, seasonal vegetables', price:'34', tags:['GF'], photo:null },
+          { id:_id(), name:'Filet Mignon', desc:'8oz center-cut, truffle butter, roasted fingerlings', price:'48', tags:[], photo:null },
+          { id:_id(), name:'Wild Mushroom Risotto', desc:'arborio rice, porcini, parmesan, truffle oil', price:'28', tags:['V'], photo:null },
+        ]
+      },
+      {
+        id: _id(), name: 'Desserts', subtitle: 'A sweet ending',
+        items: [
+          { id:_id(), name:'Cr\u00e8me Br\u00fbl\u00e9e', desc:'Madagascar vanilla bean custard', price:'14', tags:['V','GF'], photo:null },
+          { id:_id(), name:'Chocolate Fondant', desc:'molten dark chocolate, raspberry coulis, vanilla gelato', price:'16', tags:['V'], photo:null },
+        ]
+      }
+    ]
+  };
+}
+
+// Try loading from localStorage, fall back to defaults
+let state;
+try {
+  const saved = localStorage.getItem('menucraft_state');
+  state = saved ? JSON.parse(saved) : makeDefaultState();
+  // Ensure sections have ids
+  state.sections.forEach(s => { if (!s.id) s.id = _id(); s.items.forEach(it => { if (!it.id) it.id = _id(); }); });
+} catch(e) { state = makeDefaultState(); }
+
+let activeTab = 'design';
+let activeSectionId = state.sections[0]?.id || null;
+
+// Autosave to localStorage on changes (debounced)
+let _saveTimer = null;
+function autoSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    try { localStorage.setItem('menucraft_state', JSON.stringify(state)); } catch(e) {}
+  }, 500);
+}
+
+// ═══════════════════════════════════════════════════
+// RENDERING — KEY FIX: text inputs only update preview,
+// never rebuild the sidebar that contains them.
+// ═══════════════════════════════════════════════════
+
+function render() {
+  renderSidebar();
+  renderPreview();
+  autoSave();
+}
+
+// Only rebuild preview (safe to call from any input handler)
+function previewOnly() {
+  renderPreview();
+  autoSave();
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebar-content');
+  if (activeTab === 'design') el.innerHTML = renderDesignTab();
+  else if (activeTab === 'cover') el.innerHTML = renderCoverTab();
+  else if (activeTab === 'content') el.innerHTML = renderContentTab();
+  // Wire up all delegated event listeners after innerHTML set
+  wireInputs(el);
+}
+
+// ── Event delegation: attach listeners to inputs by data- attributes ──
+function wireInputs(root) {
+  // Text / number inputs: update state + preview only (no sidebar rebuild)
+  root.querySelectorAll('input[data-bind], textarea[data-bind]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const path = inp.dataset.bind; // e.g. "cover.restaurantName" or "sections.ID.items.0.name"
+      setByPath(path, inp.value);
+      previewOnly();
+    });
+  });
+  // Selects
+  root.querySelectorAll('select[data-bind]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      setByPath(sel.dataset.bind, sel.value);
+      previewOnly();
+    });
+  });
+  // Checkboxes
+  root.querySelectorAll('input[type="checkbox"][data-bind]').forEach(chk => {
+    chk.addEventListener('change', () => {
+      setByPath(chk.dataset.bind, chk.checked);
+      // checkboxes can change structure (e.g. show/hide cover), so full render
+      // but use requestAnimationFrame so browser finishes checkbox animation
+      requestAnimationFrame(() => render());
+    });
+  });
+}
+
+// Generic path setter: "cover.restaurantName" → state.cover.restaurantName = val
+function setByPath(path, val) {
+  const parts = path.split('.');
+  let obj = state;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const key = parts[i];
+    // Support numeric keys for arrays
+    obj = obj[isNaN(key) ? key : parseInt(key)];
+    if (!obj) return;
+  }
+  const last = parts[parts.length - 1];
+  obj[isNaN(last) ? last : parseInt(last)] = val;
+}
+
+function renderDesignTab() {
+  let themeCards = THEMES.map(t => {
+    const active = state.theme === t.id ? 'active' : '';
+    return `<div class="theme-card ${active}" onclick="setTheme('${t.id}')">
+      <div class="theme-swatch">
+        ${t.colors.map(c => `<div style="background:${c}"></div>`).join('')}
+      </div>
+      <div class="theme-card-name">${t.name}</div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="form-group">
+      <div class="form-label">Theme</div>
+      <div class="theme-grid">${themeCards}</div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Layout</div>
+      <select class="form-select" data-bind="layout">
+        <option value="standard" ${state.layout==='standard'?'selected':''}>Standard (Left-aligned)</option>
+        <option value="centered" ${state.layout==='centered'?'selected':''}>Centered</option>
+        <option value="two-col" ${state.layout==='two-col'?'selected':''}>Two Columns</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Price Dots</div>
+      <select class="form-select" data-bind="dotStyle">
+        <option value="dotted" ${state.dotStyle==='dotted'?'selected':''}>Dotted line</option>
+        <option value="solid" ${state.dotStyle==='solid'?'selected':''}>Solid line</option>
+        <option value="none" ${state.dotStyle==='none'?'selected':''}>No dots</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Currency Symbol</div>
+      <input class="form-input" data-bind="currency" value="${esc(state.currency)}" maxlength="4">
+    </div>
+    <div class="toggle-row">
+      <input type="checkbox" id="chk-pagenum" data-bind="showPageNumbers" ${state.showPageNumbers?'checked':''}>
+      <label for="chk-pagenum">Show page numbers</label>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Footer Text (optional)</div>
+      <input class="form-input" data-bind="footerText" value="${esc(state.footerText)}" placeholder="e.g. Prices subject to 18% gratuity">
+    </div>
+  `;
+}
+
+function renderCoverTab() {
+  const c = state.cover;
+
+  function imgBlock(dataUrl, label, uploadId, clearFn) {
+    if (dataUrl) {
+      return `<div class="img-upload has-image">
+        <img src="${dataUrl}">
+        <button class="remove-img" onclick="${clearFn}">×</button>
+      </div>
+      <div class="img-actions">
+        <button class="add-btn" style="margin-top:6px" onclick="document.getElementById('${uploadId}').click()">Replace ${label}</button>
+      </div>`;
+    }
+    return `<div class="img-upload" onclick="document.getElementById('${uploadId}').click()">
+      <div class="upload-icon">📷</div>
+      <div class="upload-text">Click to upload ${label.toLowerCase()}</div>
+      <div class="upload-hint">JPG, PNG, SVG — any size</div>
+    </div>`;
+  }
+
+  return `
+    <div class="toggle-row">
+      <input type="checkbox" id="chk-cover" data-bind="cover.showCover" ${c.showCover?'checked':''}>
+      <label for="chk-cover">Include cover page</label>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Restaurant Name</div>
+      <input class="form-input" data-bind="cover.restaurantName" value="${esc(c.restaurantName)}">
+    </div>
+    <div class="form-group">
+      <div class="form-label">Tagline</div>
+      <input class="form-input" data-bind="cover.tagline" value="${esc(c.tagline)}">
+    </div>
+    <div class="form-group">
+      <div class="form-label">Logo</div>
+      ${imgBlock(c.logo, 'Logo', 'file-logo', "event.stopPropagation();state.cover.logo=null;render()")}
+      <div class="form-hint">Appears centered above your restaurant name on the cover</div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Cover Photo</div>
+      ${imgBlock(c.photo, 'Photo', 'file-cover-photo', "event.stopPropagation();state.cover.photo=null;render()")}
+      <div class="form-hint">Landscape photo displayed below the restaurant name</div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Address</div>
+      <input class="form-input" data-bind="cover.address" value="${esc(c.address)}">
+    </div>
+    <div class="form-group">
+      <div class="form-label">Phone</div>
+      <input class="form-input" data-bind="cover.phone" value="${esc(c.phone)}">
+    </div>
+    <div class="form-group">
+      <div class="form-label">Hours</div>
+      <input class="form-input" data-bind="cover.hours" value="${esc(c.hours)}">
+    </div>
+  `;
+}
+
+function renderContentTab() {
+  let sectionList = state.sections.map((s,i) => {
+    const active = activeSectionId === s.id ? 'active' : '';
+    return `<div class="section-item ${active}" onclick="selectSection('${s.id}')">
+      <span class="drag-handle" draggable="true" ondragstart="dragSection(event,${i})" ondragover="event.preventDefault()" ondrop="dropSection(event,${i})">⠿</span>
+      <span class="section-name">${esc(s.name)}</span>
+      <span class="section-count">${s.items.length} item${s.items.length!==1?'s':''}</span>
+      <button class="section-del" onclick="event.stopPropagation();deleteSection(${i})" title="Delete section">✕</button>
+    </div>`;
+  }).join('');
+
+  let itemEditor = '';
+  const sec = state.sections.find(s => s.id === activeSectionId);
+  if (sec) {
+    const si = state.sections.indexOf(sec);
+    let items = sec.items.map((item, i) => {
+      let photoHtml = '';
+      if (item.photo) {
+        photoHtml = `<div class="item-photo-preview">
+          <img src="${item.photo}">
+          <button class="section-del" onclick="removeItemPhoto('${sec.id}',${i})">✕ Remove</button>
+        </div>`;
+      } else {
+        photoHtml = `<button class="add-btn" style="margin:4px 0;font-size:11px;padding:5px 8px" onclick="uploadItemPhoto('${sec.id}',${i})">📷 Add dish photo</button>`;
+      }
+      // Use path-based binding: sections.INDEX.items.INDEX.field
+      const bp = `sections.${si}.items.${i}`;
+      return `<div class="item-card">
+        <div class="item-header">
+          <span class="item-drag" draggable="true" ondragstart="dragItem(event,${i})" ondragover="event.preventDefault()" ondrop="dropItem(event,'${sec.id}',${i})">⠿</span>
+          <strong style="font-size:12px;color:var(--ui-text-dim)">#${i+1}</strong>
+          <button class="item-del" onclick="deleteItem('${sec.id}',${i})" title="Delete">✕</button>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><input class="form-input" placeholder="Dish name" data-bind="${bp}.name" value="${esc(item.name)}"></div>
+          <div class="form-group" style="max-width:80px"><input class="form-input" placeholder="Price" data-bind="${bp}.price" value="${esc(item.price)}"></div>
+        </div>
+        <div class="form-group"><input class="form-input" placeholder="Short description" data-bind="${bp}.desc" value="${esc(item.desc)}"></div>
+        <div class="form-group">
+          <input class="form-input" data-bind-tags="${bp}.tags" placeholder="Tags: V, GF, Spicy (comma-separated)" value="${esc(item.tags.join(', '))}">
+        </div>
+        ${photoHtml}
+      </div>`;
+    }).join('');
+
+    itemEditor = `
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--ui-border)">
+        <div class="form-group">
+          <div class="form-label">Section Name</div>
+          <input class="form-input" data-bind="sections.${si}.name" value="${esc(sec.name)}">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Section Subtitle</div>
+          <input class="form-input" data-bind="sections.${si}.subtitle" value="${esc(sec.subtitle||'')}">
+        </div>
+        <div class="form-label" style="margin-bottom:8px">Items (${sec.items.length})</div>
+        ${items}
+        <button class="add-btn" onclick="addItem('${sec.id}')">+ Add Item</button>
+      </div>`;
+  } else if (state.sections.length > 0) {
+    itemEditor = `<div style="margin-top:20px;text-align:center;color:var(--ui-text-dim);font-size:13px">
+      Click a section above to edit its items
+    </div>`;
+  }
+
+  return `
+    <div class="form-label" style="margin-bottom:8px">Menu Sections</div>
+    <div class="section-list" ondragover="event.preventDefault()">${sectionList}</div>
+    <button class="add-btn" onclick="addSection()">+ Add Section</button>
+    ${itemEditor}
+  `;
+}
+
+// Override wireInputs to also handle the special tags input
+const _origWire = wireInputs;
+wireInputs = function(root) {
+  _origWire(root);
+  // Tags inputs: comma-separated → array
+  root.querySelectorAll('input[data-bind-tags]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const path = inp.dataset.bindTags;
+      const arr = inp.value.split(',').map(t=>t.trim()).filter(Boolean);
+      setByPath(path, arr);
+      previewOnly();
+    });
+  });
+  // Also handle section name inputs updating the section list label live
+  root.querySelectorAll('input[data-bind]').forEach(inp => {
+    if (inp.dataset.bind.match(/^sections\.\d+\.name$/)) {
+      inp.addEventListener('input', () => {
+        // Update the section list item text without full sidebar rebuild
+        const si = parseInt(inp.dataset.bind.split('.')[1]);
+        const listItems = root.querySelectorAll('.section-item .section-name');
+        if (listItems[si]) listItems[si].textContent = inp.value;
+      });
+    }
+  });
+};
+
+// ═══════════════════════════════════════════════════
+// PREVIEW RENDERING
+// ═══════════════════════════════════════════════════
+
+function renderPreview() {
+  const area = document.getElementById('preview-area');
+  let pages = [];
+  let pageNum = 1;
+
+  // Cover
+  if (state.cover.showCover) {
+    const c = state.cover;
+    let logoHtml = c.logo ? `<div class="cover-logo"><img src="${c.logo}"></div>` : '';
+    let photoHtml = c.photo ? `<div class="cover-photo"><img src="${c.photo}"></div>` : '';
+    let details = [c.address, c.phone, c.hours].filter(Boolean).join('<br>');
+    const ornament = getComputedOrnament();
+
+    pages.push(`<div class="menu-page cover-page">
+      ${logoHtml}
+      <div class="cover-ornament">${ornament} ${ornament} ${ornament}</div>
+      <div class="cover-name">${esc(c.restaurantName)}</div>
+      <div class="cover-tagline">${esc(c.tagline)}</div>
+      ${photoHtml}
+      ${details ? `<div class="cover-details">${details}</div>` : ''}
+      ${state.showPageNumbers ? `<div class="page-number">${pageNum}</div>` : ''}
+    </div>`);
+    pageNum++;
+  }
+
+  // Inner pages
+  let sectionsHtml = state.sections.map(sec => {
+    let itemsHtml = sec.items.map(item => {
+      let tags = item.tags.length ? `<div class="menu-item-tags">${item.tags.map(t=>`<span class="menu-item-tag">${esc(t)}</span>`).join('')}</div>` : '';
+      let photo = item.photo ? `<div class="menu-item-photo"><img src="${item.photo}"></div>` : '';
+      return `<div class="menu-item">
+        <div class="menu-item-row">
+          <span class="menu-item-name">${esc(item.name)}</span>
+          <span class="menu-item-dots"></span>
+          <span class="menu-item-price">${esc(state.currency)}${esc(item.price)}</span>
+        </div>
+        ${item.desc ? `<div class="menu-item-desc">${esc(item.desc)}</div>` : ''}
+        ${tags}
+        ${photo}
+      </div>`;
+    }).join('');
+    const ornament = getComputedOrnament();
+
+    return `<div class="menu-section">
+      <div class="menu-section-title">${esc(sec.name)}</div>
+      ${sec.subtitle ? `<div class="menu-section-subtitle">${esc(sec.subtitle)}</div>` : ''}
+      <div class="section-divider">${ornament} ${ornament} ${ornament}</div>
+      <div class="section-items">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+
+  let footerHtml = state.footerText ? `<div class="page-footer">${esc(state.footerText)}</div>` : '';
+
+  if (state.sections.length > 0) {
+    const headerName = state.cover.restaurantName || '';
+    pages.push(`<div class="menu-page inner-page" data-dots="${state.dotStyle}" data-layout="${state.layout}">
+      <div class="page-header">${esc(headerName)}</div>
+      ${sectionsHtml}
+      ${footerHtml}
+      ${state.showPageNumbers ? `<div class="page-number">${pageNum}</div>` : ''}
+    </div>`);
+  }
+
+  area.innerHTML = `<div data-theme="${state.theme}">${pages.join('')}</div>`;
+}
+
+function getComputedOrnament() {
+  const map = {
+    'classic-bistro':'✦','modern-minimal':'—','italian-trattoria':'❧','japanese-izakaya':'◆',
+    'french-fine-dining':'◇','mexican-cantina':'✿','seafood-harbor':'⚓','steakhouse-grill':'◈',
+    'art-deco-lounge':'◆','garden-cafe':'❀','wine-bar':'✧','street-food':'★',
+    'coastal-mediterranean':'○','rustic-farmhouse':'✻','sushi-omakase':'|','bbq-smokehouse':'▪'
+  };
+  return map[state.theme] || '•';
+}
+
+// ═══════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderSidebar();
+}
+
+function setTheme(id) { state.theme = id; render(); }
+
+function selectSection(id) {
+  activeSectionId = id;
+  render();
+}
+
+function addSection() {
+  const s = { id:_id(), name:'New Section', subtitle:'', items:[] };
+  state.sections.push(s);
+  activeSectionId = s.id;
+  render();
+}
+
+function deleteSection(i) {
+  if (state.sections[i] && confirm('Delete section "'+state.sections[i].name+'"?')) {
+    const wasActive = state.sections[i].id === activeSectionId;
+    state.sections.splice(i,1);
+    if (wasActive) activeSectionId = state.sections.length ? state.sections[0].id : null;
+    render();
+  }
+}
+
+function addItem(secId) {
+  const s = state.sections.find(x=>x.id===secId);
+  if (s) { s.items.push({ id:_id(), name:'New Item', desc:'', price:'0', tags:[], photo:null }); render(); }
+}
+
+function deleteItem(secId, i) {
+  const s = state.sections.find(x=>x.id===secId);
+  if (s) { s.items.splice(i,1); render(); }
+}
+
+// Drag & drop sections
+let dragSectionIdx = null;
+function dragSection(e,i) { dragSectionIdx = i; e.dataTransfer.effectAllowed='move'; }
+function dropSection(e,i) {
+  e.preventDefault();
+  if (dragSectionIdx !== null && dragSectionIdx !== i) {
+    const item = state.sections.splice(dragSectionIdx,1)[0];
+    state.sections.splice(i,0,item);
+    render();
+  }
+  dragSectionIdx = null;
+}
+
+// Drag & drop items
+let dragItemIdx = null;
+function dragItem(e,i) { dragItemIdx = i; e.dataTransfer.effectAllowed='move'; }
+function dropItem(e,secId,i) {
+  e.preventDefault();
+  const s = state.sections.find(x=>x.id===secId);
+  if (s && dragItemIdx !== null && dragItemIdx !== i) {
+    const item = s.items.splice(dragItemIdx,1)[0];
+    s.items.splice(i,0,item);
+    render();
+  }
+  dragItemIdx = null;
+}
+
+// ═══════════════════════════════════════════════════
+// IMAGE HANDLING
+// ═══════════════════════════════════════════════════
+
+function handleImageUpload(e, target) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    if (target === 'logo') state.cover.logo = ev.target.result;
+    else if (target === 'coverPhoto') state.cover.photo = ev.target.result;
+    render();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+let pendingPhotoTarget = null;
+function uploadItemPhoto(secId, idx) {
+  pendingPhotoTarget = { secId, idx };
+  const input = document.getElementById('file-item-photo');
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file || !pendingPhotoTarget) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const s = state.sections.find(x=>x.id===pendingPhotoTarget.secId);
+      if (s && s.items[pendingPhotoTarget.idx]) {
+        s.items[pendingPhotoTarget.idx].photo = ev.target.result;
+        render();
+      }
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+  };
+  input.click();
+}
+
+function removeItemPhoto(secId, idx) {
+  const s = state.sections.find(x=>x.id===secId);
+  if (s && s.items[idx]) { s.items[idx].photo = null; render(); }
+}
+
+// ═══════════════════════════════════════════════════
+// SAVE / LOAD
+// ═══════════════════════════════════════════════════
+
+function saveProject() {
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (state.cover.restaurantName || 'menu').replace(/[^a-zA-Z0-9]/g,'_') + '.menucraft.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function loadProject() { document.getElementById('file-load').click(); }
+
+function handleLoadFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const loaded = JSON.parse(ev.target.result);
+      // Deep-assign
+      Object.keys(loaded).forEach(k => state[k] = loaded[k]);
+      state.sections.forEach(s => { if (!s.id) s.id = _id(); s.items.forEach(it => { if (!it.id) it.id = _id(); }); });
+      activeSectionId = state.sections.length ? state.sections[0].id : null;
+      render();
+    } catch(err) { alert('Could not load file. Make sure it\'s a valid .menucraft.json file.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function resetProject() {
+  if (confirm('Reset everything to defaults? This cannot be undone.')) {
+    Object.assign(state, makeDefaultState());
+    activeSectionId = state.sections[0]?.id || null;
+    render();
+  }
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+
+render();
+</script>
+</body>
+</html>

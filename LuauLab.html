@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luau Lab — Interactive Luau Programming Course</title>
+<style>
+/* ═══════════════════════════════════════════
+   LUAU LAB — Navy/Blue/Cyan Theme
+   ═══════════════════════════════════════════ */
+
+:root {
+  /* Core palette */
+  --navy:        #0D1B2A;
+  --dark-blue:   #1B2838;
+  --mid-blue:    #2E4057;
+  --panel-bg:    #152238;
+  --card-bg:     #1B2F4A;
+  --accent:      #00B4D8;
+  --accent-dk:   #0077B6;
+  --accent-glow: #00B4D840;
+  --green:       #06D6A0;
+  --green-dk:    #04A87D;
+  --yellow:      #FFD166;
+  --orange:      #F77F00;
+  --red:         #EF476F;
+  --purple:      #BB86FC;
+  --white:       #E0E1DD;
+  --light:       #CAF0F8;
+  --body-gray:   #778DA9;
+  --muted:       #415A77;
+  --code-bg:     #0F1D2E;
+  --code-border: #1E3A5F;
+  --editor-bg:   #0A1628;
+  --sidebar-w:   72px;
+  --header-h:    0px;
+  --radius:      8px;
+  --radius-sm:   4px;
+  --transition:  0.2s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--navy);
+  color: var(--white);
+  overflow: hidden;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--navy); }
+::-webkit-scrollbar-thumb { background: var(--mid-blue); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dk); }
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════ */
+#app {
+  display: flex;
+  width: 100%; height: 100%;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--dark-blue);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 4px;
+  border-right: 1px solid var(--mid-blue);
+  z-index: 10;
+}
+
+.sidebar-logo {
+  width: 40px; height: 40px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent);
+  border-radius: var(--radius);
+  font-weight: 800; font-size: 18px; color: var(--navy);
+  user-select: none;
+}
+
+.sidebar-btn {
+  width: 56px; height: 56px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: none; border-radius: var(--radius);
+  color: var(--body-gray);
+  cursor: pointer;
+  font-size: 9px; font-weight: 600;
+  transition: background var(--transition), color var(--transition);
+  user-select: none;
+}
+.sidebar-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sidebar-btn:hover { background: var(--mid-blue); color: var(--light); }
+.sidebar-btn.active { background: var(--accent-dk); color: var(--white); }
+.sidebar-btn.active svg { stroke: var(--white); }
+
+.sidebar-spacer { flex: 1; }
+
+/* ── Main content area ── */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Top bar (inside main) ── */
+#topbar {
+  height: 48px; min-height: 48px;
+  background: var(--dark-blue);
+  border-bottom: 1px solid var(--mid-blue);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+}
+#topbar-title {
+  font-size: 15px; font-weight: 700; color: var(--accent);
+}
+#topbar-breadcrumb {
+  font-size: 13px; color: var(--body-gray);
+}
+.topbar-spacer { flex: 1; }
+.topbar-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--mid-blue);
+  background: transparent;
+  color: var(--body-gray);
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.topbar-btn:hover { border-color: var(--accent); color: var(--accent); }
+.topbar-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--navy); }
+.topbar-btn.primary:hover { background: var(--accent-dk); }
+
+/* ── Page container ── */
+#page {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════
+   SCREENS
+   ═══════════════════════════════════════════ */
+.screen {
+  display: none;
+  width: 100%; height: 100%;
+}
+.screen.active { display: flex; }
+
+/* ── HOME SCREEN ── */
+#screen-home {
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 32px 40px;
+  gap: 28px;
+}
+
+.home-hero {
+  text-align: center;
+  padding: 40px 20px;
+}
+.home-hero h1 {
+  font-size: 36px; font-weight: 800; color: var(--accent);
+  margin-bottom: 8px;
+}
+.home-hero p {
+  font-size: 16px; color: var(--body-gray); max-width: 500px; margin: 0 auto;
+}
+
+.home-section-title {
+  font-size: 18px; font-weight: 700; color: var(--white);
+  margin-bottom: 12px;
+}
+
+.units-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.unit-card {
+  background: var(--card-bg);
+  border: 1px solid var(--mid-blue);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.unit-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+.unit-card-number {
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  text-transform: uppercase; letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+.unit-card-title {
+  font-size: 17px; font-weight: 700; color: var(--white);
+  margin-bottom: 8px;
+}
+.unit-card-desc {
+  font-size: 13px; color: var(--body-gray); line-height: 1.5;
+  margin-bottom: 14px;
+}
+.unit-card-progress {
+  height: 4px; background: var(--mid-blue); border-radius: 2px;
+  overflow: hidden;
+}
+.unit-card-progress-fill {
+  height: 100%; background: var(--green); border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.unit-card-status {
+  font-size: 11px; color: var(--body-gray); margin-top: 6px;
+}
+
+/* ── UNIT OVERVIEW SCREEN ── */
+#screen-unit {
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 32px 40px;
+  gap: 16px;
+}
+
+.unit-header {
+  margin-bottom: 8px;
+}
+.unit-header-label {
+  font-size: 12px; color: var(--accent); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.unit-header-title {
+  font-size: 28px; font-weight: 800; color: var(--white);
+  margin: 4px 0;
+}
+.unit-header-desc {
+  font-size: 14px; color: var(--body-gray); max-width: 600px;
+}
+
+.lesson-list {
+  display: flex; flex-direction: column; gap: 8px;
+  max-width: 700px;
+}
+
+.lesson-item {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--mid-blue);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.lesson-item:hover {
+  border-color: var(--accent);
+  background: var(--panel-bg);
+}
+.lesson-item-num {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--mid-blue);
+  border-radius: 50%;
+  font-size: 13px; font-weight: 700; color: var(--body-gray);
+  flex-shrink: 0;
+}
+.lesson-item.completed .lesson-item-num {
+  background: var(--green-dk);
+  color: var(--white);
+}
+.lesson-item-info { flex: 1; }
+.lesson-item-title {
+  font-size: 14px; font-weight: 600; color: var(--white);
+}
+.lesson-item-desc {
+  font-size: 12px; color: var(--body-gray); margin-top: 2px;
+}
+.lesson-item-check {
+  width: 20px; height: 20px;
+  color: var(--green);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.lesson-item.completed .lesson-item-check { opacity: 1; }
+
+/* ── COURSE OVERVIEW (Lessons tab) ── */
+.course-unit-group {
+  margin-bottom: 8px;
+  max-width: 750px;
+}
+.course-unit-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--mid-blue);
+  border-radius: var(--radius) var(--radius) 0 0;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.course-unit-header:hover { border-color: var(--accent); }
+.course-unit-icon { font-size: 22px; }
+.course-unit-info { flex: 1; }
+.course-unit-label { font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.course-unit-title { font-size: 15px; font-weight: 700; color: var(--white); }
+.course-unit-progress-wrap { display: flex; align-items: center; gap: 8px; }
+.course-unit-pct { font-size: 12px; color: var(--body-gray); min-width: 30px; text-align: right; }
+.course-lesson-list {
+  border: 1px solid var(--mid-blue);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  overflow: hidden;
+}
+.course-lesson-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px 10px 24px;
+  cursor: pointer;
+  transition: background var(--transition);
+  border-bottom: 1px solid var(--mid-blue);
+}
+.course-lesson-row:last-child { border-bottom: none; }
+.course-lesson-row:hover { background: var(--panel-bg); }
+.course-lesson-dot {
+  width: 32px; min-width: 32px; text-align: center;
+  font-size: 11px; font-weight: 700;
+  color: var(--body-gray);
+}
+.course-lesson-row.completed .course-lesson-dot { color: var(--green); }
+.course-lesson-title {
+  font-size: 13px; font-weight: 600; color: var(--white);
+  min-width: 140px;
+}
+.course-lesson-desc {
+  font-size: 12px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── LESSON SCREEN ── */
+#screen-lesson {
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.lesson-instructions {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+  border-right: 1px solid var(--mid-blue);
+  min-width: 0;
+}
+
+.lesson-instructions h2 {
+  font-size: 22px; font-weight: 800; color: var(--white);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--accent);
+}
+.lesson-instructions h3 {
+  font-size: 16px; font-weight: 700; color: var(--accent);
+  margin: 20px 0 10px;
+}
+.lesson-instructions p {
+  font-size: 14px; color: var(--body-gray); line-height: 1.7;
+  margin-bottom: 14px;
+}
+.lesson-instructions p code {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.lesson-code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 12px 0 18px;
+  overflow-x: auto;
+}
+.lesson-code-block pre {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--light);
+  white-space: pre;
+}
+
+.lesson-tip {
+  border-left: 4px solid var(--green);
+  background: var(--code-bg);
+  padding: 12px 16px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: 14px 0;
+}
+.lesson-tip-label {
+  font-size: 11px; font-weight: 700; color: var(--green);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.lesson-tip p {
+  font-size: 13px; color: var(--body-gray); margin: 0;
+}
+
+.lesson-warning {
+  border-left: 4px solid var(--yellow);
+  background: var(--code-bg);
+  padding: 12px 16px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin: 14px 0;
+}
+.lesson-warning .lesson-tip-label { color: var(--yellow); }
+
+/* ── Editor panel ── */
+.lesson-editor-panel {
+  width: 45%;
+  min-width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: var(--dark-blue);
+}
+
+.editor-header {
+  display: flex; align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--mid-blue);
+  gap: 8px;
+}
+.editor-header-label {
+  font-size: 13px; font-weight: 600; color: var(--body-gray);
+}
+.editor-header-spacer { flex: 1; }
+
+.editor-btn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.editor-btn-clear {
+  background: transparent; color: var(--body-gray); border: 1px solid var(--mid-blue);
+}
+.editor-btn-clear:hover { border-color: var(--body-gray); color: var(--white); }
+.editor-btn-run {
+  background: var(--green); color: var(--navy);
+}
+.editor-btn-run:hover { background: var(--green-dk); }
+.editor-btn-check {
+  background: var(--accent); color: var(--navy);
+}
+.editor-btn-check:hover { background: var(--accent-dk); }
+.editor-btn-reset {
+  background: transparent; color: var(--body-gray); border: 1px solid var(--mid-blue);
+}
+.editor-btn-reset:hover { border-color: var(--orange); color: var(--orange); }
+
+.editor-textarea {
+  flex: 1;
+  min-height: 200px;
+  background: var(--editor-bg);
+  border: none;
+  padding: 14px 16px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--light);
+  resize: none;
+  outline: none;
+  tab-size: 4;
+}
+.editor-textarea::placeholder { color: var(--muted); }
+
+.output-header {
+  display: flex; align-items: center;
+  padding: 8px 16px;
+  border-top: 1px solid var(--mid-blue);
+  border-bottom: 1px solid var(--mid-blue);
+}
+.output-header-label {
+  font-size: 13px; font-weight: 600; color: var(--body-gray);
+}
+
+.output-area {
+  min-height: 100px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px 16px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--light);
+  background: var(--editor-bg);
+}
+.output-line { margin-bottom: 2px; }
+.output-line.error { color: var(--red); }
+.output-line.success { color: var(--green); }
+.output-line.info { color: var(--yellow); }
+
+/* Lesson navigation footer */
+.lesson-nav-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--mid-blue);
+  background: var(--dark-blue);
+}
+
+/* ── QUESTS SCREEN ── */
+#screen-quests {
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 32px 40px;
+  gap: 16px;
+}
+
+.quest-card {
+  display: flex; align-items: flex-start; gap: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--mid-blue);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: all var(--transition);
+  max-width: 700px;
+}
+.quest-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.quest-card.completed { border-color: var(--green-dk); }
+
+.quest-icon {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--mid-blue);
+  border-radius: var(--radius);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.quest-card.completed .quest-icon { background: var(--green-dk); }
+
+.quest-info { flex: 1; }
+.quest-title { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+.quest-desc { font-size: 13px; color: var(--body-gray); line-height: 1.5; }
+.quest-tags { display: flex; gap: 6px; margin-top: 8px; }
+.quest-tag {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; background: var(--mid-blue); color: var(--body-gray);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* ── SANDBOX SCREEN ── */
+#screen-sandbox {
+  flex-direction: row;
+  overflow: hidden;
+}
+
+/* ── SETTINGS SCREEN ── */
+#screen-settings {
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 32px 40px;
+  gap: 20px;
+  max-width: 600px;
+}
+
+.settings-group {
+  background: var(--card-bg);
+  border: 1px solid var(--mid-blue);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.settings-group-title {
+  font-size: 14px; font-weight: 700; color: var(--accent);
+  margin-bottom: 12px;
+}
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+}
+.settings-row label {
+  font-size: 13px; color: var(--body-gray);
+}
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════ */
+
+/* ── Hint Drawer ── */
+.hint-drawer-toggle {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--mid-blue);
+  background: var(--dark-blue);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition);
+}
+.hint-drawer-toggle:hover { background: var(--panel-bg); }
+.hint-drawer-toggle-label {
+  font-size: 12px; font-weight: 600; color: var(--yellow);
+}
+.hint-drawer-toggle-arrow {
+  font-size: 10px; color: var(--yellow);
+  transition: transform 0.3s ease;
+}
+.hint-drawer-toggle.open .hint-drawer-toggle-arrow { transform: rotate(180deg); }
+
+.hint-drawer-body {
+  max-height: 0;
+  overflow: hidden;
+  background: var(--editor-bg);
+  border-top: 1px solid var(--mid-blue);
+  transition: max-height 0.35s ease;
+}
+.hint-drawer-body.open {
+  max-height: 400px;
+}
+.hint-drawer-content {
+  padding: 14px 16px;
+}
+
+.hint-stage {
+  margin-bottom: 12px;
+}
+.hint-stage-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--mid-blue);
+  background: transparent;
+  color: var(--body-gray);
+  font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-bottom: 6px;
+}
+.hint-stage-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+.hint-stage-btn.revealed { border-color: var(--muted); color: var(--muted); cursor: default; }
+.hint-stage-btn.solution-btn { border-color: var(--orange); color: var(--orange); }
+.hint-stage-btn.solution-btn:hover { background: var(--orange); color: var(--navy); }
+.hint-stage-btn.solution-btn.revealed { border-color: var(--muted); color: var(--muted); background: transparent; cursor: default; }
+
+.hint-stage-text {
+  display: none;
+  font-size: 13px; line-height: 1.6; color: var(--light);
+  padding: 8px 12px;
+  background: var(--code-bg);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--yellow);
+  margin-top: 4px;
+}
+.hint-stage-text.visible { display: block; }
+.hint-stage-text.solution-text { border-left-color: var(--orange); }
+.hint-stage-text pre {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px; line-height: 1.5;
+  white-space: pre; color: var(--light);
+}
+
+.hint-copy-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--green-dk);
+  background: transparent;
+  color: var(--green);
+  font-size: 11px; font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.hint-copy-btn:hover { background: var(--green); color: var(--navy); }
+.hidden { display: none !important; }
+.text-accent { color: var(--accent); }
+.text-green { color: var(--green); }
+.text-yellow { color: var(--yellow); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--body-gray); }
+.font-mono { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
+
+/* ═══════════════════════════════════════════
+   Keyword highlighting in code blocks
+   ═══════════════════════════════════════════ */
+.kw { color: #FF79C6; }   /* keywords: local, function, if, then, etc */
+.str { color: #F1FA8C; }  /* strings */
+.num { color: #BD93F9; }  /* numbers */
+.cm { color: #6272A4; }   /* comments */
+.fn { color: #50FA7B; }   /* function names / built-ins */
+.op { color: #FF79C6; }   /* operators like =, +, etc */
+.bi { color: #8BE9FD; }   /* built-in globals/types */
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar"></nav>
+  <div id="main">
+    <div id="topbar"></div>
+    <div id="page">
+      <div id="screen-home" class="screen"></div>
+      <div id="screen-unit" class="screen"></div>
+      <div id="screen-lesson" class="screen"></div>
+      <div id="screen-quests" class="screen"></div>
+      <div id="screen-sandbox" class="screen"></div>
+      <div id="screen-settings" class="screen"></div>
+    </div>
+  </div>
+</div>
+<script>
+// Unit 1 — Values & Variables
+const Unit1 = { id: 1, title: "Values & Variables", description: "Learn the building blocks of Luau: how to store data, work with different types, and use variables to make your code dynamic.", icon: "📦", lessons: [
+  { id: 1, title: "Your First Script", description: "Write your very first line of Luau code.",
+    content: [ { type:'heading', text:'Your First Script' }, { type:'paragraph', text:'Welcome to Luau! Every coding journey starts with a single line. In Luau, the simplest thing you can do is print a message to the Output window.' }, { type:'paragraph', text:'The <code>print()</code> function takes whatever you give it and displays it as output. Anything inside quotes is called a <strong>string</strong> — it\'s just text.' }, { type:'code', text:'print("Hello, world!")' }, { type:'paragraph', text:'When you run this code, you\'ll see <code>Hello, world!</code> appear in the Output panel on the right.' }, { type:'paragraph', text:'You can print numbers too — no quotes needed for numbers:' }, { type:'code', text:'print(42)\nprint(3.14)' }, { type:'paragraph', text:'You can even print multiple things at once by separating them with commas:' }, { type:'code', text:'print("The answer is", 42)' }, { type:'tip', label:'⭐ TRY IT', text:'In the editor on the right, write a print() statement that outputs your name. Then click Run to see the result!' } ],
+    starterCode: '-- Write your first print statement below!\n',
+    challenge: { instructions: 'Print the text "Hello, Luau!" (exactly as written, with the exclamation mark).', expectedOutput: ['Hello, Luau!'],
+      hint1: 'You need to use the print() function with the exact text inside quotes.',
+      hint2: 'The format is: print("your text here") — make sure the text between the quotes matches exactly, including capitalization and the exclamation mark.',
+      solution: 'print("Hello, Luau!")' } },
+  { id: 2, title: "Creating Variables", description: "Learn to store values in named containers.",
+    content: [ { type:'heading', text:'Creating Variables' }, { type:'paragraph', text:'A <strong>variable</strong> is like a sticky note with a name on it — you write a value down, stick it somewhere, and refer back to it whenever you need it. In code, you create one with the <code>local</code> keyword:' }, { type:'code', text:'local playerName = "StarCoder42"' }, { type:'paragraph', text:'Let\'s break this down. The word <code>local</code> tells Luau you\'re making a new variable. Then comes the name you choose (<code>playerName</code>), the <code>=</code> sign which stores a value into it, and finally the value itself — the string <code>"StarCoder42"</code>.' }, { type:'paragraph', text:'The <code>local</code> keyword is important — it keeps your variable neatly scoped so it doesn\'t leak into places it shouldn\'t. Always use it when making new variables.' }, { type:'heading3', text:'Why Use Variables?' }, { type:'paragraph', text:'Say your game has a speed value of <strong>24.5</strong> that you reference in ten different places. If you hard-code it everywhere and then want to change it, you\'d have to hunt down all ten spots. With a variable, you change it in one place:' }, { type:'code', text:'local walkSpeed = 24.5\nprint(walkSpeed)  -- Output: 24.5' }, { type:'heading3', text:'Updating Variables' }, { type:'paragraph', text:'The word "variable" literally means "able to change." Once a variable exists, you can give it a new value at any time by using <code>=</code> again — but this time WITHOUT the <code>local</code> keyword, since you\'re updating, not creating:' }, { type:'code', text:'local lives = 3\nprint(lives)  -- Output: 3\n\nlives = 5\nprint(lives)  -- Output: 5' }, { type:'tip', label:'💡 RULE OF THUMB', text:'Writing local = creating something new. No local = changing something that already exists.' } ],
+    starterCode: '-- Create a variable called "score" and set it to 100\n-- Then print it\n',
+    challenge: { instructions: 'Create a variable called "score" with the value 100, then change it to 250, then print it. The output should be 250.', expectedOutput: ['250'],
+      hint1: 'You need three steps: create the variable with local, change it without local, then print it.',
+      hint2: 'First line: local score = 100. Second line: reassign score to 250 (no local keyword!). Third line: print(score).',
+      solution: 'local score = 100\nscore = 250\nprint(score)' } },
+  { id: 3, title: "Data Types", description: "Understand the four basic types: strings, numbers, booleans, and nil.",
+    content: [ { type:'heading', text:'Data Types' }, { type:'paragraph', text:'Every value in Luau has a <strong>type</strong>. The type tells Luau (and you!) what kind of data you\'re working with. There are four basic types you\'ll use constantly:' }, { type:'code', text:'local name = "Alex"       -- string (text)\nlocal score = 100         -- number\nlocal isAlive = true      -- boolean (true or false)\nlocal nothing = nil       -- nil (empty/no value)' }, { type:'heading3', text:'Strings' }, { type:'paragraph', text:'Strings are text — anything wrapped in quotes:' }, { type:'code', text:'local greeting = "Hello!"\nlocal other = \'Also works!\'' }, { type:'heading3', text:'Numbers' }, { type:'paragraph', text:'Whole numbers, decimals, positive, negative — Luau handles them all:' }, { type:'code', text:'local whole = 42\nlocal decimal = 3.14\nlocal negative = -10' }, { type:'heading3', text:'Booleans' }, { type:'paragraph', text:'Only two possible values: <code>true</code> or <code>false</code>.' }, { type:'code', text:'local hasShield = true\nlocal isGameOver = false' }, { type:'heading3', text:'Checking Types' }, { type:'paragraph', text:'Use the <code>type()</code> function to check any value\'s type:' }, { type:'code', text:'print(type("hello"))  -- string\nprint(type(42))       -- number\nprint(type(true))     -- boolean\nprint(type(nil))      -- nil' }, { type:'tip', label:'⭐ KEY CONCEPT', text:'In Luau, 0 and "" are truthy! Only false and nil are falsy. Different from most other languages.' } ],
+    starterCode: '-- Create one variable of each type and print its type\n',
+    challenge: { instructions: 'Create a string, number, and boolean variable. Print type() of each. Output: string, number, boolean (three lines).', expectedOutput: ['string', 'number', 'boolean'],
+      hint1: 'Create three variables (any names, any values) — one for each type. Then use print(type(variableName)) for each.',
+      hint2: 'Example: local a = "hi" is a string. Then print(type(a)) prints "string". Do the same for a number and a boolean.',
+      solution: 'local a = "hi"\nlocal b = 5\nlocal c = true\nprint(type(a))\nprint(type(b))\nprint(type(c))' } },
+  { id: 4, title: "Working with Strings", description: "Combine, measure, and transform text.",
+    content: [ { type:'heading', text:'Working with Strings' }, { type:'paragraph', text:'Strings are everywhere in games — player names, chat messages, UI labels. Let\'s learn the tools for working with them.' }, { type:'heading3', text:'Joining Strings (Concatenation)' }, { type:'paragraph', text:'Use the <code>..</code> operator (two dots) to join strings together:' }, { type:'code', text:'local first = "Hello"\nlocal second = "World"\nlocal combined = first .. " " .. second\nprint(combined)  -- Hello World' }, { type:'heading3', text:'String Interpolation' }, { type:'paragraph', text:'Luau has a much cleaner way — use backticks <code>`</code> and curly braces <code>{}</code> to embed values directly:' }, { type:'code', text:'local player = "Alex"\nlocal coins = 50\nprint(`{player} has {coins} coins!`)\n-- Output: Alex has 50 coins!' }, { type:'heading3', text:'String Length' }, { type:'code', text:'local name = "Alex"\nprint(#name)              -- 4\nprint(string.len(name))   -- 4' }, { type:'heading3', text:'Useful String Functions' }, { type:'code', text:'print(string.upper("hello"))    -- HELLO\nprint(string.lower("HELLO"))    -- hello\nprint(string.rep("ha", 3))      -- hahaha\nprint(string.reverse("hello"))  -- olleh' } ],
+    starterCode: '-- Create two variables: your first name and last name\n-- Print your full name using string interpolation\n',
+    challenge: { instructions: 'Create variables for first name "Lua" and last name "Master". Use string interpolation to print "Hello, Lua Master!" (exact text).', expectedOutput: ['Hello, Lua Master!'],
+      hint1: 'Store "Lua" and "Master" in two variables, then use backtick string interpolation inside print().',
+      hint2: 'The backtick syntax is: `Hello, {first} {last}!` — use backticks (`) not regular quotes, and wrap variable names in curly braces {}.',
+      solution: 'local first = "Lua"\nlocal last = "Master"\nprint(`Hello, {first} {last}!`)' } },
+  { id: 5, title: "Numbers & Math", description: "Arithmetic operators and the math library.",
+    content: [ { type:'heading', text:'Numbers & Math' }, { type:'paragraph', text:'Numbers are the engine of every game — health, damage, speed, scores. Luau gives you all the math tools you need.' }, { type:'heading3', text:'Arithmetic Operators' }, { type:'code', text:'print(10 + 3)    -- 13  (addition)\nprint(10 - 3)    -- 7   (subtraction)\nprint(10 * 3)    -- 30  (multiplication)\nprint(10 / 3)    -- 3.3333  (division)\nprint(10 // 3)   -- 3   (floor division)\nprint(10 % 3)    -- 1   (remainder)\nprint(2 ^ 10)    -- 1024 (power)' }, { type:'heading3', text:'Compound Assignment' }, { type:'code', text:'local score = 100\nscore += 10    -- same as: score = score + 10\nprint(score)   -- 110' }, { type:'heading3', text:'Math Library Highlights' }, { type:'code', text:'print(math.floor(3.7))     -- 3  (round down)\nprint(math.ceil(3.2))      -- 4  (round up)\nprint(math.abs(-15))       -- 15 (absolute value)\nprint(math.max(5, 12, 3))  -- 12 (largest)\nprint(math.min(5, 12, 3))  -- 3  (smallest)' }, { type:'heading3', text:'Clamping Values' }, { type:'paragraph', text:'<code>math.clamp()</code> keeps a value within a range — incredibly useful in games:' }, { type:'code', text:'local health = 150\nhealth = math.clamp(health, 0, 100)\nprint(health)  -- 100 (clamped to max)' } ],
+    starterCode: '-- Calculate the area of a rectangle\n-- width = 15, height = 8\n-- Print the result\n',
+    challenge: { instructions: 'Create variables width = 15 and height = 8. Calculate the area (width * height) and print it. Output should be 120.', expectedOutput: ['120'],
+      hint1: 'Area of a rectangle is width multiplied by height. Use the * operator.',
+      hint2: 'Create two variables with local, then print(width * height). You can do the math directly inside print().',
+      solution: 'local width = 15\nlocal height = 8\nprint(width * height)' } },
+]};
+
+// ═══════════════════════════════════════════
+// UNIT 2 — Control Flow (5 lessons)
+// ═══════════════════════════════════════════
+const Unit2 = { id: 2, title: "Control Flow", description: "Teach your code to make decisions and repeat actions with if-statements and loops.", icon: "🔀", lessons: [
+  { id: 1, title: "If / Then / Else", description: "Make your code choose between different paths.",
+    content: [
+      { type: 'heading', text: 'If / Then / Else' },
+      { type: 'paragraph', text: 'An <code>if</code> statement checks a condition. If the condition is true, the code inside runs. If not, it skips ahead (or runs an <code>else</code> block instead).' },
+      { type: 'code', text: 'local health = 25\n\nif health <= 0 then\n    print("Game Over!")\nelseif health <= 25 then\n    print("Warning: Low health!")\nelse\n    print("You\'re doing great!")\nend' },
+      { type: 'paragraph', text: 'The code checks each condition from top to bottom and runs the FIRST block that matches. Once a match is found, all other blocks are skipped.' },
+      { type: 'paragraph', text: 'The <code>elseif</code> and <code>else</code> parts are optional. You can have just an <code>if...then...end</code> for simple checks.' },
+      { type: 'tip', label: '⭐ KEY CONCEPT', text: 'Every if block MUST end with the word "end". Forgetting "end" is one of the most common Luau errors!' },
+    ],
+    starterCode: '-- Create a variable "temperature" set to 75\n-- If temperature > 90, print "Hot!"\n-- Else print "Nice weather!"\n',
+    challenge: { instructions: 'Create a variable temperature = 75. If it\'s greater than 90, print "Hot!". Otherwise, print "Nice weather!" — output should be "Nice weather!"', expectedOutput: ['Nice weather!'], hint1: 'You need an if/else block that checks if temperature is greater than 90.',
+      hint2: 'Structure: if temperature > 90 then print("Hot!") else print("Nice weather!") end — don\'t forget the end keyword!',
+      solution: 'local temperature = 75\nif temperature > 90 then\n    print("Hot!")\nelse\n    print("Nice weather!")\nend' }
+  },
+  { id: 2, title: "Comparison Operators", description: "Learn ==, ~=, >, <, >=, and <=.",
+    content: [
+      { type: 'heading', text: 'Comparison Operators' },
+      { type: 'paragraph', text: 'Comparisons evaluate to <code>true</code> or <code>false</code>. They\'re the building blocks of if-statement conditions.' },
+      { type: 'code', text: 'print(5 == 5)    -- true  (equal to)\nprint(5 ~= 3)   -- true  (not equal to)\nprint(10 > 5)   -- true  (greater than)\nprint(3 < 7)    -- true  (less than)\nprint(5 >= 5)   -- true  (greater or equal)\nprint(3 <= 2)   -- false (less or equal)' },
+      { type: 'warning', label: '⚠️ COMMON MISTAKE', text: 'One = is assignment (setting a value). Two == is comparison (checking equality). This is the #1 beginner mistake in every programming language!' },
+    ],
+    starterCode: '-- Check if 10 is greater than 5 and print the result\n',
+    challenge: { instructions: 'Print whether 42 equals 42 (should print "true").', expectedOutput: ['true'], hint1: 'Use the == operator to compare two values, and print the result.',
+      hint2: 'print() can display the result of a comparison directly: print(42 == 42).',
+      solution: 'print(42 == 42)' }
+  },
+  { id: 3, title: "Logical Operators", description: "Combine conditions with and, or, not.",
+    content: [
+      { type: 'heading', text: 'Logical Operators' },
+      { type: 'paragraph', text: 'Luau uses the words <code>and</code>, <code>or</code>, and <code>not</code> to combine conditions:' },
+      { type: 'code', text: 'local health = 50\nlocal hasShield = true\n\nif health > 0 and hasShield then\n    print("Protected and alive!")\nend\n\nif health <= 0 or not hasShield then\n    print("Vulnerable!")\nend' },
+      { type: 'paragraph', text: '<code>and</code> requires BOTH conditions to be true. <code>or</code> requires at least ONE. <code>not</code> flips true to false and vice versa.' },
+      { type: 'tip', label: '💡 DEFAULT VALUES', text: 'A common pattern: local name = inputName or "Unknown" — if inputName is nil, it falls back to "Unknown".' },
+    ],
+    starterCode: 'local level = 10\nlocal hasKey = true\n-- Print "Access granted!" if level >= 5 AND hasKey is true\n',
+    challenge: { instructions: 'With level = 10 and hasKey = true, print "Access granted!" if both conditions are met.', expectedOutput: ['Access granted!'], hint1: 'Use the "and" keyword to combine two conditions in one if-statement.',
+      hint2: 'if level >= 5 and hasKey then — both must be true for the block to run. Don\'t forget end!',
+      solution: 'local level = 10\nlocal hasKey = true\nif level >= 5 and hasKey then\n    print("Access granted!")\nend' }
+  },
+  { id: 4, title: "For Loops", description: "Repeat actions a specific number of times.",
+    content: [
+      { type: 'heading', text: 'For Loops' },
+      { type: 'paragraph', text: 'A <code>for</code> loop runs a block of code a specific number of times. It uses a counter variable that automatically increments:' },
+      { type: 'code', text: 'for i = 1, 5 do\n    print(`Round {i}!`)\nend\n-- Prints: Round 1! through Round 5!' },
+      { type: 'paragraph', text: 'You can specify a step value as the third number:' },
+      { type: 'code', text: 'for i = 0, 10, 2 do\n    print(i)  -- 0, 2, 4, 6, 8, 10\nend\n\nfor i = 5, 1, -1 do\n    print(i)  -- 5, 4, 3, 2, 1 (countdown!)\nend' },
+      { type: 'tip', label: '⭐ REMEMBER', text: 'The loop variable (i) is local to the loop. It doesn\'t exist outside the for...end block.' },
+    ],
+    starterCode: '-- Print the numbers 1 through 5\n',
+    challenge: { instructions: 'Use a for loop to print numbers 1 through 5, one per line.', expectedOutput: ['1','2','3','4','5'], hint1: 'Use a for loop with a start value of 1 and end value of 5.',
+      hint2: 'The syntax is: for i = 1, 5 do ... end. Inside the loop, print(i) to display each number.',
+      solution: 'for i = 1, 5 do\n    print(i)\nend' }
+  },
+  { id: 5, title: "While & Repeat Loops", description: "Loop based on conditions.",
+    content: [
+      { type: 'heading', text: 'While & Repeat Loops' },
+      { type: 'paragraph', text: 'A <code>while</code> loop checks its condition BEFORE each iteration. A <code>repeat</code> loop checks AFTER (so it always runs at least once).' },
+      { type: 'code', text: 'local fuel = 3\nwhile fuel > 0 do\n    print(`Fuel: {fuel}`)\n    fuel -= 1\nend\nprint("Empty!")' },
+      { type: 'code', text: 'local attempts = 0\nrepeat\n    attempts += 1\n    print(`Attempt {attempts}`)\nuntil attempts >= 3' },
+      { type: 'warning', label: '⚠️ INFINITE LOOPS', text: 'If your condition never becomes false, the loop runs forever and freezes your game! Always make sure something inside the loop changes the condition.' },
+    ],
+    starterCode: '-- Count down from 3 to 1 using a while loop, then print "Go!"\n',
+    challenge: { instructions: 'Use a while loop to count from 3 down to 1, printing each number, then print "Go!" after the loop.', expectedOutput: ['3','2','1','Go!'], hint1: 'Start a while loop that runs as long as the count is above 0. Decrease the count each time.',
+      hint2: 'Create local count = 3, then while count > 0 do — print count, subtract 1 with count -= 1. After the loop, print("Go!").',
+      solution: 'local count = 3\nwhile count > 0 do\n    print(count)\n    count -= 1\nend\nprint("Go!")' }
+  },
+]};
+
+// ═══════════════════════════════════════════
+// UNIT 3 — Functions (4 lessons)
+// ═══════════════════════════════════════════
+const Unit3 = { id: 3, title: "Functions", description: "Create reusable blocks of code that you can call by name — the key to organized, powerful programs.", icon: "⚡", lessons: [
+  { id: 1, title: "Declaring Functions", description: "Create and call your first function.",
+    content: [
+      { type: 'heading', text: 'Declaring Functions' },
+      { type: 'paragraph', text: 'A <strong>function</strong> is a reusable block of code with a name. Instead of writing the same code over and over, you write it once as a function and call it whenever you need it.' },
+      { type: 'code', text: 'local function sayHello()\n    print("Hello, world!")\nend\n\nsayHello()  -- Prints: Hello, world!\nsayHello()  -- Prints it again!' },
+      { type: 'paragraph', text: 'Think of a function like a recipe — you define the steps once, then follow the recipe any time you want to make that dish.' },
+      { type: 'tip', label: '⭐ NAMING', text: 'Good function names describe what the function DOES: calculateDamage, isAlive, spawnEnemy. Bad names: doStuff, func1, x.' },
+    ],
+    starterCode: '-- Create a function called greet that prints "Welcome!"\n-- Then call it\n',
+    challenge: { instructions: 'Create a function called greet that prints "Welcome!" and call it once.', expectedOutput: ['Welcome!'], hint1: 'Define the function with local function greet() ... end, then call it by writing greet().',
+      hint2: 'Put print("Welcome!") between the function and end keywords. Then on a new line, call greet() to run it.',
+      solution: 'local function greet()\n    print("Welcome!")\nend\ngreet()' }
+  },
+  { id: 2, title: "Parameters & Returns", description: "Pass data into functions and get results back.",
+    content: [
+      { type: 'heading', text: 'Parameters & Returns' },
+      { type: 'paragraph', text: '<strong>Parameters</strong> let you pass data INTO a function. <strong>Return values</strong> let the function send data BACK to you.' },
+      { type: 'code', text: 'local function add(a, b)\n    return a + b\nend\n\nlocal result = add(10, 5)\nprint(result)  -- 15' },
+      { type: 'paragraph', text: 'Parameters are like blank spaces the caller fills in. The function works the same way regardless of what values you pass:' },
+      { type: 'code', text: 'local function greet(name)\n    print(`Hello, {name}!`)\nend\n\ngreet("Alex")    -- Hello, Alex!\ngreet("Jordan")  -- Hello, Jordan!' },
+      { type: 'tip', label: '💡 MULTIPLE RETURNS', text: 'Luau functions can return multiple values! local quotient, remainder = divmod(17, 5)' },
+    ],
+    starterCode: '-- Create a function called double that takes a number\n-- and returns it multiplied by 2\n',
+    challenge: { instructions: 'Create a function "double" that takes a number and returns it * 2. Call it with 21 and print the result (should be 42).', expectedOutput: ['42'], hint1: 'The function takes one parameter and should return that parameter multiplied by 2.',
+      hint2: 'Inside the function, use return n * 2. Then call it with print(double(21)) to display the result.',
+      solution: 'local function double(n)\n    return n * 2\nend\nprint(double(21))' }
+  },
+  { id: 3, title: "Scope & Closures", description: "Understand how functions capture variables from their environment.",
+    content: [
+      { type: 'heading', text: 'Scope & Closures' },
+      { type: 'paragraph', text: 'Functions can "see" variables from the scope they were created in. When a function captures a variable from an outer scope, it\'s called a <strong>closure</strong>.' },
+      { type: 'code', text: 'local count = 0\n\nlocal function increment()\n    count += 1\n    print(`Count: {count}`)\nend\n\nincrement()  -- Count: 1\nincrement()  -- Count: 2\nincrement()  -- Count: 3' },
+      { type: 'paragraph', text: 'The function "remembers" the variable <code>count</code> even though count was defined outside the function. This is incredibly powerful for creating stateful behavior.' },
+      { type: 'tip', label: '⭐ WHY IT MATTERS', text: 'In Roblox, every time you write part.Touched:Connect(function(hit) ... end), you\'re creating a closure. The function captures variables from the surrounding scope.' },
+    ],
+    starterCode: 'local total = 0\n-- Create a function addToTotal(n) that adds n to total and prints total\n',
+    challenge: { instructions: 'Create a closure: local total = 0, then a function addToTotal(n) that adds n to total and prints total. Call it with 10, then 20. Output should be 10 then 30.', expectedOutput: ['10', '30'], hint1: 'The function needs to modify the outer variable total using += and then print it.',
+      hint2: 'Inside addToTotal, write total += n then print(total). The function "sees" total from the outer scope — that\'s a closure!',
+      solution: 'local total = 0\nlocal function addToTotal(n)\n    total += n\n    print(total)\nend\naddToTotal(10)\naddToTotal(20)' }
+  },
+  { id: 4, title: "Functions as Values", description: "Store functions in variables, pass them around, build powerful patterns.",
+    content: [
+      { type: 'heading', text: 'Functions as Values' },
+      { type: 'paragraph', text: 'In Luau, functions are <strong>first-class values</strong>. This means you can store them in variables, put them in tables, and pass them as arguments to other functions.' },
+      { type: 'code', text: 'local function applyTwice(fn, value)\n    return fn(fn(value))\nend\n\nlocal function addOne(x)\n    return x + 1\nend\n\nprint(applyTwice(addOne, 5))  -- 7 (5+1=6, 6+1=7)' },
+      { type: 'paragraph', text: 'Anonymous functions (without a name) are common as callbacks:' },
+      { type: 'code', text: 'local numbers = {3, 1, 4, 1, 5}\ntable.sort(numbers, function(a, b)\n    return a > b  -- Sort descending\nend)' },
+      { type: 'tip', label: '🎮 ROBLOX USE', text: 'Event connections use this pattern constantly: button.Activated:Connect(function() ... end)' },
+    ],
+    starterCode: '-- Create a function called triple that multiplies by 3\n-- Pass it to print() to show triple(10)\n',
+    challenge: { instructions: 'Create function triple(n) returning n * 3. Print triple(10). Output: 30.', expectedOutput: ['30'], hint1: 'Create a function that takes a number and returns it times 3.',
+      hint2: 'local function triple(n) return n * 3 end — then print(triple(10)) to display 30.',
+      solution: 'local function triple(n)\n    return n * 3\nend\nprint(triple(10))' }
+  },
+]};
+
+// ═══════════════════════════════════════════
+// UNIT 4 — Tables (5 lessons)
+// ═══════════════════════════════════════════
+const Unit4 = { id: 4, title: "Tables", description: "Master Luau's single most powerful data structure — arrays, dictionaries, and everything in between.", icon: "📋", lessons: [
+  { id: 1, title: "Arrays", description: "Ordered lists of values.",
+    content: [
+      { type: 'heading', text: 'Arrays' },
+      { type: 'paragraph', text: 'An <strong>array</strong> is an ordered list of values. In Luau, arrays are just tables with sequential integer keys starting at 1.' },
+      { type: 'code', text: 'local fruits = {"Apple", "Banana", "Cherry"}\n\nprint(fruits[1])  -- Apple\nprint(fruits[2])  -- Banana\nprint(#fruits)    -- 3 (length)' },
+      { type: 'warning', label: '⚠️ INDEX STARTS AT 1', text: 'Luau arrays start at index 1, NOT 0. This is different from most other languages!' },
+      { type: 'code', text: 'table.insert(fruits, "Dragonfruit")  -- Add to end\nprint(#fruits)  -- 4\n\ntable.remove(fruits, 1)  -- Remove first item\nprint(fruits[1])  -- Banana (everything shifted)' },
+    ],
+    starterCode: '-- Create an array of 3 colors and print the second one\n',
+    challenge: { instructions: 'Create an array colors = {"Red", "Green", "Blue"}. Print the length of the array (should be 3).', expectedOutput: ['3'], hint1: 'Create the array with curly braces, then use the # operator to get its length.',
+      hint2: 'The # operator gives the length of an array: print(#colors). Make sure the array has exactly 3 items.',
+      solution: 'local colors = {"Red", "Green", "Blue"}\nprint(#colors)' }
+  },
+  { id: 2, title: "Dictionaries", description: "Key-value pairs for structured data.",
+    content: [
+      { type: 'heading', text: 'Dictionaries' },
+      { type: 'paragraph', text: 'A <strong>dictionary</strong> maps named keys to values. Perfect for structured data like player stats:' },
+      { type: 'code', text: 'local player = {\n    name = "Alex",\n    health = 100,\n    level = 5,\n}\n\nprint(player.name)     -- Alex\nprint(player.health)   -- 100\n\nplayer.health = 75\nprint(player.health)   -- 75' },
+      { type: 'paragraph', text: 'You can add new keys at any time, and remove them by setting to nil:' },
+      { type: 'code', text: 'player.coins = 50      -- Add new key\nplayer.level = nil     -- Remove key' },
+    ],
+    starterCode: '-- Create a dictionary for a game enemy with name, health, and damage\n',
+    challenge: { instructions: 'Create a dictionary enemy = {name = "Goblin", health = 50, damage = 10}. Print enemy.name.', expectedOutput: ['Goblin'], hint1: 'Create a table with key = value pairs inside curly braces, then use dot notation to access a field.',
+      hint2: 'Dictionary syntax: {name = "Goblin", health = 50, damage = 10}. Access with enemy.name.',
+      solution: 'local enemy = {name = "Goblin", health = 50, damage = 10}\nprint(enemy.name)' }
+  },
+  { id: 3, title: "Iterating Tables", description: "Loop through arrays and dictionaries.",
+    content: [
+      { type: 'heading', text: 'Iterating Tables' },
+      { type: 'paragraph', text: 'The <code>for...in</code> loop lets you walk through every item in a table:' },
+      { type: 'code', text: 'local scores = {10, 20, 30, 40, 50}\n\nfor index, value in scores do\n    print(`#{index}: {value}`)\nend' },
+      { type: 'paragraph', text: 'This also works for dictionaries:' },
+      { type: 'code', text: 'local player = { name = "Alex", level = 5 }\n\nfor key, value in player do\n    print(`{key} = {value}`)\nend' },
+      { type: 'tip', label: '💡 GENERALIZED ITERATION', text: 'In Luau, you don\'t need pairs() or ipairs() — the plain for...in syntax works for all tables. This is a Luau improvement over standard Lua!' },
+    ],
+    starterCode: '-- Create an array of 3 numbers and use a for loop to print each\n',
+    challenge: { instructions: 'Create an array nums = {10, 20, 30} and use a for-in loop to print each value on its own line.', expectedOutput: ['10','20','30'], hint1: 'Use a for...in loop to walk through every item in the table.',
+      hint2: 'for index, value in arrayName do — inside the loop, print(value) to display each element.',
+      solution: 'local nums = {10, 20, 30}\nfor i, v in nums do\n    print(v)\nend' }
+  },
+  { id: 4, title: "Nested Tables", description: "Tables inside tables for complex data.",
+    content: [
+      { type: 'heading', text: 'Nested Tables' },
+      { type: 'paragraph', text: 'Tables can contain other tables, letting you build complex data structures like inventories and databases:' },
+      { type: 'code', text: 'local inventory = {\n    { name = "Sword", damage = 25 },\n    { name = "Shield", armor = 15 },\n    { name = "Potion", healing = 50 },\n}\n\nprint(inventory[1].name)    -- Sword\nprint(inventory[2].armor)   -- 15' },
+      { type: 'code', text: 'for i, item in inventory do\n    print(`{i}. {item.name}`)\nend\n-- 1. Sword\n-- 2. Shield\n-- 3. Potion' },
+    ],
+    starterCode: '-- Create a nested table with 2 items, each having a name and price\n',
+    challenge: { instructions: 'Create items = {{name="Sword", price=100}, {name="Shield", price=75}}. Print items[2].price (should be 75).', expectedOutput: ['75'], hint1: 'A nested table is a table of tables. Access with items[index].field.',
+      hint2: 'items[2] gets the second table, then .price gets the price field from that table.',
+      solution: 'local items = {{name="Sword", price=100}, {name="Shield", price=75}}\nprint(items[2].price)' }
+  },
+  { id: 5, title: "Table Library", description: "Built-in functions: insert, remove, sort, find, clone, freeze.",
+    content: [
+      { type: 'heading', text: 'Table Library' },
+      { type: 'paragraph', text: 'Luau\'s table library provides powerful tools for manipulating tables:' },
+      { type: 'code', text: 'local items = {"Sword", "Shield"}\n\ntable.insert(items, "Potion")  -- Add to end\nprint(#items)                   -- 3\n\nlocal found = table.find(items, "Shield")\nprint(found)  -- 2 (the index)\n\ntable.remove(items, 1)  -- Remove first\nprint(items[1])          -- Shield (shifted)' },
+      { type: 'heading3', text: 'Luau Extras' },
+      { type: 'code', text: '-- Clone: shallow copy a table\nlocal copy = table.clone(items)\n\n-- Freeze: make table read-only\nlocal config = table.freeze({\n    MAX_HP = 100,\n    SPEED = 16,\n})\n-- config.MAX_HP = 200  -- ERROR! Frozen!' },
+    ],
+    starterCode: '-- Create an array, insert an item, and print the new length\n',
+    challenge: { instructions: 'Create arr = {"a", "b"}. Insert "c". Print #arr (should be 3).', expectedOutput: ['3'], hint1: 'Use table.insert() to add an element, then # to count the length.',
+      hint2: 'table.insert(arr, "c") adds to the end. #arr gives the new length.',
+      solution: 'local arr = {"a", "b"}\ntable.insert(arr, "c")\nprint(#arr)' }
+  },
+]};
+
+// ═══════════════════════════════════════════
+// UNIT 5 — OOP & Metatables (4 lessons)
+// ═══════════════════════════════════════════
+const Unit5 = { id: 5, title: "OOP & Metatables", description: "Unlock the advanced power of Luau: customize table behavior, build classes, and create inheritance hierarchies.", icon: "🏗️", lessons: [
+  { id: 1, title: "Metatables Basics", description: "Attach custom behavior to tables.",
+    content: [
+      { type: 'heading', text: 'Metatables Basics' },
+      { type: 'paragraph', text: 'A <strong>metatable</strong> is a table that defines custom behavior for another table. You attach it with <code>setmetatable()</code>.' },
+      { type: 'paragraph', text: 'Metatables contain special keys called <strong>metamethods</strong> that start with __ (double underscore). For example, <code>__tostring</code> controls what happens when you print a table:' },
+      { type: 'code', text: 'local player = { name = "Alex", level = 10 }\n\nsetmetatable(player, {\n    __tostring = function(self)\n        return self.name .. " (Level " .. self.level .. ")"\n    end\n})\n\nprint(tostring(player))  -- Alex (Level 10)' },
+      { type: 'tip', label: '⭐ KEY IDEA', text: 'Metatables let tables "pretend" to be more than they are — they can act like objects, respond to operators (+, -, etc.), and even be called like functions.' },
+    ],
+    starterCode: '-- Create a table representing a pet with name and species fields\n-- Then print both values on one line: "Buddy the Dog"\n',
+    challenge: { instructions: 'Create a table pet = {name = "Buddy", species = "Dog"}. Print the pet\'s name and species in the format "Buddy the Dog" using concatenation (..).', expectedOutput: ['Buddy the Dog'],
+      hint1: 'Create the table with two fields, then use the .. operator to join them with " the " in between.',
+      hint2: 'print(pet.name .. " the " .. pet.species) — dot notation accesses each field, and .. joins them into one string.',
+      solution: 'local pet = {name = "Buddy", species = "Dog"}\nprint(pet.name .. " the " .. pet.species)' }
+  },
+  { id: 2, title: "The __index Metamethod", description: "The key to inheritance and fallback behavior.",
+    content: [
+      { type: 'heading', text: 'The __index Metamethod' },
+      { type: 'paragraph', text: '<code>__index</code> fires when you access a key that doesn\'t exist in a table. If it\'s set to another table, Luau looks up the missing key there instead — this is how inheritance works!' },
+      { type: 'code', text: 'local defaults = {\n    health = 100,\n    speed = 16,\n    damage = 10,\n}\n\nlocal player = setmetatable(\n    { name = "Alex" },\n    { __index = defaults }\n)\n\nprint(player.name)    -- "Alex" (found directly)\nprint(player.health)  -- 100 (found via __index)' },
+      { type: 'paragraph', text: 'The lookup chain: check the table first, then check __index. This is the foundation of OOP in Luau.' },
+    ],
+    starterCode: '-- Create a "defaults" table and a "character" table\n-- Use __index so character inherits from defaults\n',
+    challenge: { instructions: 'Create defaults = {health = 100, speed = 16}. Create character = {name = "Warrior"} with __index pointing to defaults. Print character.name, then character.health. Output should be two lines: Warrior, then 100.', expectedOutput: ['Warrior', '100'],
+      hint1: 'setmetatable(character, {__index = defaults}) makes the character fall back to defaults for missing keys.',
+      hint2: 'character.name is "Warrior" (found directly). character.health isn\'t in character, so __index looks it up in defaults and finds 100.',
+      solution: 'local defaults = {health = 100, speed = 16}\nlocal character = setmetatable({name = "Warrior"}, {__index = defaults})\nprint(character.name)\nprint(character.health)' }
+  },
+  { id: 3, title: "The Class Pattern", description: "Build reusable classes with constructors and methods.",
+    content: [
+      { type: 'heading', text: 'The Class Pattern' },
+      { type: 'paragraph', text: 'The standard OOP pattern in Luau: a table acts as the class, <code>__index</code> chains create method lookup, and a <code>.new()</code> constructor creates instances.' },
+      { type: 'code', text: 'local Enemy = {}\nEnemy.__index = Enemy\n\nfunction Enemy.new(name, health)\n    local self = setmetatable({}, Enemy)\n    self.name = name\n    self.health = health\n    return self\nend\n\nfunction Enemy:takeDamage(amount)\n    self.health = self.health - amount\n    print(self.name .. ": " .. self.health .. " HP")\nend\n\nlocal goblin = Enemy.new("Goblin", 50)\ngoblin:takeDamage(15)  -- Goblin: 35 HP' },
+      { type: 'tip', label: '💡 DOT VS COLON', text: 'Use . for constructors (Enemy.new) and : for methods (goblin:takeDamage). The colon automatically passes self as the first argument.' },
+    ],
+    starterCode: '-- Simulate the class pattern using plain tables:\n-- Create an enemy table with name and health\n-- Write a function that reduces health by a damage amount\n-- and prints the result\n',
+    challenge: { instructions: 'Create enemy = {name = "Goblin", health = 50}. Write a function takeDamage(target, amount) that subtracts amount from target.health and prints target.name .. ": " .. target.health .. " HP". Call it: takeDamage(enemy, 15). Output: Goblin: 35 HP', expectedOutput: ['Goblin: 35 HP'],
+      hint1: 'Create the table, then a function that takes the enemy table and a damage number as arguments.',
+      hint2: 'Inside the function: target.health = target.health - amount, then print(target.name .. ": " .. target.health .. " HP"). Call it with takeDamage(enemy, 15).',
+      solution: 'local enemy = {name = "Goblin", health = 50}\nlocal function takeDamage(target, amount)\n    target.health = target.health - amount\n    print(target.name .. ": " .. target.health .. " HP")\nend\ntakeDamage(enemy, 15)' }
+  },
+  { id: 4, title: "Inheritance", description: "Create subclasses that extend parent classes.",
+    content: [
+      { type: 'heading', text: 'Inheritance' },
+      { type: 'paragraph', text: 'Create a subclass by making its <code>__index</code> point to the parent class. This creates a lookup chain: instance → subclass → parent.' },
+      { type: 'code', text: '-- Boss inherits from Enemy\nlocal Boss = setmetatable({}, { __index = Enemy })\nBoss.__index = Boss\n\nfunction Boss.new(name, health, specialAttack)\n    local self = Enemy.new(name, health)\n    setmetatable(self, Boss)\n    self.specialAttack = specialAttack\n    return self\nend\n\nfunction Boss:useSpecial()\n    print(self.name .. " uses " .. self.specialAttack .. "!")\nend' },
+      { type: 'paragraph', text: 'The Boss can use all Enemy methods (like <code>takeDamage</code>) AND its own methods (like <code>useSpecial</code>). This is polymorphism in action.' },
+      { type: 'tip', label: '🏗️ PATTERN', text: 'The inheritance chain: bossInstance → Boss → Enemy. When you call bossInstance:takeDamage(), Luau looks in the instance, then Boss, then Enemy where it finds the method.' },
+    ],
+    starterCode: '-- Simulate inheritance with nested tables:\n-- Create a base "creature" and a specialized "dragon"\n',
+    challenge: { instructions: 'Create creature = {type = "Unknown", sound = "..."}. Create dragon = {type = "Dragon", breath = "fire"} with __index = creature. Print dragon.type, dragon.breath, and dragon.sound. Output: Dragon, fire, ... (three lines).', expectedOutput: ['Dragon', 'fire', '...'],
+      hint1: 'dragon.type and dragon.breath are found directly. dragon.sound is missing, so __index falls back to creature where sound = "...".',
+      hint2: 'local dragon = setmetatable({type = "Dragon", breath = "fire"}, {__index = creature}) — then print each field.',
+      solution: 'local creature = {type = "Unknown", sound = "..."}\nlocal dragon = setmetatable({type = "Dragon", breath = "fire"}, {__index = creature})\nprint(dragon.type)\nprint(dragon.breath)\nprint(dragon.sound)' }
+  },
+]};
+
+// ═══════════════════════════════════════════
+// UNIT 6 — Roblox Essentials (5 lessons)
+// ═══════════════════════════════════════════
+const Unit6 = { id: 6, title: "Roblox Essentials", description: "Connect your Luau skills to the Roblox engine — parts, events, client/server communication, and data persistence.", icon: "🎮", lessons: [
+  { id: 1, title: "Parts & Instances", description: "Create and manipulate 3D objects with code.",
+    content: [
+      { type: 'heading', text: 'Parts & Instances' },
+      { type: 'paragraph', text: 'In Roblox, everything in the game world is an <strong>Instance</strong>. The most basic is a <code>Part</code> — a 3D object you can see and interact with.' },
+      { type: 'code', text: '-- Create a part from code (server-side Script)\nlocal part = Instance.new("Part")\npart.Name = "MyCoolPart"\npart.Size = Vector3.new(4, 1, 4)\npart.Position = Vector3.new(0, 10, 0)\npart.Color = Color3.fromRGB(0, 180, 216)\npart.Anchored = true\npart.Parent = workspace' },
+      { type: 'tip', label: '⭐ BEST PRACTICE', text: 'Set Parent LAST. Configure all properties first, then parent the object. This is more efficient because Roblox doesn\'t update the world for each individual property change.' },
+      { type: 'paragraph', text: 'Note: Roblox APIs don\'t work in our simulator. The challenge below tests the table-property pattern that Instance manipulation relies on.' },
+    ],
+    starterCode: '-- Simulate setting up a part using a plain table\n',
+    challenge: { instructions: 'Simulate creating a part: make a table called part = {}. Set part.Name = "MyPart", part.Size = 4, part.Anchored = true. Print part.Name and part.Anchored. Output: MyPart then true.', expectedOutput: ['MyPart', 'true'],
+      hint1: 'Create an empty table, then assign fields one at a time using dot notation.',
+      hint2: 'local part = {} then part.Name = "MyPart" etc. This is exactly how Roblox property assignment works — just with plain tables here.',
+      solution: 'local part = {}\npart.Name = "MyPart"\npart.Size = 4\npart.Anchored = true\nprint(part.Name)\nprint(part.Anchored)' }
+  },
+  { id: 2, title: "Events", description: "React to things happening in the game world.",
+    content: [
+      { type: 'heading', text: 'Events' },
+      { type: 'paragraph', text: '<strong>Events</strong> are signals that fire when something happens — a player touches a part, a character dies, a button is clicked. You <code>Connect</code> a function to an event.' },
+      { type: 'code', text: 'local part = workspace:WaitForChild("TrapPart")\n\npart.Touched:Connect(function(hit)\n    local humanoid = hit.Parent:FindFirstChild("Humanoid")\n    if humanoid then\n        humanoid.Health -= 25\n        print("Ouch! Trap triggered!")\n    end\nend)' },
+      { type: 'heading3', text: 'Common Events' },
+      { type: 'code', text: '-- Player joins\nPlayers.PlayerAdded:Connect(function(player)\n    print(player.Name .. " joined!")\nend)\n\n-- Player leaves\nPlayers.PlayerRemoving:Connect(function(player)\n    print(player.Name .. " left!")\nend)' },
+      { type: 'tip', label: '💡 WAITFORCHILD', text: 'Always use :WaitForChild("Name") instead of .Name when accessing objects that might not be loaded yet. It prevents the dreaded "attempt to index nil" error.' },
+      { type: 'paragraph', text: 'Events use callback functions — the challenge below tests that pattern.' },
+    ],
+    starterCode: '-- Events are callback functions. Practice the pattern:\n',
+    challenge: { instructions: 'Create a function called onPlayerJoin(name) that prints name .. " joined the game!". Call it twice: onPlayerJoin("Alex") and onPlayerJoin("Sam"). Output: two lines.', expectedOutput: ['Alex joined the game!', 'Sam joined the game!'],
+      hint1: 'This is a regular function that takes a name parameter and prints a message using concatenation.',
+      hint2: 'local function onPlayerJoin(name) print(name .. " joined the game!") end — then call it twice with different names.',
+      solution: 'local function onPlayerJoin(name)\n    print(name .. " joined the game!")\nend\nonPlayerJoin("Alex")\nonPlayerJoin("Sam")' }
+  },
+  { id: 3, title: "Client vs. Server", description: "Understand the two-brain architecture.",
+    content: [
+      { type: 'heading', text: 'Client vs. Server' },
+      { type: 'paragraph', text: 'Every Roblox game runs on TWO sides simultaneously:' },
+      { type: 'paragraph', text: '<strong>Server</strong> — runs on Roblox\'s computers. Handles game rules, scores, anti-cheat. Uses <code>Script</code> objects in ServerScriptService.' },
+      { type: 'paragraph', text: '<strong>Client</strong> — runs on each player\'s device. Handles what they see, hear, and input. Uses <code>LocalScript</code> objects in StarterPlayerScripts or StarterGui.' },
+      { type: 'warning', label: '🔒 SECURITY RULE', text: 'NEVER trust the client with important data. Hackers can modify client code. Always validate everything on the server. The client handles visuals; the server handles truth.' },
+      { type: 'paragraph', text: 'The challenge tests the validation concept: always check data before acting on it.' },
+    ],
+    starterCode: '-- Practice server-side validation:\n',
+    challenge: { instructions: 'Write a function validatePurchase(coins, price) that prints "Purchase OK" if coins >= price, or "Not enough coins" otherwise. Test with validatePurchase(100, 50) and validatePurchase(20, 50).', expectedOutput: ['Purchase OK', 'Not enough coins'],
+      hint1: 'Use an if/else to compare coins against price and print the appropriate message.',
+      hint2: 'if coins >= price then print("Purchase OK") else print("Not enough coins") end — the server would run this check, never trusting the client.',
+      solution: 'local function validatePurchase(coins, price)\n    if coins >= price then\n        print("Purchase OK")\n    else\n        print("Not enough coins")\n    end\nend\nvalidatePurchase(100, 50)\nvalidatePurchase(20, 50)' }
+  },
+  { id: 4, title: "RemoteEvents", description: "Send messages between client and server.",
+    content: [
+      { type: 'heading', text: 'RemoteEvents' },
+      { type: 'paragraph', text: '<code>RemoteEvent</code> objects let the client and server send one-way messages to each other. Create them in ReplicatedStorage.' },
+      { type: 'code', text: '-- SERVER: Listen for client messages\nlocal event = ReplicatedStorage:WaitForChild("CoinCollected")\nevent.OnServerEvent:Connect(function(player)\n    player.leaderstats.Coins.Value += 1\nend)' },
+      { type: 'code', text: '-- CLIENT: Send message to server\nlocal event = ReplicatedStorage:WaitForChild("CoinCollected")\nevent:FireServer()' },
+      { type: 'tip', label: '⭐ PATTERN', text: 'Client says "I did something" → Server validates and updates data. Never let the client decide the outcome!' },
+      { type: 'paragraph', text: 'The challenge simulates the server-side handler pattern: a function that receives a player name and updates their data.' },
+    ],
+    starterCode: '-- Simulate a server event handler:\n',
+    challenge: { instructions: 'Create a table playerCoins = {Alex = 10, Sam = 25}. Write a function awardCoin(playerName) that adds 1 to that player\'s coins. Call awardCoin("Alex") three times, then print playerCoins.Alex. Output: 13.', expectedOutput: ['13'],
+      hint1: 'Access the table with playerCoins[playerName] or playerCoins.Alex. Use += 1 to increment.',
+      hint2: 'Inside the function: playerCoins[playerName] += 1. After calling it 3 times for "Alex" (who starts at 10), the result is 13.',
+      solution: 'local playerCoins = {Alex = 10, Sam = 25}\nlocal function awardCoin(playerName)\n    playerCoins[playerName] += 1\nend\nawardCoin("Alex")\nawardCoin("Alex")\nawardCoin("Alex")\nprint(playerCoins.Alex)' }
+  },
+  { id: 5, title: "DataStores", description: "Save player progress between sessions.",
+    content: [
+      { type: 'heading', text: 'DataStores' },
+      { type: 'paragraph', text: '<code>DataStoreService</code> lets you save player data that persists between game sessions. It\'s server-side only.' },
+      { type: 'code', text: 'local DataStoreService = game:GetService("DataStoreService")\nlocal store = DataStoreService:GetDataStore("PlayerData")\n\n-- Save data\nlocal success, err = pcall(function()\n    store:SetAsync("Player_" .. player.UserId, {\n        coins = 500,\n        level = 12,\n    })\nend)' },
+      { type: 'warning', label: '⚠️ ALWAYS USE PCALL', text: 'DataStore calls can fail due to network issues. ALWAYS wrap them in pcall() so your game doesn\'t crash when the network hiccups.' },
+      { type: 'paragraph', text: 'The challenge tests the data serialization pattern: storing and retrieving player data from a table.' },
+    ],
+    starterCode: '-- Simulate saving and loading player data:\n',
+    challenge: { instructions: 'Create a "database" table. Write saveData(key, data) that stores data in database[key]. Write loadData(key) that returns database[key]. Save {coins = 500, level = 12} under key "Player_1". Load it back and print the coins value. Output: 500.', expectedOutput: ['500'],
+      hint1: 'The "database" is just a table. saveData stores into it, loadData reads from it.',
+      hint2: 'local function saveData(key, data) database[key] = data end. Then local loaded = loadData("Player_1") and print(loaded.coins).',
+      solution: 'local database = {}\nlocal function saveData(key, data)\n    database[key] = data\nend\nlocal function loadData(key)\n    return database[key]\nend\nsaveData("Player_1", {coins = 500, level = 12})\nlocal loaded = loadData("Player_1")\nprint(loaded.coins)' }
+  },
+]};
+
+// ═══════════════════════════════════════════
+// QUESTS — Standalone coding challenges
+// ═══════════════════════════════════════════
+
+const Quests = [
+  {
+    id: "q1", icon: "🧮", title: "The Calculator",
+    description: "Build a function that takes two numbers and an operator string, and returns the result.",
+    tags: ["Functions", "Control Flow"],
+    starterCode: '-- Create a function calculate(a, op, b) that:\n-- Returns a + b when op is "+"\n-- Returns a - b when op is "-"\n-- Returns a * b when op is "*"\n-- Returns a / b when op is "/"\n-- Then test it:\n\n-- print(calculate(10, "+", 5))   should print 15\n-- print(calculate(20, "-", 8))   should print 12\n-- print(calculate(6, "*", 7))    should print 42\n',
+    challenge: {
+      instructions: 'Create the calculate function and print the results of: calculate(10, "+", 5), calculate(20, "-", 8), and calculate(6, "*", 7).',
+      expectedOutput: ['15', '12', '42'],
+      hint1: 'Your function needs to check the op parameter with if/elseif and perform the matching math operation.',
+      hint2: 'Use if op == "+" then return a + b, elseif op == "-" then return a - b, and so on for * and /. Don\'t forget end for both the if and the function!',
+      solution: 'local function calculate(a, op, b)\n    if op == "+" then return a + b\n    elseif op == "-" then return a - b\n    elseif op == "*" then return a * b\n    elseif op == "/" then return a / b\n    end\nend\nprint(calculate(10, "+", 5))\nprint(calculate(20, "-", 8))\nprint(calculate(6, "*", 7))',
+    }
+  },
+  {
+    id: "q2", icon: "📊", title: "Array Sum",
+    description: "Write a function that takes an array of numbers and returns their sum.",
+    tags: ["Tables", "Loops"],
+    starterCode: '-- Create a function sumArray(numbers) that adds up all values\n-- Test with: print(sumArray({10, 20, 30, 40}))\n-- Should print: 100\n',
+    challenge: {
+      instructions: 'Create sumArray(numbers) and print sumArray({10, 20, 30, 40}). Output: 100.',
+      expectedOutput: ['100'],
+      hint1: 'Loop through the array with for...in, adding each value to a running total.',
+      hint2: 'Create local total = 0 before the loop. Inside: total += v. After the loop: return total.',
+      solution: 'local function sumArray(numbers)\n    local total = 0\n    for _, v in numbers do\n        total += v\n    end\n    return total\nend\nprint(sumArray({10, 20, 30, 40}))',
+    }
+  },
+  {
+    id: "q3", icon: "🔄", title: "FizzBuzz",
+    description: "The classic coding challenge: print Fizz for multiples of 3, Buzz for 5, FizzBuzz for both.",
+    tags: ["Loops", "Control Flow"],
+    starterCode: '-- For numbers 1 to 15:\n-- If divisible by both 3 and 5, print "FizzBuzz"\n-- Else if divisible by 3, print "Fizz"\n-- Else if divisible by 5, print "Buzz"\n-- Else print the number\n',
+    challenge: {
+      instructions: 'Implement FizzBuzz for 1-15.',
+      expectedOutput: ['1','2','Fizz','4','Buzz','Fizz','7','8','Fizz','Buzz','11','Fizz','13','14','FizzBuzz'],
+      hint1: 'Use a for loop 1 to 15. Check divisibility with the % (modulus) operator — if x % 3 == 0, it\'s divisible by 3.',
+      hint2: 'Check the combined case (both 3 AND 5) FIRST, because a number divisible by both would also match the individual checks. Use elseif for the single cases.',
+      solution: 'for i = 1, 15 do\n    if i % 3 == 0 and i % 5 == 0 then\n        print("FizzBuzz")\n    elseif i % 3 == 0 then\n        print("Fizz")\n    elseif i % 5 == 0 then\n        print("Buzz")\n    else\n        print(i)\n    end\nend',
+    }
+  },
+  {
+    id: "q4", icon: "🏆", title: "High Score",
+    description: "Find the highest value in an array of scores.",
+    tags: ["Tables", "Loops"],
+    starterCode: '-- Create a function findMax(scores) that returns the highest score\n-- Test: print(findMax({45, 92, 37, 88, 65}))\n-- Should print: 92\n',
+    challenge: {
+      instructions: 'Create findMax(scores) and print findMax({45, 92, 37, 88, 65}). Output: 92.',
+      expectedOutput: ['92'],
+      hint1: 'Start by assuming the first element is the largest. Then loop through and update whenever you find something bigger.',
+      hint2: 'Set local max = scores[1]. In the loop: if v > max then max = v end. After the loop, return max.',
+      solution: 'local function findMax(scores)\n    local max = scores[1]\n    for _, v in scores do\n        if v > max then max = v end\n    end\n    return max\nend\nprint(findMax({45, 92, 37, 88, 65}))',
+    }
+  },
+  {
+    id: "q5", icon: "🔁", title: "String Reverser",
+    description: "Write a function that reverses a string without using string.reverse.",
+    tags: ["Strings", "Loops"],
+    starterCode: '-- Create reverseStr(s) that reverses a string\n-- Hint: build a new string character by character\n-- Test: print(reverseStr("hello"))\n-- Should print: olleh\n',
+    challenge: {
+      instructions: 'Create reverseStr("hello") that prints "olleh".',
+      expectedOutput: ['olleh'],
+      hint1: 'You could build a new string character by character in reverse order, or use a built-in function.',
+      hint2: 'The string library has string.reverse(s). Or for a manual approach: loop from #s down to 1, using string.sub(s, i, i) to get each character.',
+      solution: 'print(string.reverse("hello"))',
+    }
+  },
+  {
+    id: "q6", icon: "📦", title: "Inventory Manager",
+    description: "Create functions to add, remove, and list items in a table-based inventory.",
+    tags: ["Tables", "Functions"],
+    starterCode: '-- Create an inventory system:\n-- local inventory = {}\n-- addItem(inventory, "Sword")\n-- addItem(inventory, "Shield")\n-- addItem(inventory, "Potion")\n-- removeItem(inventory, "Shield")\n-- Print remaining items count\n',
+    challenge: {
+      instructions: 'Build the inventory system. After adding 3 items and removing 1, print the count (should be 2).',
+      expectedOutput: ['2'],
+      hint1: 'Use table.insert() to add items and table.find() + table.remove() to remove by name.',
+      hint2: 'For removeItem: first find the index with table.find(inv, item), then if it exists, table.remove(inv, idx). After 3 inserts and 1 remove, the count should be 2.',
+      solution: 'local inventory = {}\nlocal function addItem(inv, item)\n    table.insert(inv, item)\nend\nlocal function removeItem(inv, item)\n    local idx = table.find(inv, item)\n    if idx then table.remove(inv, idx) end\nend\naddItem(inventory, "Sword")\naddItem(inventory, "Shield")\naddItem(inventory, "Potion")\nremoveItem(inventory, "Shield")\nprint(#inventory)',
+    }
+  },
+  {
+    id: "q7", icon: "⚔️", title: "Damage Calculator",
+    description: "Calculate final damage considering base damage, multiplier, and armor reduction.",
+    tags: ["Functions", "Numbers"],
+    starterCode: '-- Create calcDamage(baseDmg, multiplier, armor)\n-- Formula: final = (baseDmg * multiplier) - armor\n-- Clamp minimum to 0 (can\'t deal negative damage)\n-- Test: print(calcDamage(25, 2, 15))\n-- Should print: 35\n',
+    challenge: {
+      instructions: 'Create calcDamage(25, 2, 15) = 35 and calcDamage(10, 1, 50) = 0 (clamped). Print both.',
+      expectedOutput: ['35', '0'],
+      hint1: 'Apply the formula (base * multiplier) - armor, then make sure the result doesn\'t go below 0.',
+      hint2: 'Use math.max(0, result) to clamp the minimum to zero. This prevents negative damage values.',
+      solution: 'local function calcDamage(base, mult, armor)\n    local dmg = (base * mult) - armor\n    return math.max(0, dmg)\nend\nprint(calcDamage(25, 2, 15))\nprint(calcDamage(10, 1, 50))',
+    }
+  },
+  {
+    id: "q8", icon: "🌟", title: "Star Pattern",
+    description: "Print a right triangle of stars using nested loops.",
+    tags: ["Loops", "Strings"],
+    starterCode: '-- Print this pattern:\n-- *\n-- **\n-- ***\n-- ****\n-- *****\n',
+    challenge: {
+      instructions: 'Print a star triangle: 1 star on line 1, 2 on line 2, up to 5.',
+      expectedOutput: ['*','**','***','****','*****'],
+      hint1: 'Use a for loop from 1 to 5. On each iteration, print a string of i stars.',
+      hint2: 'string.rep("*", i) creates a string of i asterisks. Print that inside the loop.',
+      solution: 'for i = 1, 5 do\n    print(string.rep("*", i))\nend',
+    }
+  },
+];
+
+// ═══════════════════════════════════════════
+// PROGRESS SYSTEM — localStorage + JSON export/import
+// ═══════════════════════════════════════════
+
+const Progress = (() => {
+  const STORAGE_KEY = 'luau-lab-progress';
+
+  const defaultState = () => ({
+    version: 1,
+    completedLessons: [],   // ["1-1", "1-2", "2-3", ...]
+    completedQuests: [],    // ["q1", "q2", ...]
+    lastVisited: null,      // "1-3" (unit-lesson)
+    editorCode: {},         // { "1-1": "local x = 5\n..." }
+    startedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+
+  let state = defaultState();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        state = { ...defaultState(), ...parsed };
+      }
+    } catch (e) {
+      console.warn('Progress: failed to load from localStorage', e);
+    }
+    return state;
+  }
+
+  function save() {
+    state.updatedAt = new Date().toISOString();
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn('Progress: failed to save to localStorage', e);
+    }
+  }
+
+  function completeLesson(unitId, lessonId) {
+    const key = `${unitId}-${lessonId}`;
+    if (!state.completedLessons.includes(key)) {
+      state.completedLessons.push(key);
+      save();
+    }
+  }
+
+  function uncompleteLesson(unitId, lessonId) {
+    const key = `${unitId}-${lessonId}`;
+    state.completedLessons = state.completedLessons.filter(k => k !== key);
+    save();
+  }
+
+  function isLessonComplete(unitId, lessonId) {
+    return state.completedLessons.includes(`${unitId}-${lessonId}`);
+  }
+
+  function getUnitProgress(unitId, totalLessons) {
+    const completed = state.completedLessons.filter(k => k.startsWith(`${unitId}-`)).length;
+    return { completed, total: totalLessons, percent: totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0 };
+  }
+
+  function completeQuest(questId) {
+    if (!state.completedQuests.includes(questId)) {
+      state.completedQuests.push(questId);
+      save();
+    }
+  }
+
+  function isQuestComplete(questId) {
+    return state.completedQuests.includes(questId);
+  }
+
+  function setLastVisited(key) {
+    state.lastVisited = key;
+    save();
+  }
+
+  function saveEditorCode(lessonKey, code) {
+    state.editorCode[lessonKey] = code;
+    save();
+  }
+
+  function getEditorCode(lessonKey) {
+    return state.editorCode[lessonKey] || null;
+  }
+
+  function getTotalStats() {
+    return {
+      lessonsCompleted: state.completedLessons.length,
+      questsCompleted: state.completedQuests.length,
+      startedAt: state.startedAt,
+      updatedAt: state.updatedAt,
+    };
+  }
+
+  // ── JSON Export/Import ──
+  function exportJSON() {
+    const data = JSON.stringify(state, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `luau-lab-progress-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importJSON(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.version && imported.completedLessons) {
+            state = { ...defaultState(), ...imported };
+            save();
+            resolve(state);
+          } else {
+            reject(new Error('Invalid progress file format'));
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  }
+
+  function reset() {
+    state = defaultState();
+    save();
+    return state;
+  }
+
+  // Initialize on load
+  load();
+
+  return {
+    completeLesson, uncompleteLesson, isLessonComplete, getUnitProgress,
+    completeQuest, isQuestComplete,
+    setLastVisited, saveEditorCode, getEditorCode,
+    getTotalStats, exportJSON, importJSON, reset, load,
+    get state() { return state; },
+  };
+})();
+
+// ═══════════════════════════════════════════
+// EDITOR — Simulated Luau execution engine
+// ═══════════════════════════════════════════
+
+const Editor = (() => {
+
+  // ── Lightweight Luau simulator ──
+  // Handles: print(), variable assignment, basic math, string concat/interp,
+  // if/else, for loops, while loops, table construction, simple function calls
+
+  function simulate(code) {
+    const output = [];
+    const env = {};
+
+    try {
+      const lines = preprocess(code);
+      executeBlock(lines, env, output, 0);
+    } catch (e) {
+      output.push({ type: 'error', text: e.message || String(e) });
+    }
+
+    return output;
+  }
+
+  function preprocess(code) {
+    return code
+      .split('\n')
+      .map(line => line.replace(/--.*$/, '').trimEnd()) // strip comments
+      .filter(line => line.trim() !== '');
+  }
+
+  function resolveValue(expr, env) {
+    expr = expr.trim();
+
+    // nil
+    if (expr === 'nil') return null;
+    // booleans
+    if (expr === 'true') return true;
+    if (expr === 'false') return false;
+    // numbers
+    if (/^-?\d+(\.\d+)?$/.test(expr)) return parseFloat(expr);
+    if (/^0x[0-9a-fA-F]+$/.test(expr)) return parseInt(expr, 16);
+    if (/^0b[01]+$/.test(expr)) return parseInt(expr.slice(2), 2);
+    // strings (double/single quote)
+    const strMatch = expr.match(/^["'](.*)["']$/);
+    if (strMatch) return strMatch[1];
+    // backtick interpolation
+    if (expr.startsWith('`') && expr.endsWith('`')) {
+      const inner = expr.slice(1, -1);
+      return inner.replace(/\{([^}]+)\}/g, (_, e) => {
+        const val = resolveValue(e.trim(), env);
+        return val === null ? 'nil' : String(val);
+      });
+    }
+    // table constructor
+    if (expr.startsWith('{') && expr.endsWith('}')) {
+      return parseTable(expr, env);
+    }
+    // # (length)
+    if (expr.startsWith('#')) {
+      const val = resolveValue(expr.slice(1), env);
+      if (typeof val === 'string') return val.length;
+      if (Array.isArray(val)) return val.filter((_, i) => i > 0).length; // skip index 0
+      if (typeof val === 'object' && val !== null) {
+        // count sequential integer keys
+        let count = 0;
+        while (val[count + 1] !== undefined) count++;
+        return count;
+      }
+      return 0;
+    }
+    // not operator
+    if (expr.startsWith('not ')) {
+      const val = resolveValue(expr.slice(4), env);
+      return val === false || val === null;
+    }
+    // math functions
+    const mathMatch = expr.match(/^math\.(\w+)\((.+)\)$/);
+    if (mathMatch) {
+      const fn = mathMatch[1];
+      const args = splitArgs(mathMatch[2]).map(a => resolveValue(a, env));
+      return evalMath(fn, args);
+    }
+    // string functions
+    const strFnMatch = expr.match(/^string\.(\w+)\((.+)\)$/);
+    if (strFnMatch) {
+      const fn = strFnMatch[1];
+      const args = splitArgs(strFnMatch[2]).map(a => resolveValue(a, env));
+      return evalString(fn, args);
+    }
+    // tostring/tonumber/type
+    const builtinMatch = expr.match(/^(tostring|tonumber|type)\((.+)\)$/);
+    if (builtinMatch) {
+      const val = resolveValue(builtinMatch[2], env);
+      if (builtinMatch[1] === 'tostring') return String(val === null ? 'nil' : val);
+      if (builtinMatch[1] === 'tonumber') return Number(val) || null;
+      if (builtinMatch[1] === 'type') {
+        if (val === null) return 'nil';
+        if (typeof val === 'boolean') return 'boolean';
+        if (typeof val === 'number') return 'number';
+        if (typeof val === 'string') return 'string';
+        if (typeof val === 'object') return 'table';
+        if (typeof val === 'function') return 'function';
+        return typeof val;
+      }
+    }
+    // table.insert
+    if (expr.startsWith('table.insert(')) {
+      // This is a statement, not an expression, but handle gracefully
+      return null;
+    }
+    // Concatenation (..)
+    if (expr.includes(' .. ')) {
+      const parts = expr.split(' .. ').map(p => resolveValue(p.trim(), env));
+      return parts.map(p => p === null ? 'nil' : String(p)).join('');
+    }
+    // Arithmetic
+    for (const [op, fn] of [[' + ', (a,b) => a+b], [' - ', (a,b) => a-b], [' * ', (a,b) => a*b], [' / ', (a,b) => a/b], [' // ', (a,b) => Math.floor(a/b)], [' % ', (a,b) => a%b], [' ^ ', (a,b) => Math.pow(a,b)]]) {
+      const idx = expr.lastIndexOf(op);
+      if (idx > 0) {
+        const left = resolveValue(expr.slice(0, idx), env);
+        const right = resolveValue(expr.slice(idx + op.length), env);
+        if (typeof left === 'number' && typeof right === 'number') return fn(left, right);
+      }
+    }
+    // Comparison
+    for (const [op, fn] of [
+      [' == ', (a,b) => a === b], [' ~= ', (a,b) => a !== b],
+      [' >= ', (a,b) => a >= b], [' <= ', (a,b) => a <= b],
+      [' > ', (a,b) => a > b], [' < ', (a,b) => a < b],
+    ]) {
+      const idx = expr.indexOf(op);
+      if (idx > 0) {
+        const left = resolveValue(expr.slice(0, idx), env);
+        const right = resolveValue(expr.slice(idx + op.length), env);
+        return fn(left, right);
+      }
+    }
+    // and / or
+    if (expr.includes(' and ')) {
+      const idx = expr.indexOf(' and ');
+      const left = resolveValue(expr.slice(0, idx), env);
+      if (left === false || left === null) return left;
+      return resolveValue(expr.slice(idx + 5), env);
+    }
+    if (expr.includes(' or ')) {
+      const idx = expr.indexOf(' or ');
+      const left = resolveValue(expr.slice(0, idx), env);
+      if (left !== false && left !== null) return left;
+      return resolveValue(expr.slice(idx + 4), env);
+    }
+    // Table indexing: tbl.key or tbl[key]
+    const dotMatch = expr.match(/^(\w+)\.(\w+)$/);
+    if (dotMatch) {
+      const tbl = env[dotMatch[1]];
+      if (tbl && typeof tbl === 'object') return tbl[dotMatch[2]] !== undefined ? tbl[dotMatch[2]] : null;
+    }
+    const bracketMatch = expr.match(/^(\w+)\[(.+)\]$/);
+    if (bracketMatch) {
+      const tbl = env[bracketMatch[1]];
+      const key = resolveValue(bracketMatch[2], env);
+      if (tbl && typeof tbl === 'object') return tbl[key] !== undefined ? tbl[key] : null;
+    }
+    // Variable lookup
+    if (/^\w+$/.test(expr)) {
+      return env[expr] !== undefined ? env[expr] : null;
+    }
+    // Parenthesized expression
+    if (expr.startsWith('(') && expr.endsWith(')')) {
+      return resolveValue(expr.slice(1, -1), env);
+    }
+
+    return null;
+  }
+
+  function parseTable(expr, env) {
+    const inner = expr.slice(1, -1).trim();
+    if (!inner) return {};
+    const result = {};
+    let arrayIdx = 1;
+    const items = splitArgs(inner);
+    for (const item of items) {
+      const kvMatch = item.trim().match(/^(\w+)\s*=\s*(.+)$/);
+      if (kvMatch) {
+        result[kvMatch[1]] = resolveValue(kvMatch[2], env);
+      } else {
+        result[arrayIdx++] = resolveValue(item.trim(), env);
+      }
+    }
+    return result;
+  }
+
+  function splitArgs(str) {
+    const args = [];
+    let depth = 0, start = 0, inStr = false, strChar = '';
+    for (let i = 0; i < str.length; i++) {
+      const ch = str[i];
+      if (inStr) {
+        if (ch === strChar && str[i-1] !== '\\') inStr = false;
+      } else if (ch === '"' || ch === "'" || ch === '`') {
+        inStr = true; strChar = ch;
+      } else if (ch === '(' || ch === '{' || ch === '[') {
+        depth++;
+      } else if (ch === ')' || ch === '}' || ch === ']') {
+        depth--;
+      } else if (ch === ',' && depth === 0) {
+        args.push(str.slice(start, i));
+        start = i + 1;
+      }
+    }
+    if (start < str.length) args.push(str.slice(start));
+    return args;
+  }
+
+  function evalMath(fn, args) {
+    const m = Math;
+    const map = {
+      abs: (a) => m.abs(a), ceil: (a) => m.ceil(a), floor: (a) => m.floor(a),
+      round: (a) => m.round(a), sqrt: (a) => m.sqrt(a),
+      max: (...a) => m.max(...a), min: (...a) => m.min(...a),
+      random: (a, b) => a && b ? m.floor(m.random() * (b - a + 1)) + a : m.random(),
+      sin: (a) => m.sin(a), cos: (a) => m.cos(a), tan: (a) => m.tan(a),
+      rad: (a) => a * m.PI / 180, deg: (a) => a * 180 / m.PI,
+      log: (a, b) => b ? m.log(a) / m.log(b) : m.log(a),
+      pow: (a, b) => m.pow(a, b),
+      clamp: (x, lo, hi) => m.max(lo, m.min(hi, x)),
+      huge: () => Infinity, pi: () => m.PI,
+    };
+    if (fn === 'huge') return Infinity;
+    if (fn === 'pi') return m.PI;
+    const f = map[fn];
+    return f ? f(...args) : null;
+  }
+
+  function evalString(fn, args) {
+    const map = {
+      len: (s) => s.length,
+      upper: (s) => s.toUpperCase(),
+      lower: (s) => s.toLowerCase(),
+      rep: (s, n) => s.repeat(n),
+      reverse: (s) => s.split('').reverse().join(''),
+      sub: (s, i, j) => s.slice(i - 1, j),
+      byte: (s, i) => s.charCodeAt((i || 1) - 1),
+      char: (...codes) => String.fromCharCode(...codes),
+      format: (fmt, ...a) => fmt, // simplified
+      find: (s, p) => { const i = s.indexOf(p); return i >= 0 ? i + 1 : null; },
+      split: (s, sep) => { const parts = s.split(sep); const r = {}; parts.forEach((p, i) => r[i+1] = p); return r; },
+    };
+    const f = map[fn];
+    return f ? f(...args) : null;
+  }
+
+  function executeBlock(lines, env, output, startIdx) {
+    let i = startIdx;
+    let iterations = 0;
+    const MAX_ITER = 5000;
+
+    while (i < lines.length) {
+      if (++iterations > MAX_ITER) {
+        output.push({ type: 'error', text: 'Execution limit reached (possible infinite loop)' });
+        return i;
+      }
+
+      const line = lines[i].trim();
+
+      // End of block
+      if (line === 'end' || line === 'else' || line.startsWith('elseif ')) return i;
+
+      // print()
+      const printMatch = line.match(/^print\((.+)\)$/);
+      if (printMatch) {
+        const args = splitArgs(printMatch[1]).map(a => resolveValue(a, env));
+        const text = args.map(a => a === null ? 'nil' : a === true ? 'true' : a === false ? 'false' : typeof a === 'object' ? 'table' : String(a)).join('\t');
+        output.push({ type: 'normal', text });
+        i++; continue;
+      }
+
+      // warn()
+      const warnMatch = line.match(/^warn\((.+)\)$/);
+      if (warnMatch) {
+        const args = splitArgs(warnMatch[1]).map(a => resolveValue(a, env));
+        const text = args.map(a => a === null ? 'nil' : String(a)).join('\t');
+        output.push({ type: 'info', text });
+        i++; continue;
+      }
+
+      // local variable declaration
+      const localMatch = line.match(/^local\s+(\w+)\s*=\s*(.+)$/);
+      if (localMatch) {
+        env[localMatch[1]] = resolveValue(localMatch[2], env);
+        i++; continue;
+      }
+
+      // local without assignment
+      const localNilMatch = line.match(/^local\s+(\w+)\s*$/);
+      if (localNilMatch) {
+        env[localNilMatch[1]] = null;
+        i++; continue;
+      }
+
+      // Multi local: local a, b, c = 1, 2, 3
+      const multiLocal = line.match(/^local\s+([\w,\s]+)\s*=\s*(.+)$/);
+      if (multiLocal) {
+        const names = multiLocal[1].split(',').map(n => n.trim());
+        const values = splitArgs(multiLocal[2]).map(v => resolveValue(v, env));
+        names.forEach((name, idx) => { env[name] = values[idx] !== undefined ? values[idx] : null; });
+        i++; continue;
+      }
+
+      // Variable assignment (no local)
+      const assignMatch = line.match(/^(\w+)\s*=\s*(.+)$/);
+      if (assignMatch && !line.startsWith('local ') && !line.startsWith('function ') && !line.startsWith('if ') && !line.startsWith('for ') && !line.startsWith('while ')) {
+        env[assignMatch[1]] = resolveValue(assignMatch[2], env);
+        i++; continue;
+      }
+
+      // Compound assignment
+      const compoundMatch = line.match(/^(\w+)\s*(\+=|-=|\*=|\/=|\.\.=)\s*(.+)$/);
+      if (compoundMatch) {
+        const name = compoundMatch[1];
+        const op = compoundMatch[2];
+        const right = resolveValue(compoundMatch[3], env);
+        const left = env[name] || 0;
+        switch (op) {
+          case '+=': env[name] = left + right; break;
+          case '-=': env[name] = left - right; break;
+          case '*=': env[name] = left * right; break;
+          case '/=': env[name] = left / right; break;
+          case '..=': env[name] = String(left) + String(right); break;
+        }
+        i++; continue;
+      }
+
+      // table.insert
+      const insertMatch = line.match(/^table\.insert\((\w+),\s*(.+)\)$/);
+      if (insertMatch) {
+        const tbl = env[insertMatch[1]];
+        const val = resolveValue(insertMatch[2], env);
+        if (tbl && typeof tbl === 'object') {
+          let maxIdx = 0;
+          for (const k in tbl) { const n = parseInt(k); if (!isNaN(n) && n > maxIdx) maxIdx = n; }
+          tbl[maxIdx + 1] = val;
+        }
+        i++; continue;
+      }
+
+      // table.remove
+      const removeMatch = line.match(/^table\.remove\((\w+),?\s*(.*)\)$/);
+      if (removeMatch) {
+        const tbl = env[removeMatch[1]];
+        if (tbl && typeof tbl === 'object') {
+          const idx = removeMatch[2] ? resolveValue(removeMatch[2], env) : null;
+          // simplified: just acknowledge
+        }
+        i++; continue;
+      }
+
+      // Dot assignment: tbl.key = value
+      const dotAssign = line.match(/^(\w+)\.(\w+)\s*=\s*(.+)$/);
+      if (dotAssign) {
+        if (!env[dotAssign[1]] || typeof env[dotAssign[1]] !== 'object') env[dotAssign[1]] = {};
+        env[dotAssign[1]][dotAssign[2]] = resolveValue(dotAssign[3], env);
+        i++; continue;
+      }
+
+      // Bracket assignment: tbl[key] = value
+      const bracketAssign = line.match(/^(\w+)\[(.+)\]\s*=\s*(.+)$/);
+      if (bracketAssign) {
+        if (!env[bracketAssign[1]] || typeof env[bracketAssign[1]] !== 'object') env[bracketAssign[1]] = {};
+        const key = resolveValue(bracketAssign[2], env);
+        env[bracketAssign[1]][key] = resolveValue(bracketAssign[3], env);
+        i++; continue;
+      }
+
+      // for i = start, stop [, step] do
+      const forMatch = line.match(/^for\s+(\w+)\s*=\s*(.+),\s*(.+?)(?:,\s*(.+))?\s+do$/);
+      if (forMatch) {
+        const varName = forMatch[1];
+        const start = resolveValue(forMatch[2], env);
+        const stop = resolveValue(forMatch[3], env);
+        const step = forMatch[4] ? resolveValue(forMatch[4], env) : 1;
+        const bodyStart = i + 1;
+        // Find matching 'end'
+        let endIdx = findEnd(lines, bodyStart);
+        for (let v = start; step > 0 ? v <= stop : v >= stop; v += step) {
+          if (++iterations > MAX_ITER) { output.push({ type: 'error', text: 'Loop iteration limit reached' }); return endIdx + 1; }
+          env[varName] = v;
+          executeBlock(lines, env, output, bodyStart);
+        }
+        i = endIdx + 1; continue;
+      }
+
+      // for k, v in tbl do (simplified)
+      const forInMatch = line.match(/^for\s+(\w+),?\s*(\w*)\s+in\s+(?:ipairs|pairs)?\(?\s*(\w+)\s*\)?\s+do$/);
+      if (forInMatch) {
+        const k1 = forInMatch[1];
+        const k2 = forInMatch[2];
+        const tbl = env[forInMatch[3]];
+        const bodyStart = i + 1;
+        let endIdx = findEnd(lines, bodyStart);
+        if (tbl && typeof tbl === 'object') {
+          for (const key in tbl) {
+            if (++iterations > MAX_ITER) { output.push({ type: 'error', text: 'Loop iteration limit reached' }); return endIdx + 1; }
+            env[k1] = isNaN(key) ? key : parseInt(key);
+            if (k2) env[k2] = tbl[key];
+            executeBlock(lines, env, output, bodyStart);
+          }
+        }
+        i = endIdx + 1; continue;
+      }
+
+      // while ... do
+      const whileMatch = line.match(/^while\s+(.+)\s+do$/);
+      if (whileMatch) {
+        const bodyStart = i + 1;
+        let endIdx = findEnd(lines, bodyStart);
+        while (resolveValue(whileMatch[1], env)) {
+          if (++iterations > MAX_ITER) { output.push({ type: 'error', text: 'While loop limit reached' }); return endIdx + 1; }
+          executeBlock(lines, env, output, bodyStart);
+        }
+        i = endIdx + 1; continue;
+      }
+
+      // if ... then
+      const ifMatch = line.match(/^if\s+(.+)\s+then$/);
+      if (ifMatch) {
+        const condition = resolveValue(ifMatch[1], env);
+        const bodyStart = i + 1;
+        if (condition && condition !== false) {
+          const endOrElse = executeBlock(lines, env, output, bodyStart);
+          i = skipToEnd(lines, endOrElse);
+          i++; continue;
+        } else {
+          // Skip to else/elseif/end
+          i = skipToElse(lines, bodyStart);
+          const eline = lines[i] ? lines[i].trim() : 'end';
+          if (eline === 'else') {
+            const afterElse = executeBlock(lines, env, output, i + 1);
+            i = afterElse + 1; continue;
+          } else if (eline.startsWith('elseif ')) {
+            continue; // Re-evaluate the elseif
+          } else {
+            i++; continue; // end
+          }
+        }
+      }
+
+      // Skip function definitions for now
+      if (line.startsWith('local function ') || line.startsWith('function ')) {
+        const endIdx = findEnd(lines, i + 1);
+        i = endIdx + 1; continue;
+      }
+
+      // Unknown line — skip
+      i++;
+    }
+    return i;
+  }
+
+  function findEnd(lines, startIdx) {
+    let depth = 1;
+    for (let i = startIdx; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.match(/^(if|for|while|repeat|function|local function)\b/) && (line.includes(' do') || line.includes(' then') || line === 'repeat')) depth++;
+      if (line === 'end') { depth--; if (depth === 0) return i; }
+    }
+    return lines.length;
+  }
+
+  function skipToEnd(lines, fromIdx) {
+    let depth = 0;
+    for (let i = fromIdx; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.match(/^(if|for|while|repeat|function|local function)\b/) && (line.includes(' do') || line.includes(' then'))) depth++;
+      if (line === 'end') {
+        if (depth === 0) return i;
+        depth--;
+      }
+      if (depth === 0 && (line === 'else' || line.startsWith('elseif '))) {
+        // Skip past this else/elseif block to end
+        continue;
+      }
+    }
+    return lines.length;
+  }
+
+  function skipToElse(lines, fromIdx) {
+    let depth = 0;
+    for (let i = fromIdx; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.match(/^(if|for|while|repeat|function|local function)\b/) && (line.includes(' do') || line.includes(' then'))) depth++;
+      if (line === 'end') {
+        if (depth === 0) return i;
+        depth--;
+      }
+      if (depth === 0 && (line === 'else' || line.startsWith('elseif '))) return i;
+    }
+    return lines.length;
+  }
+
+  // ── Check user output against expected ──
+  function checkOutput(userOutput, expectedLines) {
+    if (!expectedLines || expectedLines.length === 0) return { pass: true, message: 'No output check required.' };
+
+    const userLines = userOutput
+      .filter(o => o.type === 'normal')
+      .map(o => o.text.trim());
+
+    if (userLines.length === 0 && expectedLines.length > 0) {
+      return { pass: false, message: 'No output detected. Make sure your code uses print().' };
+    }
+
+    for (let i = 0; i < expectedLines.length; i++) {
+      const expected = String(expectedLines[i]).trim();
+      const actual = userLines[i] ? userLines[i].trim() : undefined;
+      if (actual === undefined) {
+        return { pass: false, message: `Expected more output. Missing: "${expected}"` };
+      }
+      // Flexible matching: trim and compare
+      if (actual !== expected) {
+        // Try numeric comparison
+        if (!isNaN(expected) && !isNaN(actual) && parseFloat(actual) === parseFloat(expected)) continue;
+        return { pass: false, message: `Line ${i + 1}: Expected "${expected}" but got "${actual}"` };
+      }
+    }
+
+    return { pass: true, message: 'All checks passed!' };
+  }
+
+  return { simulate, checkOutput };
+})();
+
+// ═══════════════════════════════════════════
+// APP — Main controller, routing, rendering
+// ═══════════════════════════════════════════
+
+const GuideRefs = {
+  "1-1": "Guide Chapter 1 (The Big Picture) & Chapter 2 (Values and Types)",
+  "1-2": "Guide Chapter 3 (Variables and Scope)",
+  "1-3": "Guide Chapter 2 (Values and Types — The Eight Types)",
+  "1-4": "Guide Chapter 2 (Strings In Depth)",
+  "1-5": "Guide Chapter 2 (Numbers In Depth) & Chapter 4 (Operators)",
+  "2-1": "Guide Chapter 5 (Control Flow — if/elseif/else)",
+  "2-2": "Guide Chapter 4 (Comparison Operators)",
+  "2-3": "Guide Chapter 4 (Logical Operators)",
+  "2-4": "Guide Chapter 5 (Numeric for Loop & Generic for Loop)",
+  "2-5": "Guide Chapter 5 (while Loop & repeat...until)",
+  "3-1": "Guide Chapter 6 (Functions — Declaring Functions)",
+  "3-2": "Guide Chapter 6 (Parameters and Return Values)",
+  "3-3": "Guide Chapter 6 (Closures: Functions That Remember)",
+  "3-4": "Guide Chapter 6 (Higher-Order Functions)",
+  "4-1": "Guide Chapter 7 (Tables — Arrays)",
+  "4-2": "Guide Chapter 7 (Dictionaries)",
+  "4-3": "Guide Chapter 7 (Iterating Tables) & Chapter 5 (Generic for Loop)",
+  "4-4": "Guide Chapter 7 (Tables of Tables)",
+  "4-5": "Guide Chapter 7 (The table Library for Arrays & Freezing Tables)",
+  "5-1": "Guide Chapter 8 (Metatables and Metamethods)",
+  "5-2": "Guide Chapter 8 (__index: The Most Important Metamethod)",
+  "5-3": "Guide Chapter 9 (The Basic Class Pattern)",
+  "5-4": "Guide Chapter 9 (Inheritance)",
+  "6-1": "Guide Chapter 1 (The 30,000-Foot View — The Three Types of Scripts)",
+  "6-2": "Guide Chapter 6 (Functions) — callbacks are the pattern behind events",
+  "6-3": "Guide Chapter 1 (Client vs. Server: The Two Brains)",
+  "6-4": "Guide Chapter 6 (Closures) & Chapter 7 (Dictionaries) — the patterns behind RemoteEvents",
+  "6-5": "Guide Chapter 11 (Error Handling — pcall) & Chapter 13 (Modules)",
+};
+
+const App = (() => {
+  const AllUnits = [Unit1, Unit2, Unit3, Unit4, Unit5, Unit6];
+  let currentScreen = 'home';
+  let currentUnit = null;
+  let currentLesson = null;
+  let currentQuest = null;
+
+  // ── SVG Icons ──
+  const Icons = {
+    home: '<svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+    lessons: '<svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>',
+    quests: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    sandbox: '<svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+    settings: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>',
+    back: '<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>',
+    next: '<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>',
+  };
+
+  // ── Initialize ──
+  function init() {
+    renderSidebar();
+    navigate('home');
+    setupKeyboard();
+  }
+
+  // ── Sidebar ──
+  function renderSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.innerHTML = `
+      <div class="sidebar-logo">LL</div>
+      <button class="sidebar-btn" data-screen="home" title="Home">${Icons.home}<span>Home</span></button>
+      <button class="sidebar-btn" data-screen="lessons" title="Lessons">${Icons.lessons}<span>Lessons</span></button>
+      <button class="sidebar-btn" data-screen="quests" title="Quests">${Icons.quests}<span>Quests</span></button>
+      <button class="sidebar-btn" data-screen="sandbox" title="Sandbox">${Icons.sandbox}<span>Sandbox</span></button>
+      <div class="sidebar-spacer"></div>
+      <button class="sidebar-btn" data-screen="settings" title="Settings">${Icons.settings}<span>Settings</span></button>
+    `;
+    sidebar.querySelectorAll('.sidebar-btn').forEach(btn => {
+      btn.addEventListener('click', () => navigate(btn.dataset.screen));
+    });
+  }
+
+  // ── Navigation ──
+  function navigate(screen, data = {}) {
+    currentScreen = screen;
+    // Update sidebar active state
+    document.querySelectorAll('.sidebar-btn').forEach(btn => {
+      const s = btn.dataset.screen;
+      btn.classList.toggle('active',
+        s === screen ||
+        (s === 'home' && screen === 'home') ||
+        (s === 'lessons' && (screen === 'lessons' || screen === 'unit' || screen === 'lesson'))
+      );
+    });
+
+    // Hide all screens
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+    switch (screen) {
+      case 'home': renderHome(); break;
+      case 'lessons': renderCourseOverview(); break;
+      case 'unit': currentUnit = data.unit; renderUnit(); break;
+      case 'lesson': currentUnit = data.unit; currentLesson = data.lesson; renderLesson(); break;
+      case 'quests': renderQuests(); break;
+      case 'quest': currentQuest = data.quest; renderQuestLesson(); break;
+      case 'sandbox': renderSandbox(); break;
+      case 'settings': renderSettings(); break;
+    }
+  }
+
+  // ── Topbar ──
+  function setTopbar(title, breadcrumb = '', buttons = []) {
+    const topbar = document.getElementById('topbar');
+    topbar.innerHTML = `
+      <span id="topbar-title">${title}</span>
+      <span id="topbar-breadcrumb">${breadcrumb}</span>
+      <div class="topbar-spacer"></div>
+      ${buttons.map(b => `<button class="topbar-btn ${b.cls || ''}" onclick="${b.onclick}">${b.label}</button>`).join('')}
+    `;
+  }
+
+  // ── HOME SCREEN ──
+  function renderHome() {
+    const stats = Progress.getTotalStats();
+    const totalLessons = AllUnits.reduce((s, u) => s + u.lessons.length, 0);
+
+    const screen = document.getElementById('screen-home');
+    screen.innerHTML = `
+      <div class="home-hero">
+        <h1>Luau Lab</h1>
+        <p>Master the programming language behind Roblox — from first script to advanced patterns.</p>
+        <p class="text-muted" style="margin-top:8px;font-size:13px">${stats.lessonsCompleted}/${totalLessons} lessons completed · ${stats.questsCompleted}/${Quests.length} quests cleared</p>
+      </div>
+      <div class="home-section-title">Units</div>
+      <div class="units-grid">
+        ${AllUnits.map(u => {
+          const prog = Progress.getUnitProgress(u.id, u.lessons.length);
+          return `
+          <div class="unit-card" onclick="App.navigate('unit', {unit: ${u.id}})">
+            <div class="unit-card-number">Unit ${u.id} ${u.icon}</div>
+            <div class="unit-card-title">${u.title}</div>
+            <div class="unit-card-desc">${u.description}</div>
+            <div class="unit-card-progress"><div class="unit-card-progress-fill" style="width:${prog.percent}%"></div></div>
+            <div class="unit-card-status">${prog.completed}/${prog.total} lessons · ${prog.percent}% complete</div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+    screen.classList.add('active');
+    setTopbar('Luau Lab', '2026 Edition');
+  }
+
+  // ── COURSE OVERVIEW (Lessons Tab) ──
+  function renderCourseOverview() {
+    const stats = Progress.getTotalStats();
+    const totalLessons = AllUnits.reduce((s, u) => s + u.lessons.length, 0);
+
+    const screen = document.getElementById('screen-unit');
+    screen.innerHTML = `
+      <div class="unit-header">
+        <div class="unit-header-label">📖 Full Course</div>
+        <div class="unit-header-title">All Lessons</div>
+        <div class="unit-header-desc">${stats.lessonsCompleted} of ${totalLessons} lessons completed across ${AllUnits.length} units.</div>
+      </div>
+      ${AllUnits.map(u => {
+        const prog = Progress.getUnitProgress(u.id, u.lessons.length);
+        return `
+        <div class="course-unit-group">
+          <div class="course-unit-header" onclick="App.navigate('unit', {unit: ${u.id}})">
+            <span class="course-unit-icon">${u.icon}</span>
+            <div class="course-unit-info">
+              <div class="course-unit-label">Unit ${u.id}</div>
+              <div class="course-unit-title">${u.title}</div>
+            </div>
+            <div class="course-unit-progress-wrap">
+              <div class="unit-card-progress" style="width:80px"><div class="unit-card-progress-fill" style="width:${prog.percent}%"></div></div>
+              <span class="course-unit-pct">${prog.completed}/${prog.total}</span>
+            </div>
+          </div>
+          <div class="course-lesson-list">
+            ${u.lessons.map(l => {
+              const done = Progress.isLessonComplete(u.id, l.id);
+              return `
+              <div class="course-lesson-row ${done ? 'completed' : ''}" onclick="App.navigate('lesson', {unit:${u.id}, lesson:${l.id}})">
+                <span class="course-lesson-dot">${done ? '✓' : u.id + '.' + l.id}</span>
+                <span class="course-lesson-title">${l.title}</span>
+                <span class="course-lesson-desc">${l.description}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    `;
+    screen.classList.add('active');
+    setTopbar('All Lessons', `${stats.lessonsCompleted}/${totalLessons} completed`);
+  }
+
+  // ── UNIT SCREEN ──
+  function renderUnit() {
+    const unit = AllUnits.find(u => u.id === currentUnit);
+    if (!unit) return;
+
+    const screen = document.getElementById('screen-unit');
+    screen.innerHTML = `
+      <div class="unit-header">
+        <div class="unit-header-label">Unit ${unit.id} ${unit.icon}</div>
+        <div class="unit-header-title">${unit.title}</div>
+        <div class="unit-header-desc">${unit.description}</div>
+      </div>
+      <div class="lesson-list">
+        ${unit.lessons.map(l => {
+          const done = Progress.isLessonComplete(unit.id, l.id);
+          return `
+          <div class="lesson-item ${done ? 'completed' : ''}" onclick="App.navigate('lesson', {unit: ${unit.id}, lesson: ${l.id}})">
+            <div class="lesson-item-num">${done ? '✓' : l.id}</div>
+            <div class="lesson-item-info">
+              <div class="lesson-item-title">${l.title}</div>
+              <div class="lesson-item-desc">${l.description}</div>
+            </div>
+            <div class="lesson-item-check">${Icons.check}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+    screen.classList.add('active');
+    setTopbar(unit.title, `Unit ${unit.id}`, [
+      { label: '← Back', onclick: "App.navigate('home')", cls: '' }
+    ]);
+  }
+
+  // ── LESSON SCREEN ──
+  function renderLesson() {
+    hintDrawerOpen = false;
+    hintStage = 0;
+    const unit = AllUnits.find(u => u.id === currentUnit);
+    const lesson = unit ? unit.lessons.find(l => l.id === currentLesson) : null;
+    if (!unit || !lesson) return;
+
+    Progress.setLastVisited(`${unit.id}-${lesson.id}`);
+    const savedCode = Progress.getEditorCode(`${unit.id}-${lesson.id}`);
+    const isComplete = Progress.isLessonComplete(unit.id, lesson.id);
+
+    // Find prev/next
+    const idx = unit.lessons.findIndex(l => l.id === lesson.id);
+    const prevLesson = idx > 0 ? unit.lessons[idx - 1] : null;
+    const nextLesson = idx < unit.lessons.length - 1 ? unit.lessons[idx + 1] : null;
+    const nextUnit = !nextLesson ? AllUnits.find(u => u.id === unit.id + 1) : null;
+
+    const screen = document.getElementById('screen-lesson');
+    screen.innerHTML = `
+      <div class="lesson-instructions">
+        ${renderContent(lesson.content)}
+        ${lesson.challenge ? `
+          <div class="lesson-tip" style="border-left-color:var(--accent); margin-top:24px">
+            <div class="lesson-tip-label" style="color:var(--accent)">✏️ Challenge</div>
+            <p>${lesson.challenge.instructions}</p>
+          </div>
+        ` : ''}
+        ${GuideRefs[`${unit.id}-${lesson.id}`] ? `
+          <div class="lesson-tip" style="border-left-color:var(--purple); margin-top:16px">
+            <div class="lesson-tip-label" style="color:var(--purple)">📖 Luau Lab Guide</div>
+            <p>For a deeper explanation, see <strong>${GuideRefs[`${unit.id}-${lesson.id}`]}</strong> in the companion Luau Lab Programming Guide.</p>
+          </div>
+        ` : ''}
+      </div>
+      <div class="lesson-editor-panel">
+        <div class="editor-header">
+          <span class="editor-header-label">Editor</span>
+          <div class="editor-header-spacer"></div>
+          <button class="editor-btn editor-btn-reset" onclick="App.resetEditor()">Reset</button>
+          <button class="editor-btn editor-btn-clear" onclick="App.clearOutput()">Clear</button>
+          <button class="editor-btn editor-btn-run" onclick="App.runCode()">▶ Run</button>
+          ${lesson.challenge ? `<button class="editor-btn editor-btn-check" onclick="App.checkCode()">✓ Check</button>` : ''}
+        </div>
+        <textarea class="editor-textarea" id="code-editor" spellcheck="false" placeholder="Write your Luau code here...">${savedCode || lesson.starterCode || ''}</textarea>
+        <div class="output-header"><span class="output-header-label">Output</span></div>
+        <div class="output-area" id="output-area"></div>
+        ${lesson.challenge ? buildHintDrawer(lesson.challenge) : ''}
+        <div class="lesson-nav-footer">
+          ${prevLesson ? `<button class="topbar-btn" onclick="App.navigate('lesson', {unit:${unit.id}, lesson:${prevLesson.id}})">← ${prevLesson.title}</button>` : `<button class="topbar-btn" onclick="App.navigate('unit', {unit:${unit.id}})">← Lessons</button>`}
+          <span class="text-muted" style="font-size:12px">${isComplete ? '✅ Completed' : ''}</span>
+          ${nextLesson ? `<button class="topbar-btn primary" onclick="App.navigate('lesson', {unit:${unit.id}, lesson:${nextLesson.id}})">Next: ${nextLesson.title} →</button>` : nextUnit ? `<button class="topbar-btn primary" onclick="App.navigate('unit', {unit:${nextUnit.id}})">Next Unit →</button>` : `<button class="topbar-btn primary" onclick="App.navigate('home')">🏠 Home</button>`}
+        </div>
+      </div>
+    `;
+    screen.classList.add('active');
+    setTopbar(`${lesson.title}`, `Unit ${unit.id} · Lesson ${lesson.id}`, [
+      { label: '← Back', onclick: `App.navigate('unit', {unit:${unit.id}})`, cls: '' }
+    ]);
+
+    // Auto-save on edit
+    const editor = document.getElementById('code-editor');
+    editor.addEventListener('input', () => {
+      Progress.saveEditorCode(`${unit.id}-${lesson.id}`, editor.value);
+    });
+    handleTab(editor);
+  }
+
+  // ── QUEST SCREEN ──
+  function renderQuests() {
+    const screen = document.getElementById('screen-quests');
+    screen.innerHTML = `
+      <div class="unit-header">
+        <div class="unit-header-label">⭐ Challenges</div>
+        <div class="unit-header-title">Quests</div>
+        <div class="unit-header-desc">Standalone coding challenges that test your skills across multiple concepts.</div>
+      </div>
+      ${Quests.map(q => {
+        const done = Progress.isQuestComplete(q.id);
+        return `
+        <div class="quest-card ${done ? 'completed' : ''}" onclick="App.navigate('quest', {quest:'${q.id}'})">
+          <div class="quest-icon">${q.icon}</div>
+          <div class="quest-info">
+            <div class="quest-title">${q.title} ${done ? '✅' : ''}</div>
+            <div class="quest-desc">${q.description}</div>
+            <div class="quest-tags">${q.tags.map(t => `<span class="quest-tag">${t}</span>`).join('')}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    `;
+    screen.classList.add('active');
+    setTopbar('Quests', `${Progress.state.completedQuests.length}/${Quests.length} completed`);
+  }
+
+  // ── QUEST LESSON VIEW ──
+  function renderQuestLesson() {
+    hintDrawerOpen = false;
+    hintStage = 0;
+    const quest = Quests.find(q => q.id === currentQuest);
+    if (!quest) return;
+
+    const savedCode = Progress.getEditorCode(`quest-${quest.id}`);
+    const isComplete = Progress.isQuestComplete(quest.id);
+
+    const screen = document.getElementById('screen-lesson');
+    screen.innerHTML = `
+      <div class="lesson-instructions">
+        <h2>${quest.icon} ${quest.title}</h2>
+        <p>${quest.description}</p>
+        <div class="lesson-tip" style="border-left-color:var(--accent); margin-top:16px">
+          <div class="lesson-tip-label" style="color:var(--accent)">✏️ Challenge</div>
+          <p>${quest.challenge.instructions}</p>
+        </div>
+        <div class="quest-tags" style="margin-top:12px">${quest.tags.map(t => `<span class="quest-tag">${t}</span>`).join('')}</div>
+      </div>
+      <div class="lesson-editor-panel">
+        <div class="editor-header">
+          <span class="editor-header-label">Editor</span>
+          <div class="editor-header-spacer"></div>
+          <button class="editor-btn editor-btn-reset" onclick="App.resetEditor()">Reset</button>
+          <button class="editor-btn editor-btn-clear" onclick="App.clearOutput()">Clear</button>
+          <button class="editor-btn editor-btn-run" onclick="App.runCode()">▶ Run</button>
+          <button class="editor-btn editor-btn-check" onclick="App.checkQuest()">✓ Check</button>
+        </div>
+        <textarea class="editor-textarea" id="code-editor" spellcheck="false" placeholder="Write your solution here...">${savedCode || quest.starterCode || ''}</textarea>
+        <div class="output-header"><span class="output-header-label">Output</span></div>
+        <div class="output-area" id="output-area"></div>
+        ${buildHintDrawer(quest.challenge)}
+        <div class="lesson-nav-footer">
+          <button class="topbar-btn" onclick="App.navigate('quests')">← Quests</button>
+          <span class="text-muted" style="font-size:12px">${isComplete ? '✅ Completed' : ''}</span>
+          <div></div>
+        </div>
+      </div>
+    `;
+    screen.classList.add('active');
+    setTopbar(quest.title, 'Quest');
+
+    const editor = document.getElementById('code-editor');
+    editor.addEventListener('input', () => {
+      Progress.saveEditorCode(`quest-${quest.id}`, editor.value);
+    });
+    handleTab(editor);
+  }
+
+  // ── SANDBOX SCREEN ──
+  function renderSandbox() {
+    const savedCode = Progress.getEditorCode('sandbox');
+    const screen = document.getElementById('screen-sandbox');
+    screen.innerHTML = `
+      <div class="lesson-instructions" style="padding:28px 32px">
+        <h2>Sandbox</h2>
+        <p>A free-form coding area where you can experiment with Luau code. There are no challenges or checks here — just you and the language.</p>
+        <div class="lesson-tip">
+          <div class="lesson-tip-label">💡 What works here</div>
+          <p>The simulator supports: print(), variables, math, strings, string interpolation, if/else, for loops, while loops, tables, and table operations. Roblox-specific APIs (Instance, workspace, etc.) won't work here.</p>
+        </div>
+        <h3>Quick Reference</h3>
+        <div class="lesson-code-block"><pre>print("Hello!")          -- Output text
+local x = 42             -- Variables
+local s = \`2 + 2 = {2+2}\`  -- Interpolation
+if x > 10 then ... end   -- Conditionals
+for i = 1, 5 do ... end  -- Loops
+local t = {1, 2, 3}      -- Tables</pre></div>
+      </div>
+      <div class="lesson-editor-panel">
+        <div class="editor-header">
+          <span class="editor-header-label">Sandbox Editor</span>
+          <div class="editor-header-spacer"></div>
+          <button class="editor-btn editor-btn-clear" onclick="App.clearOutput()">Clear</button>
+          <button class="editor-btn editor-btn-run" onclick="App.runCode()">▶ Run</button>
+        </div>
+        <textarea class="editor-textarea" id="code-editor" spellcheck="false" placeholder="-- Write anything you want!\n">${savedCode || '-- Sandbox: experiment freely!\nlocal name = "World"\nprint(`Hello, {name}!`)\n\nfor i = 1, 5 do\n    print(`Number {i}`)\nend\n'}</textarea>
+        <div class="output-header"><span class="output-header-label">Output</span></div>
+        <div class="output-area" id="output-area"></div>
+        <div class="lesson-nav-footer"><div></div><div></div><div></div></div>
+      </div>
+    `;
+    screen.classList.add('active');
+    setTopbar('Sandbox', 'Free Play');
+
+    const editor = document.getElementById('code-editor');
+    editor.addEventListener('input', () => {
+      Progress.saveEditorCode('sandbox', editor.value);
+    });
+    handleTab(editor);
+  }
+
+  // ── SETTINGS SCREEN ──
+  function renderSettings() {
+    const stats = Progress.getTotalStats();
+    const totalLessons = AllUnits.reduce((s, u) => s + u.lessons.length, 0);
+
+    const screen = document.getElementById('screen-settings');
+    screen.innerHTML = `
+      <div class="unit-header">
+        <div class="unit-header-title">Settings</div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title">Progress</div>
+        <div class="settings-row"><label>Lessons completed</label><span>${stats.lessonsCompleted} / ${totalLessons}</span></div>
+        <div class="settings-row"><label>Quests completed</label><span>${stats.questsCompleted} / ${Quests.length}</span></div>
+        <div class="settings-row"><label>Started</label><span>${new Date(stats.startedAt).toLocaleDateString()}</span></div>
+        <div class="settings-row"><label>Last updated</label><span>${new Date(stats.updatedAt).toLocaleDateString()}</span></div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title">Save / Load Progress</div>
+        <div class="settings-row">
+          <label>Export progress as JSON file</label>
+          <button class="topbar-btn" onclick="Progress.exportJSON()">📥 Export</button>
+        </div>
+        <div class="settings-row">
+          <label>Import progress from JSON file</label>
+          <button class="topbar-btn" onclick="document.getElementById('import-file').click()">📤 Import</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="App.handleImport(event)">
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title" style="color:var(--red)">Danger Zone</div>
+        <div class="settings-row">
+          <label>Reset all progress and saved code</label>
+          <button class="topbar-btn" style="border-color:var(--red);color:var(--red)" onclick="App.handleReset()">🗑️ Reset All</button>
+        </div>
+      </div>
+    `;
+    screen.classList.add('active');
+    setTopbar('Settings', '');
+  }
+
+  // ── Hint Drawer Builder ──
+  function buildHintDrawer(challenge) {
+    if (!challenge || !challenge.hint1) return '';
+    const escapedSolution = challenge.solution ? escapeHtml(challenge.solution) : '';
+    return `
+      <div class="hint-drawer-toggle" onclick="App.toggleHintDrawer()">
+        <span class="hint-drawer-toggle-label">💡 Need Help?</span>
+        <span class="hint-drawer-toggle-arrow">▲</span>
+      </div>
+      <div class="hint-drawer-body" id="hint-drawer-body">
+        <div class="hint-drawer-content">
+          <div class="hint-stage" id="hint-stage-1">
+            <button class="hint-stage-btn" onclick="App.revealHint(1)">🔍 Show Hint</button>
+            <div class="hint-stage-text" id="hint-text-1">${escapeHtml(challenge.hint1)}</div>
+          </div>
+          <div class="hint-stage" id="hint-stage-2" style="display:none">
+            <button class="hint-stage-btn" onclick="App.revealHint(2)">🔎 Show Bigger Hint</button>
+            <div class="hint-stage-text" id="hint-text-2">${escapeHtml(challenge.hint2 || '')}</div>
+          </div>
+          <div class="hint-stage" id="hint-stage-3" style="display:none">
+            <button class="hint-stage-btn solution-btn" onclick="App.revealHint(3)">🔓 Show Full Solution</button>
+            <div class="hint-stage-text solution-text" id="hint-text-3"><pre>${escapedSolution}</pre>
+              <button class="hint-copy-btn" onclick="App.copySolution()">📋 Copy to Editor</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  let hintDrawerOpen = false;
+  let hintStage = 0;
+
+  function toggleHintDrawer() {
+    hintDrawerOpen = !hintDrawerOpen;
+    const body = document.getElementById('hint-drawer-body');
+    const toggle = document.querySelector('.hint-drawer-toggle');
+    if (body) body.classList.toggle('open', hintDrawerOpen);
+    if (toggle) toggle.classList.toggle('open', hintDrawerOpen);
+  }
+
+  function revealHint(stage) {
+    if (stage <= hintStage) return;
+    hintStage = stage;
+    const text = document.getElementById(`hint-text-${stage}`);
+    const btn = document.querySelector(`#hint-stage-${stage} .hint-stage-btn`);
+    if (text) text.classList.add('visible');
+    if (btn) btn.classList.add('revealed');
+    if (stage < 3) {
+      const nextStage = document.getElementById(`hint-stage-${stage + 1}`);
+      if (nextStage) nextStage.style.display = 'block';
+    }
+  }
+
+  function copySolution() {
+    const editor = document.getElementById('code-editor');
+    const solutionPre = document.querySelector('#hint-text-3 pre');
+    if (editor && solutionPre) {
+      editor.value = solutionPre.textContent;
+      editor.dispatchEvent(new Event('input'));
+      const btn = document.querySelector('.hint-copy-btn');
+      if (btn) {
+        const original = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        setTimeout(() => { btn.innerHTML = original; }, 1500);
+      }
+    }
+  }
+
+  // ── Content Renderer ──
+  function renderContent(blocks) {
+    return blocks.map(b => {
+      switch (b.type) {
+        case 'heading': return `<h2>${b.text}</h2>`;
+        case 'heading3': return `<h3>${b.text}</h3>`;
+        case 'paragraph': return `<p>${b.text}</p>`;
+        case 'code': return `<div class="lesson-code-block"><pre>${escapeHtml(b.text)}</pre></div>`;
+        case 'tip': return `<div class="lesson-tip"><div class="lesson-tip-label">${b.label || '💡 TIP'}</div><p>${b.text}</p></div>`;
+        case 'warning': return `<div class="lesson-warning"><div class="lesson-tip-label">${b.label || '⚠️ WARNING'}</div><p>${b.text}</p></div>`;
+        default: return '';
+      }
+    }).join('');
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Editor Actions ──
+  function runCode() {
+    const editor = document.getElementById('code-editor');
+    if (!editor) return;
+    const output = Editor.simulate(editor.value);
+    displayOutput(output);
+  }
+
+  function clearOutput() {
+    const area = document.getElementById('output-area');
+    if (area) area.innerHTML = '';
+  }
+
+  function resetEditor() {
+    const editor = document.getElementById('code-editor');
+    if (!editor) return;
+
+    let starterCode = '';
+    if (currentScreen === 'lesson') {
+      const unit = AllUnits.find(u => u.id === currentUnit);
+      const lesson = unit ? unit.lessons.find(l => l.id === currentLesson) : null;
+      starterCode = lesson ? lesson.starterCode || '' : '';
+      Progress.saveEditorCode(`${currentUnit}-${currentLesson}`, starterCode);
+    } else if (currentScreen === 'quest') {
+      const quest = Quests.find(q => q.id === currentQuest);
+      starterCode = quest ? quest.starterCode || '' : '';
+      Progress.saveEditorCode(`quest-${currentQuest}`, starterCode);
+    }
+    editor.value = starterCode;
+    clearOutput();
+  }
+
+  function checkCode() {
+    const unit = AllUnits.find(u => u.id === currentUnit);
+    const lesson = unit ? unit.lessons.find(l => l.id === currentLesson) : null;
+    if (!lesson || !lesson.challenge) return;
+
+    const editor = document.getElementById('code-editor');
+    const output = Editor.simulate(editor.value);
+    displayOutput(output);
+
+    const result = Editor.checkOutput(output, lesson.challenge.expectedOutput);
+    const area = document.getElementById('output-area');
+    if (result.pass) {
+      area.innerHTML += `<div class="output-line success">✅ ${result.message}</div>`;
+      Progress.completeLesson(currentUnit, currentLesson);
+      // Update the completion indicator
+      const nav = document.querySelector('.lesson-nav-footer .text-muted');
+      if (nav) nav.textContent = '✅ Completed';
+    } else {
+      area.innerHTML += `<div class="output-line error">❌ ${result.message}</div>`;
+      if (lesson.challenge.hint) {
+        area.innerHTML += `<div class="output-line info">💡 Hint: Check the lesson instructions and try again!</div>`;
+      }
+    }
+  }
+
+  function checkQuest() {
+    const quest = Quests.find(q => q.id === currentQuest);
+    if (!quest) return;
+
+    const editor = document.getElementById('code-editor');
+    const output = Editor.simulate(editor.value);
+    displayOutput(output);
+
+    const result = Editor.checkOutput(output, quest.challenge.expectedOutput);
+    const area = document.getElementById('output-area');
+    if (result.pass) {
+      area.innerHTML += `<div class="output-line success">✅ Quest Complete! ${result.message}</div>`;
+      Progress.completeQuest(quest.id);
+      const nav = document.querySelector('.lesson-nav-footer .text-muted');
+      if (nav) nav.textContent = '✅ Completed';
+    } else {
+      area.innerHTML += `<div class="output-line error">❌ ${result.message}</div>`;
+    }
+  }
+
+  function displayOutput(output) {
+    const area = document.getElementById('output-area');
+    if (!area) return;
+    area.innerHTML = output.map(o =>
+      `<div class="output-line ${o.type === 'error' ? 'error' : o.type === 'info' ? 'info' : ''}">${escapeHtml(o.text)}</div>`
+    ).join('');
+  }
+
+  // ── Tab key support in editor ──
+  function handleTab(textarea) {
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.value = textarea.value.substring(0, start) + '    ' + textarea.value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+      }
+    });
+  }
+
+  // ── Keyboard shortcuts ──
+  function setupKeyboard() {
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+Enter to run
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        runCode();
+      }
+    });
+  }
+
+  // ── Settings handlers ──
+  function handleImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    Progress.importJSON(file).then(() => {
+      navigate('settings');
+    }).catch(err => {
+      alert('Failed to import: ' + err.message);
+    });
+  }
+
+  function handleReset() {
+    if (confirm('Are you sure? This will erase all progress and saved code.')) {
+      Progress.reset();
+      navigate('home');
+    }
+  }
+
+  return {
+    init, navigate, runCode, clearOutput, resetEditor,
+    checkCode, checkQuest, handleImport, handleReset,
+    toggleHintDrawer, revealHint, copySolution,
+  };
+})();
+
+// Start the app
+document.addEventListener('DOMContentLoaded', App.init);
+</script>
+</body>
+</html>
