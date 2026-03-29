@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gitguide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0e1117;
+    --surface: #161b22;
+    --surface-raised: #1c2129;
+    --border: #30363d;
+    --border-bright: #484f58;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-dim: #1f6feb33;
+    --green: #3fb950;
+    --green-dim: #23863633;
+    --orange: #d29922;
+    --orange-dim: #9e6a0333;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --code-bg: #0d1117;
+    --copy-flash: #3fb95066;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, var(--accent-dim) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    position: relative;
+  }
+  .header h1 span { color: var(--accent); }
+  .header .subtitle {
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    position: relative;
+  }
+  .badge-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .badge.fedora { color: #51a2da; border-color: #51a2da44; }
+  .badge.gh { color: var(--accent); border-color: var(--accent-dim); }
+  .badge.cli { color: var(--green); border-color: var(--green-dim); }
+
+  /* Progress bar */
+  .progress-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .progress-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+  .progress-count {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* Main content */
+  .content {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* Phase headers */
+  .phase {
+    margin-top: 2.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .phase-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .phase-icon.setup { background: var(--accent-dim); color: var(--accent); }
+  .phase-icon.work { background: var(--green-dim); color: var(--green); }
+  .phase-icon.daily { background: var(--orange-dim); color: var(--orange); }
+  .phase h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Step cards */
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .step:hover { border-color: var(--border-bright); }
+  .step.completed { border-color: var(--green); }
+  .step.completed .step-header .step-num { background: var(--green); color: var(--bg); }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .step-header:hover { background: var(--surface-raised); }
+
+  .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+  }
+  .step-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .step-chevron {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    transition: transform 0.25s ease;
+  }
+  .step.open .step-chevron { transform: rotate(90deg); }
+
+  .step-body {
+    display: none;
+    padding: 0 1.25rem 1.25rem 3.35rem;
+  }
+  .step.open .step-body { display: block; }
+
+  .step-body p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.65;
+  }
+  .step-body p strong { color: var(--text); font-weight: 600; }
+
+  /* Code blocks */
+  .cmd-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 0.6rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .cmd-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.75rem;
+    background: var(--surface-raised);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+  }
+  .cmd-code {
+    padding: 0.75rem 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--text);
+  }
+  .cmd-code .comment { color: var(--text-muted); }
+  .cmd-code .prompt { color: var(--green); user-select: none; }
+  .cmd-code .flag { color: var(--orange); }
+  .cmd-code .string { color: #a5d6ff; }
+  .cmd-code .output { color: var(--text-muted); font-style: italic; }
+
+  /* Tip / Warning callouts */
+  .callout {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0.75rem 0;
+    font-size: 0.85rem;
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    line-height: 1.6;
+  }
+  .callout-icon { flex-shrink: 0; font-size: 1rem; margin-top: 0.1rem; }
+  .callout.tip {
+    background: var(--green-dim);
+    border: 1px solid #3fb95033;
+    color: #7ee787;
+  }
+  .callout.warn {
+    background: var(--orange-dim);
+    border: 1px solid #d2992233;
+    color: #e3b341;
+  }
+  .callout.info {
+    background: var(--accent-dim);
+    border: 1px solid #58a6ff33;
+    color: #79c0ff;
+  }
+
+  /* Check-off button */
+  .done-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding: 0.45rem 0.9rem;
+    background: var(--green-dim);
+    border: 1px solid #3fb95044;
+    border-radius: 6px;
+    color: var(--green);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .done-btn:hover { background: #3fb95022; border-color: var(--green); }
+  .done-btn.is-done { opacity: 0.5; pointer-events: none; }
+
+  /* Cheat sheet at bottom */
+  .cheatsheet {
+    margin-top: 3rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .cheatsheet-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .cheatsheet-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .cs-item {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .cs-item:hover { background: var(--surface-raised); }
+  .cs-item:nth-child(even) { border-right: none; }
+  .cs-item:nth-last-child(-n+2) { border-bottom: none; }
+  .cs-cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-bottom: 0.2rem;
+  }
+  .cs-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 600px) {
+    .header { padding: 2rem 1rem 1.5rem; }
+    .header h1 { font-size: 1.5rem; }
+    .content { padding: 1.5rem 1rem 3rem; }
+    .step-body { padding-left: 1.25rem; }
+    .cheatsheet-grid { grid-template-columns: 1fr; }
+    .cs-item { border-right: none; }
+    .cs-item:last-child { border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Getting Files to <span>GitHub</span></h1>
+  <p class="subtitle">A step-by-step guide using Git + GitHub CLI on Fedora</p>
+  <div class="badge-row">
+    <span class="badge fedora">&#9881; Fedora / KDE Plasma</span>
+    <span class="badge gh">&#10095; GitHub CLI</span>
+    <span class="badge cli">&#9632; Terminal</span>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <span class="progress-label">Progress</span>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <span class="progress-count" id="progressCount">0 / 9</span>
+</div>
+
+<div class="content" id="content">
+
+  <!-- ========== PHASE 1: ONE-TIME SETUP ========== -->
+  <div class="phase">
+    <div class="phase-icon setup">&#9881;</div>
+    <h2>One-Time Setup</h2>
+  </div>
+
+  <div class="step" data-step="1">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">1</div>
+      <div class="step-title">Install Git and GitHub CLI</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p>Open <strong>Konsole</strong> (or any terminal) and run these two commands. Git is the version control engine; <code>gh</code> is GitHub's official CLI tool that sits on top of it.</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>sudo dnf install git</div>
+      </div>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>sudo dnf install gh</div>
+      </div>
+      <div class="callout tip">
+        <span class="callout-icon">&#10003;</span>
+        <span>If either is already installed, dnf will just say "nothing to do." No harm done.</span>
+      </div>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <div class="step" data-step="2">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">2</div>
+      <div class="step-title">Tell Git who you are</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p>Git stamps every commit with your name and email. These should match your GitHub account. This only needs to be done once per machine.</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>git config <span class="flag">--global</span> user.name <span class="string">"Your Name"</span>
+<span class="prompt">$ </span>git config <span class="flag">--global</span> user.email <span class="string">"you@example.com"</span></div>
+      </div>
+      <div class="callout info">
+        <span class="callout-icon">&#8505;</span>
+        <span>Replace the quoted values with your actual name and the email tied to your GitHub account.</span>
+      </div>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <div class="step" data-step="3">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">3</div>
+      <div class="step-title">Authenticate with GitHub</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p>This is where <code>gh</code> really shines — it handles all the authentication plumbing for you. Run this and follow the interactive prompts:</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>gh auth login</div>
+      </div>
+      <p>It will ask you a few things:</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>prompts you'll see</span></div>
+        <div class="cmd-code"><span class="output">? What account do you want to log into?</span>  &#8594; GitHub.com
+<span class="output">? What is your preferred protocol?</span>        &#8594; HTTPS
+<span class="output">? Authenticate Git with your GitHub credentials?</span> &#8594; Yes
+<span class="output">? How would you like to authenticate?</span>     &#8594; Login with a web browser</div>
+      </div>
+      <p>It will give you a <strong>one-time code</strong>, then open your browser. Paste the code, authorize the app, and you're done. This also configures regular <code>git push</code> to work without extra password prompts.</p>
+      <div class="callout tip">
+        <span class="callout-icon">&#10003;</span>
+        <span>You can verify it worked by running: <code>gh auth status</code></span>
+      </div>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <div class="step" data-step="4">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">4</div>
+      <div class="step-title">Clone your existing repo</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p>This downloads your GitHub repo to a local folder. Navigate to wherever you want to keep your projects first (like <code>~/Projects</code>), then clone:</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>cd ~/Projects
+<span class="prompt">$ </span>gh repo clone <span class="string">your-username/your-repo-name</span></div>
+      </div>
+      <p>This creates a folder with your repo's name containing all of your existing files. <strong>Move into it:</strong></p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>cd <span class="string">your-repo-name</span></div>
+      </div>
+      <div class="callout info">
+        <span class="callout-icon">&#8505;</span>
+        <span>You can find the exact clone path on your repo's GitHub page — the green <strong>&lt;&gt; Code</strong> button shows it. But with <code>gh</code>, just the <code>username/repo</code> format works.</span>
+      </div>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <!-- ========== PHASE 2: ADDING YOUR FILES ========== -->
+  <div class="phase">
+    <div class="phase-icon work">&#9654;</div>
+    <h2>Adding Your Files Today</h2>
+  </div>
+
+  <div class="step" data-step="5">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">5</div>
+      <div class="step-title">Copy your files into the repo folder</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p>Use your file manager (Dolphin) or the terminal to copy your new files into the cloned repo folder. You can also overwrite existing files if you're updating them — Git will detect the changes automatically.</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal — examples</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="comment"># Copy a single file</span>
+<span class="prompt">$ </span>cp ~/Downloads/my-new-game.html .
+
+<span class="comment"># Copy several files at once</span>
+<span class="prompt">$ </span>cp ~/Downloads/file1.html ~/Downloads/file2.html .
+
+<span class="comment"># Copy everything from a folder</span>
+<span class="prompt">$ </span>cp ~/Downloads/my-batch/* .</div>
+      </div>
+      <div class="callout warn">
+        <span class="callout-icon">&#9888;</span>
+        <span>Make sure you're inside the repo folder when you do this. The <code>.</code> at the end means "right here."</span>
+      </div>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <div class="step" data-step="6">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">6</div>
+      <div class="step-title">Check what Git sees</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p>Before committing, take a look at what Git has detected. This is your safety check — get in the habit of running this often:</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>git status</div>
+      </div>
+      <p>You'll see output like this:</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>example output</span></div>
+        <div class="cmd-code"><span class="output">Untracked files:
+    my-new-game.html
+    another-file.html
+
+Modified:
+    existing-file.html</span></div>
+      </div>
+      <p><strong>Untracked</strong> = brand new files Git hasn't seen before. <strong>Modified</strong> = existing files you've updated. Both are expected.</p>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <div class="step" data-step="7">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">7</div>
+      <div class="step-title">Stage and commit</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p><strong>Staging</strong> means telling Git "include these changes in my next commit." <strong>Committing</strong> creates a snapshot with a message describing what you did.</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="comment"># Stage everything (new + modified)</span>
+<span class="prompt">$ </span>git add <span class="flag">.</span>
+
+<span class="comment"># Commit with a message</span>
+<span class="prompt">$ </span>git commit <span class="flag">-m</span> <span class="string">"Add new game files and update index"</span></div>
+      </div>
+      <p>Or, to stage and commit specific files instead of everything:</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal — selective</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>git add my-new-game.html another-file.html
+<span class="prompt">$ </span>git commit <span class="flag">-m</span> <span class="string">"Add two new game projects"</span></div>
+      </div>
+      <div class="callout tip">
+        <span class="callout-icon">&#10003;</span>
+        <span>Write commit messages that describe <em>what</em> changed, not <em>that</em> something changed. "Add Missile Command remake" beats "update files."</span>
+      </div>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <div class="step" data-step="8">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">8</div>
+      <div class="step-title">Push to GitHub</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p>Your commit currently exists only on your machine. Push sends it up to GitHub so it's live in your repo:</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>terminal</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="prompt">$ </span>git push</div>
+      </div>
+      <p>That's it. Go check your repo on GitHub — your new and updated files should be there. Since <code>gh auth login</code> already set up your credentials, no password prompt should appear.</p>
+      <div class="callout tip">
+        <span class="callout-icon">&#10003;</span>
+        <span>You can quickly open your repo in the browser with: <code>gh browse</code></span>
+      </div>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <!-- ========== PHASE 3: DAILY WORKFLOW ========== -->
+  <div class="phase">
+    <div class="phase-icon daily">&#9733;</div>
+    <h2>Your Daily Workflow</h2>
+  </div>
+
+  <div class="step" data-step="9">
+    <div class="step-header" onclick="toggleStep(this)">
+      <div class="step-num">9</div>
+      <div class="step-title">The daily 4-command loop</div>
+      <div class="step-chevron">&#9654;</div>
+    </div>
+    <div class="step-body">
+      <p>Once the setup is done, adding 1–5 files per day is just this loop every time:</p>
+      <div class="cmd-block">
+        <div class="cmd-label"><span>daily workflow</span><button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        <div class="cmd-code"><span class="comment"># 1. Go to your repo</span>
+<span class="prompt">$ </span>cd ~/Projects/<span class="string">your-repo-name</span>
+
+<span class="comment"># 2. Copy in your new/updated files</span>
+<span class="prompt">$ </span>cp ~/path/to/new-files/* .
+
+<span class="comment"># 3. Stage, commit, push</span>
+<span class="prompt">$ </span>git add .
+<span class="prompt">$ </span>git commit <span class="flag">-m</span> <span class="string">"Add today's project files"</span>
+<span class="prompt">$ </span>git push</div>
+      </div>
+      <div class="callout info">
+        <span class="callout-icon">&#8505;</span>
+        <span>You can make multiple commits per day. Smaller, focused commits with clear messages are better than one giant dump at the end of the day.</span>
+      </div>
+      <div class="callout warn">
+        <span class="callout-icon">&#9888;</span>
+        <span>If you ever edit files directly on GitHub's website, run <code>git pull</code> before starting local work to sync those changes down first. Otherwise you'll get merge conflicts.</span>
+      </div>
+      <button class="done-btn" onclick="markDone(this)">&#10003; Done</button>
+    </div>
+  </div>
+
+  <!-- ========== CHEAT SHEET ========== -->
+  <div class="cheatsheet">
+    <div class="cheatsheet-header">&#9889; Quick Reference</div>
+    <div class="cheatsheet-grid">
+      <div class="cs-item">
+        <div class="cs-cmd">git status</div>
+        <div class="cs-desc">See what's changed / staged</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">git add .</div>
+        <div class="cs-desc">Stage all changes</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">git commit -m "msg"</div>
+        <div class="cs-desc">Save a snapshot locally</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">git push</div>
+        <div class="cs-desc">Upload commits to GitHub</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">git pull</div>
+        <div class="cs-desc">Download latest from GitHub</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">git log --oneline</div>
+        <div class="cs-desc">See commit history</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">git diff</div>
+        <div class="cs-desc">See unstaged changes in detail</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">gh browse</div>
+        <div class="cs-desc">Open repo in browser</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">gh auth status</div>
+        <div class="cs-desc">Check login state</div>
+      </div>
+      <div class="cs-item">
+        <div class="cs-cmd">gh repo view</div>
+        <div class="cs-desc">Repo info in terminal</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const TOTAL_STEPS = 9;
+  let completed = new Set();
+
+  // Restore from sessionStorage
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('gh-guide-done') || '[]');
+    saved.forEach(s => completed.add(s));
+  } catch(e) {}
+
+  function toggleStep(header) {
+    const step = header.parentElement;
+    const wasOpen = step.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.step.open').forEach(s => s.classList.remove('open'));
+    if (!wasOpen) step.classList.add('open');
+  }
+
+  function markDone(btn) {
+    const step = btn.closest('.step');
+    const num = parseInt(step.dataset.step);
+    completed.add(num);
+    step.classList.add('completed');
+    step.classList.remove('open');
+    btn.classList.add('is-done');
+    btn.textContent = '✓ Completed';
+    sessionStorage.setItem('gh-guide-done', JSON.stringify([...completed]));
+    updateProgress();
+    // Auto-open next
+    const next = document.querySelector(`.step[data-step="${num + 1}"]`);
+    if (next && !next.classList.contains('completed')) {
+      setTimeout(() => next.classList.add('open'), 300);
+    }
+  }
+
+  function updateProgress() {
+    const pct = (completed.size / TOTAL_STEPS) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressCount').textContent = completed.size + ' / ' + TOTAL_STEPS;
+  }
+
+  function copyCmd(btn) {
+    const block = btn.closest('.cmd-block');
+    const codeEl = block.querySelector('.cmd-code');
+    // Get text, strip prompt symbols and comment lines
+    let text = codeEl.innerText
+      .split('\n')
+      .filter(line => !line.trim().startsWith('#') && !line.trim().startsWith('?'))
+      .map(line => line.replace(/^\$\s*/, '').trim())
+      .filter(Boolean)
+      .join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 1500);
+    });
+  }
+
+  // Init: restore completed state and open step 1
+  document.querySelectorAll('.step').forEach(step => {
+    const num = parseInt(step.dataset.step);
+    if (completed.has(num)) {
+      step.classList.add('completed');
+      const btn = step.querySelector('.done-btn');
+      if (btn) { btn.classList.add('is-done'); btn.textContent = '✓ Completed'; }
+    }
+  });
+  updateProgress();
+
+  // Auto-open first incomplete step
+  const firstIncomplete = document.querySelector('.step:not(.completed)');
+  if (firstIncomplete) firstIncomplete.classList.add('open');
+</script>
+</body>
+</html>

@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Workshop — Woodworking Calculators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:wght@400;500&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1209;
+    --paper: #f5ede0;
+    --warm-mid: #c4a882;
+    --amber: #b8710a;
+    --amber-bright: #d4820c;
+    --oak: #8b5e3c;
+    --iron: #2c2416;
+    --rule: #c4a882;
+    --chip: #e8ddd0;
+    --chip-dark: #d4c4b0;
+    --shadow: rgba(26,18,9,0.18);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--iron);
+    background-image:
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 80px,
+        rgba(196,168,130,0.03) 80px,
+        rgba(196,168,130,0.03) 81px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 80px,
+        rgba(196,168,130,0.03) 80px,
+        rgba(196,168,130,0.03) 81px
+      );
+    font-family: 'Josefin Sans', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .site-header {
+    background: var(--ink);
+    border-bottom: 3px solid var(--amber);
+    padding: 28px 40px 24px;
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-area h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--paper);
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .logo-area h1 span { color: var(--amber); }
+  .logo-area p {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--warm-mid);
+    margin-top: 4px;
+  }
+
+  .header-rule {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--amber), transparent);
+    margin-bottom: 8px;
+  }
+
+  .header-badge {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--warm-mid);
+    text-align: right;
+    margin-bottom: 4px;
+    line-height: 1.7;
+  }
+
+  /* NAV TABS */
+  .calc-nav {
+    background: var(--ink);
+    padding: 0 40px;
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .calc-nav::-webkit-scrollbar { display: none; }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--warm-mid);
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 12px 18px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .nav-btn:hover { color: var(--paper); }
+  .nav-btn.active {
+    color: var(--amber-bright);
+    border-bottom-color: var(--amber-bright);
+  }
+
+  /* MAIN LAYOUT */
+  .main-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* CALC PANELS */
+  .calc-panel {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .calc-panel.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-header {
+    margin-bottom: 32px;
+  }
+  .panel-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: var(--paper);
+    line-height: 1.1;
+  }
+  .panel-header p {
+    color: var(--warm-mid);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+  }
+  .panel-divider {
+    height: 2px;
+    background: linear-gradient(to right, var(--amber), transparent);
+    margin: 12px 0 28px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--paper);
+    border-radius: 2px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+    box-shadow: 4px 4px 0 var(--amber), 0 8px 32px var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--amber) 0px, var(--amber) 12px,
+      transparent 12px, transparent 16px
+    );
+  }
+
+  .card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--oak);
+    margin-bottom: 20px;
+    letter-spacing: 0.03em;
+  }
+
+  /* FORM ELEMENTS */
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px 20px;
+    margin-bottom: 20px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--oak);
+    font-weight: 600;
+  }
+
+  input[type="number"], input[type="text"], select {
+    background: var(--chip);
+    border: 1px solid var(--chip-dark);
+    border-bottom: 2px solid var(--warm-mid);
+    border-radius: 1px;
+    padding: 9px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    width: 100%;
+  }
+  input[type="number"]:focus, select:focus {
+    border-bottom-color: var(--amber);
+    background: #ede4d5;
+  }
+
+  select option { background: var(--paper); }
+
+  /* BUTTON */
+  .calc-btn {
+    background: var(--amber);
+    color: var(--paper);
+    border: none;
+    padding: 12px 32px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 1px;
+    transition: background 0.15s, transform 0.1s;
+    box-shadow: 2px 2px 0 var(--oak);
+  }
+  .calc-btn:hover { background: var(--amber-bright); }
+  .calc-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--oak); }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--warm-mid);
+    color: var(--oak);
+    padding: 11px 20px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 1px;
+    margin-left: 10px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .reset-btn:hover { border-color: var(--oak); color: var(--ink); }
+
+  .btn-row { display: flex; align-items: center; gap: 0; margin-top: 4px; }
+
+  /* RESULT AREA */
+  .result-box {
+    margin-top: 24px;
+    background: var(--iron);
+    border-left: 4px solid var(--amber);
+    padding: 18px 22px;
+    border-radius: 0 2px 2px 0;
+    display: none;
+  }
+  .result-box.visible { display: block; }
+
+  .result-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--warm-mid);
+    margin-bottom: 4px;
+  }
+
+  .result-main {
+    font-family: 'DM Mono', monospace;
+    font-size: 2rem;
+    color: var(--amber-bright);
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .result-sub {
+    font-size: 0.7rem;
+    color: var(--warm-mid);
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+    line-height: 1.6;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .result-item {
+    background: rgba(196,168,130,0.08);
+    padding: 12px 14px;
+    border-radius: 1px;
+  }
+  .result-item .r-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--warm-mid);
+    margin-bottom: 4px;
+  }
+  .result-item .r-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.15rem;
+    color: var(--amber-bright);
+  }
+
+  /* INFO BOXES */
+  .info-note {
+    background: rgba(196,168,130,0.12);
+    border: 1px solid rgba(196,168,130,0.25);
+    border-radius: 2px;
+    padding: 12px 16px;
+    font-size: 0.72rem;
+    color: var(--warm-mid);
+    line-height: 1.6;
+    margin-top: 16px;
+    letter-spacing: 0.02em;
+  }
+  .info-note strong { color: var(--amber); }
+
+  /* TABLE */
+  .ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    margin-top: 8px;
+  }
+  .ref-table th {
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--oak);
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--chip-dark);
+    text-align: left;
+    font-family: 'Josefin Sans', sans-serif;
+  }
+  .ref-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--chip-dark);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--ink);
+  }
+  .ref-table tr:last-child td { border-bottom: none; }
+  .ref-table tr:hover td { background: var(--chip-dark); }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* RULER DECORATION */
+  .ruler-strip {
+    height: 20px;
+    background: var(--chip-dark);
+    margin: 20px 0;
+    border-radius: 1px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ruler-strip::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--warm-mid) 0px, var(--warm-mid) 1px,
+      transparent 1px, transparent 9px,
+      var(--warm-mid) 9px, var(--warm-mid) 10px,
+      transparent 10px, transparent 49px,
+      var(--warm-mid) 49px, var(--warm-mid) 50px,
+      transparent 50px, transparent 99px,
+      var(--amber) 99px, var(--amber) 100px,
+      transparent 100px, transparent 199px
+    );
+    opacity: 0.5;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--iron); }
+  ::-webkit-scrollbar-thumb { background: var(--amber); border-radius: 3px; }
+
+  /* FOOTER */
+  .site-footer {
+    text-align: center;
+    padding: 30px;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(196,168,130,0.4);
+  }
+
+  /* FRACTIONAL INPUT hint */
+  .frac-hint {
+    font-size: 0.58rem;
+    color: var(--warm-mid);
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-area">
+    <h1>The <span>Workshop</span></h1>
+    <p>Precision Woodworking Calculators</p>
+  </div>
+  <div class="header-rule"></div>
+  <div class="header-badge">
+    Est. <br>Tools for <br>the Craft
+  </div>
+</header>
+
+<nav class="calc-nav">
+  <button class="nav-btn active" onclick="showPanel('board-feet')">Board Feet</button>
+  <button class="nav-btn" onclick="showPanel('lumber-cost')">Lumber Cost</button>
+  <button class="nav-btn" onclick="showPanel('miter')">Miter & Bevel</button>
+  <button class="nav-btn" onclick="showPanel('dovetail')">Dovetail Layout</button>
+  <button class="nav-btn" onclick="showPanel('shelf-sag')">Shelf Sag</button>
+  <button class="nav-btn" onclick="showPanel('dado')">Dado & Rabbet</button>
+  <button class="nav-btn" onclick="showPanel('finishing')">Finish Coverage</button>
+  <button class="nav-btn" onclick="showPanel('screw')">Screw Reference</button>
+</nav>
+
+<main class="main-wrap">
+
+  <!-- ============ BOARD FEET ============ -->
+  <div class="calc-panel active" id="board-feet">
+    <div class="panel-header">
+      <h2>Board Feet Calculator</h2>
+      <p>Calculate lumber volume in board feet — the standard unit of lumber measurement</p>
+      <div class="panel-divider"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Single Board</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Thickness (inches)</label>
+            <input type="number" id="bf-thick" value="1" min="0.1" step="0.125">
+          </div>
+          <div class="field">
+            <label>Width (inches)</label>
+            <input type="number" id="bf-width" value="6" min="0.1" step="0.25">
+          </div>
+          <div class="field">
+            <label>Length (feet)</label>
+            <input type="number" id="bf-length" value="8" min="0.1" step="0.5">
+          </div>
+          <div class="field">
+            <label>Quantity</label>
+            <input type="number" id="bf-qty" value="1" min="1" step="1">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcBoardFeet()">Calculate</button>
+          <button class="reset-btn" onclick="resetBF()">Reset</button>
+        </div>
+        <div class="result-box" id="bf-result">
+          <div class="result-label">Total Board Feet</div>
+          <div class="result-main" id="bf-main">—</div>
+          <div class="result-sub" id="bf-sub"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Project Cut List</div>
+        <div id="cutlist-rows">
+          <div class="field-grid" style="grid-template-columns: 1fr 1fr 1fr auto; align-items: end;">
+            <div class="field"><label>T (in)</label><input type="number" class="cl-t" value="1" step="0.125"></div>
+            <div class="field"><label>W (in)</label><input type="number" class="cl-w" value="6" step="0.25"></div>
+            <div class="field"><label>L (ft)</label><input type="number" class="cl-l" value="8" step="0.5"></div>
+            <div class="field"><label>Qty</label><input type="number" class="cl-q" value="1" min="1"></div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px; margin-bottom:16px;">
+          <button class="reset-btn" onclick="addCLRow()" style="border-color:var(--amber); color:var(--amber);">+ Add Row</button>
+          <button class="reset-btn" onclick="removeCLRow()">− Remove</button>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcCutList()">Calculate Total</button>
+        </div>
+        <div class="result-box" id="cl-result">
+          <div class="result-label">Project Total</div>
+          <div class="result-main" id="cl-main">—</div>
+          <div class="result-sub" id="cl-sub"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Board Feet Formula &amp; Reference</div>
+      <div class="info-note">
+        <strong>Formula:</strong> Board Feet = (Thickness × Width × Length) ÷ 12<br>
+        Where thickness &amp; width are in inches, length in feet. One board foot = 1" × 12" × 12" (144 cubic inches).
+      </div>
+      <div class="ruler-strip"></div>
+      <table class="ref-table">
+        <thead><tr><th>Nominal Size</th><th>Actual Size</th><th>BF per Lineal Foot</th><th>Common Length</th></tr></thead>
+        <tbody>
+          <tr><td>1×4</td><td>¾" × 3½"</td><td>0.33 BF</td><td>8–16 ft</td></tr>
+          <tr><td>1×6</td><td>¾" × 5½"</td><td>0.50 BF</td><td>8–16 ft</td></tr>
+          <tr><td>1×8</td><td>¾" × 7¼"</td><td>0.67 BF</td><td>8–16 ft</td></tr>
+          <tr><td>1×10</td><td>¾" × 9¼"</td><td>0.83 BF</td><td>8–16 ft</td></tr>
+          <tr><td>1×12</td><td>¾" × 11¼"</td><td>1.00 BF</td><td>8–16 ft</td></tr>
+          <tr><td>2×4</td><td>1½" × 3½"</td><td>0.67 BF</td><td>8–16 ft</td></tr>
+          <tr><td>2×6</td><td>1½" × 5½"</td><td>1.00 BF</td><td>8–16 ft</td></tr>
+          <tr><td>4×4</td><td>3½" × 3½"</td><td>1.33 BF</td><td>8–16 ft</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ LUMBER COST ============ -->
+  <div class="calc-panel" id="lumber-cost">
+    <div class="panel-header">
+      <h2>Lumber Cost Estimator</h2>
+      <p>Estimate project lumber cost with waste factor and multiple species</p>
+      <div class="panel-divider"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Cost by Board Feet</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Board Feet Needed</label>
+            <input type="number" id="lc-bf" value="50" min="0.1" step="1">
+          </div>
+          <div class="field">
+            <label>Price per Board Foot ($)</label>
+            <input type="number" id="lc-price" value="4.50" min="0" step="0.25">
+          </div>
+          <div class="field">
+            <label>Waste Factor (%)</label>
+            <input type="number" id="lc-waste" value="15" min="0" max="60" step="1">
+          </div>
+          <div class="field">
+            <label>Sales Tax (%)</label>
+            <input type="number" id="lc-tax" value="8" min="0" max="20" step="0.25">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcLumberCost()">Calculate</button>
+          <button class="reset-btn" onclick="resetLC()">Reset</button>
+        </div>
+        <div class="result-box" id="lc-result">
+          <div class="result-grid">
+            <div class="result-item"><div class="r-label">Net BF Needed</div><div class="r-val" id="lc-net">—</div></div>
+            <div class="result-item"><div class="r-label">Subtotal</div><div class="r-val" id="lc-sub">—</div></div>
+            <div class="result-item"><div class="r-label">Tax</div><div class="r-val" id="lc-taxamt">—</div></div>
+            <div class="result-item"><div class="r-label">Total</div><div class="r-val" id="lc-total">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Species Price Reference</div>
+        <table class="ref-table">
+          <thead><tr><th>Species</th><th>Approx $/BF</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Pine (select)</td><td>$2–4</td><td>Easy to work</td></tr>
+            <tr><td>Poplar</td><td>$3–5</td><td>Paints well</td></tr>
+            <tr><td>Red Oak</td><td>$4–7</td><td>Classic hardwood</td></tr>
+            <tr><td>White Oak</td><td>$5–9</td><td>Rift/qtr available</td></tr>
+            <tr><td>Hard Maple</td><td>$5–9</td><td>Excellent for tops</td></tr>
+            <tr><td>Walnut</td><td>$8–15</td><td>Premium furniture</td></tr>
+            <tr><td>Cherry</td><td>$6–12</td><td>Fine furniture</td></tr>
+            <tr><td>Ash</td><td>$4–8</td><td>Bends well</td></tr>
+            <tr><td>Teak</td><td>$20–35</td><td>Outdoor/marine</td></tr>
+            <tr><td>Mahogany</td><td>$7–14</td><td>Classic cabinet wood</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MITER ============ -->
+  <div class="calc-panel" id="miter">
+    <div class="panel-header">
+      <h2>Miter &amp; Bevel Calculator</h2>
+      <p>Find saw settings for any corner angle — including compound miters</p>
+      <div class="panel-divider"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Simple Miter (Flat Work)</div>
+        <div class="info-note" style="margin-bottom:18px;">Enter the <strong>corner angle</strong> of the finished piece (e.g. 90° for a box, 135° for an octagon).</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Corner Angle (°)</label>
+            <input type="number" id="mt-corner" value="90" min="1" max="358" step="1">
+          </div>
+          <div class="field">
+            <label>Number of Sides</label>
+            <input type="number" id="mt-sides" value="4" min="3" max="100" step="1">
+            <span class="frac-hint">OR enter sides to auto-fill corner</span>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcMiter()">Calculate</button>
+          <button class="reset-btn" onclick="resetMT()">Reset</button>
+        </div>
+        <div class="result-box" id="mt-result">
+          <div class="result-label">Miter Saw Setting</div>
+          <div class="result-main" id="mt-main">—</div>
+          <div class="result-sub" id="mt-sub"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Compound Miter (Crown Moulding)</div>
+        <div class="info-note" style="margin-bottom:18px;">For moulding held flat on the saw bed with blade tilted.</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Corner Angle (°)</label>
+            <input type="number" id="cm-corner" value="90" min="1" max="179" step="1">
+          </div>
+          <div class="field">
+            <label>Spring Angle (°)</label>
+            <input type="number" id="cm-spring" value="38" min="1" max="89" step="1">
+            <span class="frac-hint">Common: 38° or 45°</span>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcCompound()">Calculate</button>
+          <button class="reset-btn" onclick="resetCM()">Reset</button>
+        </div>
+        <div class="result-box" id="cm-result">
+          <div class="result-grid">
+            <div class="result-item"><div class="r-label">Miter Angle</div><div class="r-val" id="cm-miter">—</div></div>
+            <div class="result-item"><div class="r-label">Bevel Angle</div><div class="r-val" id="cm-bevel">—</div></div>
+          </div>
+          <div class="result-sub" id="cm-sub"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Common Polygon Miter Reference</div>
+      <table class="ref-table">
+        <thead><tr><th>Shape</th><th>Sides</th><th>Corner Angle</th><th>Miter Setting</th><th>Cut Per Piece</th></tr></thead>
+        <tbody>
+          <tr><td>Triangle</td><td>3</td><td>60°</td><td>30°</td><td>6 cuts</td></tr>
+          <tr><td>Square / Box</td><td>4</td><td>90°</td><td>45°</td><td>8 cuts</td></tr>
+          <tr><td>Pentagon</td><td>5</td><td>108°</td><td>36°</td><td>10 cuts</td></tr>
+          <tr><td>Hexagon</td><td>6</td><td>120°</td><td>30°</td><td>12 cuts</td></tr>
+          <tr><td>Octagon</td><td>8</td><td>135°</td><td>22.5°</td><td>16 cuts</td></tr>
+          <tr><td>Decagon</td><td>10</td><td>144°</td><td>18°</td><td>20 cuts</td></tr>
+          <tr><td>Dodecagon</td><td>12</td><td>150°</td><td>15°</td><td>24 cuts</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ DOVETAIL ============ -->
+  <div class="calc-panel" id="dovetail">
+    <div class="panel-header">
+      <h2>Dovetail Layout Calculator</h2>
+      <p>Evenly space tails and pins across any board width</p>
+      <div class="panel-divider"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Tail Spacing</div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Board Width (inches)</label>
+          <input type="number" id="dv-width" value="6" min="1" step="0.25">
+        </div>
+        <div class="field">
+          <label>Number of Tails</label>
+          <input type="number" id="dv-tails" value="5" min="1" max="50" step="1">
+        </div>
+        <div class="field">
+          <label>Dovetail Ratio (1:n)</label>
+          <input type="number" id="dv-ratio" value="8" min="4" max="12" step="1">
+          <span class="frac-hint">Softwood: 6–8 · Hardwood: 8–10</span>
+        </div>
+        <div class="field">
+          <label>Half-Pin Width (inches)</label>
+          <input type="number" id="dv-halfpin" value="0.25" min="0.125" step="0.125">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="calc-btn" onclick="calcDovetail()">Calculate Layout</button>
+        <button class="reset-btn" onclick="resetDV()">Reset</button>
+      </div>
+      <div class="result-box" id="dv-result">
+        <div class="result-label">Layout (left to right from baseline)</div>
+        <div class="result-main" id="dv-main">—</div>
+        <div class="result-sub" id="dv-sub"></div>
+        <div id="dv-table-wrap" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Dovetail Angle Reference</div>
+      <table class="ref-table">
+        <thead><tr><th>Wood Type</th><th>Ratio</th><th>Angle</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Softwoods</td><td>1:6</td><td>9.5°</td><td>Pine, cedar, fir</td></tr>
+          <tr><td>Hardwoods</td><td>1:8</td><td>7.1°</td><td>Oak, maple, walnut</td></tr>
+          <tr><td>Hardwoods</td><td>1:7</td><td>8.1°</td><td>Cherry, ash, beech</td></tr>
+          <tr><td>End grain</td><td>1:5</td><td>11.3°</td><td>Box joints, trays</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ SHELF SAG ============ -->
+  <div class="calc-panel" id="shelf-sag">
+    <div class="panel-header">
+      <h2>Shelf Sag Calculator</h2>
+      <p>Estimate mid-span deflection for loaded shelves</p>
+      <div class="panel-divider"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Deflection Estimate</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Span (inches)</label>
+            <input type="number" id="sh-span" value="36" min="6" step="1">
+          </div>
+          <div class="field">
+            <label>Shelf Depth (inches)</label>
+            <input type="number" id="sh-depth" value="12" min="1" step="1">
+          </div>
+          <div class="field">
+            <label>Thickness (inches)</label>
+            <input type="number" id="sh-thick" value="0.75" min="0.25" step="0.125">
+          </div>
+          <div class="field">
+            <label>Total Load (lbs)</label>
+            <input type="number" id="sh-load" value="50" min="1" step="5">
+          </div>
+          <div class="field">
+            <label>Material</label>
+            <select id="sh-mat">
+              <option value="1500000">Plywood (3/4")</option>
+              <option value="1600000">MDF</option>
+              <option value="1800000">Pine / Fir</option>
+              <option value="1700000">Poplar</option>
+              <option value="2000000">Red Oak</option>
+              <option value="1900000">Cherry</option>
+              <option value="2200000">Hard Maple</option>
+              <option value="1800000">Walnut</option>
+              <option value="1200000">Particleboard</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcShelf()">Calculate Sag</button>
+          <button class="reset-btn" onclick="resetSH()">Reset</button>
+        </div>
+        <div class="result-box" id="sh-result">
+          <div class="result-grid">
+            <div class="result-item"><div class="r-label">Mid-span Deflection</div><div class="r-val" id="sh-defl">—</div></div>
+            <div class="result-item"><div class="r-label">Rating</div><div class="r-val" id="sh-rating">—</div></div>
+          </div>
+          <div class="result-sub" id="sh-sub"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Rule of 32 — Max Span Guide</div>
+        <div class="info-note" style="margin-bottom:14px;">
+          A common guideline: multiply shelf thickness (in inches) by 32 to get a safe maximum span in inches for typical book loads (~25 lbs/ft).
+        </div>
+        <table class="ref-table">
+          <thead><tr><th>Thickness</th><th>Max Span</th><th>Load Capacity</th></tr></thead>
+          <tbody>
+            <tr><td>½"</td><td>16"</td><td>Light (paperbacks)</td></tr>
+            <tr><td>¾"</td><td>24"</td><td>Medium (hardcovers)</td></tr>
+            <tr><td>1"</td><td>32"</td><td>Standard books</td></tr>
+            <tr><td>1¼"</td><td>40"</td><td>Heavy reference</td></tr>
+            <tr><td>1½"</td><td>48"</td><td>Very heavy loads</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DADO ============ -->
+  <div class="calc-panel" id="dado">
+    <div class="panel-header">
+      <h2>Dado &amp; Rabbet Calculator</h2>
+      <p>Size your dadoes, grooves, and rabbets for a snug fit</p>
+      <div class="panel-divider"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Dado / Groove Sizing</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Panel Thickness (inches)</label>
+            <input type="number" id="dd-thick" value="0.75" min="0.125" step="0.125">
+          </div>
+          <div class="field">
+            <label>Depth of Cut (ratio)</label>
+            <select id="dd-depth-mode">
+              <option value="0.333">⅓ thickness (light)</option>
+              <option value="0.5" selected>½ thickness (standard)</option>
+              <option value="0.667">⅔ thickness (deep)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Fit Type</label>
+            <select id="dd-fit">
+              <option value="0">Snug (0" play)</option>
+              <option value="0.015" selected>Working (1/64" play)</option>
+              <option value="0.031">Loose (1/32" play)</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcDado()">Calculate</button>
+          <button class="reset-btn" onclick="resetDD()">Reset</button>
+        </div>
+        <div class="result-box" id="dd-result">
+          <div class="result-grid">
+            <div class="result-item"><div class="r-label">Dado Width</div><div class="r-val" id="dd-width">—</div></div>
+            <div class="result-item"><div class="r-label">Dado Depth</div><div class="r-val" id="dd-depthr">—</div></div>
+            <div class="result-item"><div class="r-label">Remaining Stock</div><div class="r-val" id="dd-remain">—</div></div>
+          </div>
+          <div class="result-sub" id="dd-sub"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Rabbet Sizing</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Panel Thickness (inches)</label>
+            <input type="number" id="rb-thick" value="0.75" min="0.125" step="0.125">
+          </div>
+          <div class="field">
+            <label>Rabbet Style</label>
+            <select id="rb-style">
+              <option value="back">Back panel rabbet</option>
+              <option value="half">Half-lap joint</option>
+              <option value="custom">Custom ratio</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Custom Depth Ratio</label>
+            <input type="number" id="rb-ratio" value="0.5" min="0.1" max="0.9" step="0.05">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcRabbet()">Calculate</button>
+          <button class="reset-btn" onclick="resetRB()">Reset</button>
+        </div>
+        <div class="result-box" id="rb-result">
+          <div class="result-grid">
+            <div class="result-item"><div class="r-label">Rabbet Width</div><div class="r-val" id="rb-width">—</div></div>
+            <div class="result-item"><div class="r-label">Rabbet Depth</div><div class="r-val" id="rb-depth">—</div></div>
+          </div>
+          <div class="result-sub" id="rb-sub"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FINISHING ============ -->
+  <div class="calc-panel" id="finishing">
+    <div class="panel-header">
+      <h2>Finish Coverage Calculator</h2>
+      <p>How much finish, stain, or paint do you need for your project?</p>
+      <div class="panel-divider"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Coverage Estimator</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Surface Area (sq ft)</label>
+            <input type="number" id="fn-area" value="100" min="1" step="5">
+          </div>
+          <div class="field">
+            <label>Number of Coats</label>
+            <input type="number" id="fn-coats" value="2" min="1" max="10" step="1">
+          </div>
+          <div class="field">
+            <label>Finish Type</label>
+            <select id="fn-type" onchange="updateCoverage()">
+              <option value="400">Polyurethane (oil-based)</option>
+              <option value="350">Polyurethane (water-based)</option>
+              <option value="450">Lacquer</option>
+              <option value="300">Shellac</option>
+              <option value="250">Oil finish (tung, danish)</option>
+              <option value="400">Varnish</option>
+              <option value="300">Stain</option>
+              <option value="350">Paint (latex)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Coverage (sq ft / qt)</label>
+            <input type="number" id="fn-coverage" value="400" min="50" step="25">
+          </div>
+          <div class="field">
+            <label>Wood Porosity</label>
+            <select id="fn-porous">
+              <option value="1.0">Closed grain (maple, cherry)</option>
+              <option value="1.15" selected>Medium (oak, ash)</option>
+              <option value="1.3">Open grain (mahogany, teak)</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcFinish()">Calculate</button>
+          <button class="reset-btn" onclick="resetFN()">Reset</button>
+        </div>
+        <div class="result-box" id="fn-result">
+          <div class="result-grid">
+            <div class="result-item"><div class="r-label">Quarts Needed</div><div class="r-val" id="fn-qts">—</div></div>
+            <div class="result-item"><div class="r-label">Gallons Needed</div><div class="r-val" id="fn-gal">—</div></div>
+          </div>
+          <div class="result-sub" id="fn-sub"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quick Area Calculator</div>
+        <div class="info-note" style="margin-bottom:16px;">Add up multiple surfaces to get a total sq ft figure.</div>
+        <div id="fn-surfaces">
+          <div class="field-grid" style="grid-template-columns: 1fr 1fr auto; align-items:end;">
+            <div class="field"><label>Length (ft)</label><input type="number" class="fn-l" value="4" step="0.25"></div>
+            <div class="field"><label>Width (ft)</label><input type="number" class="fn-w" value="2" step="0.25"></div>
+            <div class="field"><label>Qty</label><input type="number" class="fn-q" value="1" min="1"></div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px; margin-bottom:16px;">
+          <button class="reset-btn" onclick="addFNRow()" style="border-color:var(--amber); color:var(--amber);">+ Surface</button>
+          <button class="reset-btn" onclick="removeFNRow()">− Remove</button>
+        </div>
+        <div class="btn-row">
+          <button class="calc-btn" onclick="calcFNArea()">Sum Area</button>
+        </div>
+        <div class="result-box" id="fn-area-result">
+          <div class="result-label">Total Surface Area</div>
+          <div class="result-main" id="fn-area-main">—</div>
+          <div class="result-sub">sq ft — paste into Coverage Estimator above</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCREW REFERENCE ============ -->
+  <div class="calc-panel" id="screw">
+    <div class="panel-header">
+      <h2>Screw &amp; Fastener Reference</h2>
+      <p>Pilot hole sizes, lengths, and countersink dimensions for common wood screws</p>
+      <div class="panel-divider"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Pilot Hole Calculator</div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Screw Size (#)</label>
+          <select id="sc-size">
+            <option value="4">#4</option>
+            <option value="6">#6</option>
+            <option value="8" selected>#8</option>
+            <option value="10">#10</option>
+            <option value="12">#12</option>
+            <option value="14">#14</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Wood Type</label>
+          <select id="sc-wood">
+            <option value="soft">Softwood (pine, fir)</option>
+            <option value="hard" selected>Hardwood (oak, maple)</option>
+            <option value="mdf">MDF / Plywood</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Screw Length (inches)</label>
+          <input type="number" id="sc-length" value="1.5" min="0.5" step="0.25">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="calc-btn" onclick="calcScrew()">Calculate</button>
+        <button class="reset-btn" onclick="resetSC()">Reset</button>
+      </div>
+      <div class="result-box" id="sc-result">
+        <div class="result-grid">
+          <div class="result-item"><div class="r-label">Pilot Hole (body)</div><div class="r-val" id="sc-body">—</div></div>
+          <div class="result-item"><div class="r-label">Pilot Hole (shank)</div><div class="r-val" id="sc-shank">—</div></div>
+          <div class="result-item"><div class="r-label">Countersink</div><div class="r-val" id="sc-cs">—</div></div>
+          <div class="result-item"><div class="r-label">Depth (threads)</div><div class="r-val" id="sc-depth">—</div></div>
+        </div>
+        <div class="result-sub" id="sc-sub"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Wood Screw Reference Chart</div>
+      <table class="ref-table">
+        <thead><tr><th>Screw #</th><th>Shank Dia.</th><th>Soft Pilot</th><th>Hard Pilot</th><th>Countersink</th><th>Threads/in</th></tr></thead>
+        <tbody>
+          <tr><td>#4</td><td>0.112"</td><td>3/64"</td><td>7/64"</td><td>¼"</td><td>32</td></tr>
+          <tr><td>#6</td><td>0.138"</td><td>1/16"</td><td>7/64"</td><td>5/16"</td><td>18</td></tr>
+          <tr><td>#8</td><td>0.164"</td><td>5/64"</td><td>9/64"</td><td>3/8"</td><td>15</td></tr>
+          <tr><td>#10</td><td>0.190"</td><td>3/32"</td><td>5/32"</td><td>7/16"</td><td>13</td></tr>
+          <tr><td>#12</td><td>0.216"</td><td>7/64"</td><td>3/16"</td><td>½"</td><td>11</td></tr>
+          <tr><td>#14</td><td>0.242"</td><td>1/8"</td><td>7/32"</td><td>9/16"</td><td>10</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Pocket Screw Length Guide</div>
+      <table class="ref-table">
+        <thead><tr><th>Material Thickness</th><th>Screw Length</th><th>Drill Setting</th></tr></thead>
+        <tbody>
+          <tr><td>½"</td><td>1"</td><td>½" step</td></tr>
+          <tr><td>¾"</td><td>1¼"</td><td>¾" step</td></tr>
+          <tr><td>1"</td><td>1½"</td><td>1" step</td></tr>
+          <tr><td>1½"</td><td>2½"</td><td>1½" step</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">The Workshop · Woodworking Calculators · All results are estimates — verify critical dimensions before cutting</footer>
+
+<script>
+// ===================== NAV =====================
+function showPanel(id) {
+  document.querySelectorAll('.calc-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function showResult(id) {
+  document.getElementById(id).classList.add('visible');
+}
+
+function hideResult(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
+// ===================== HELPERS =====================
+function fmtDec(n, d=3) { return parseFloat(n.toFixed(d)).toString(); }
+function fmtIn(n) {
+  // Format as fraction
+  const whole = Math.floor(n);
+  const frac = n - whole;
+  const denoms = [2,4,8,16,32,64];
+  let best = '', bestDiff = 1;
+  for (let d of denoms) {
+    const num = Math.round(frac * d);
+    const diff = Math.abs(frac - num/d);
+    if (diff < bestDiff) { bestDiff = diff; best = num === 0 ? '' : num === d ? '1' : `${num}/${d}`; }
+  }
+  if (best === '1') return `${whole+1}"`;
+  if (!best) return `${whole}"`;
+  return whole > 0 ? `${whole} ${best}"` : `${best}"`;
+}
+function toRad(d) { return d * Math.PI / 180; }
+function toDeg(r) { return r * 180 / Math.PI; }
+
+// ===================== BOARD FEET =====================
+function calcBoardFeet() {
+  const t = parseFloat(document.getElementById('bf-thick').value);
+  const w = parseFloat(document.getElementById('bf-width').value);
+  const l = parseFloat(document.getElementById('bf-length').value);
+  const q = parseInt(document.getElementById('bf-qty').value);
+  if (isNaN(t)||isNaN(w)||isNaN(l)||isNaN(q)) return;
+  const bf = (t * w * l) / 12;
+  const total = bf * q;
+  document.getElementById('bf-main').textContent = fmtDec(total, 2) + ' BF';
+  document.getElementById('bf-sub').innerHTML = `${fmtDec(bf,2)} BF per board × ${q} piece(s)<br>${fmtDec(total*144,1)} cubic inches total`;
+  showResult('bf-result');
+}
+function resetBF() {
+  ['bf-thick','bf-width','bf-length','bf-qty'].forEach(id => {
+    document.getElementById(id).value = id==='bf-thick'?1:id==='bf-width'?6:id==='bf-length'?8:1;
+  });
+  hideResult('bf-result');
+}
+
+// CUT LIST
+function addCLRow() {
+  const wrap = document.getElementById('cutlist-rows');
+  const div = document.createElement('div');
+  div.className = 'field-grid';
+  div.style.cssText = 'grid-template-columns:1fr 1fr 1fr auto; align-items:end;';
+  div.innerHTML = `<div class="field"><label>T (in)</label><input type="number" class="cl-t" value="1" step="0.125"></div>
+    <div class="field"><label>W (in)</label><input type="number" class="cl-w" value="6" step="0.25"></div>
+    <div class="field"><label>L (ft)</label><input type="number" class="cl-l" value="8" step="0.5"></div>
+    <div class="field"><label>Qty</label><input type="number" class="cl-q" value="1" min="1"></div>`;
+  wrap.appendChild(div);
+}
+function removeCLRow() {
+  const rows = document.querySelectorAll('#cutlist-rows .field-grid');
+  if (rows.length > 1) rows[rows.length-1].remove();
+}
+function calcCutList() {
+  let total = 0;
+  const ts = document.querySelectorAll('.cl-t');
+  const ws = document.querySelectorAll('.cl-w');
+  const ls = document.querySelectorAll('.cl-l');
+  const qs = document.querySelectorAll('.cl-q');
+  for (let i=0; i<ts.length; i++) {
+    total += (parseFloat(ts[i].value)*parseFloat(ws[i].value)*parseFloat(ls[i].value)/12) * parseInt(qs[i].value||1);
+  }
+  document.getElementById('cl-main').textContent = fmtDec(total,2) + ' BF';
+  document.getElementById('cl-sub').innerHTML = `${ts.length} line item(s) · Add ~15–20% for waste`;
+  showResult('cl-result');
+}
+
+// ===================== LUMBER COST =====================
+function calcLumberCost() {
+  const bf = parseFloat(document.getElementById('lc-bf').value);
+  const price = parseFloat(document.getElementById('lc-price').value);
+  const waste = parseFloat(document.getElementById('lc-waste').value)/100;
+  const tax = parseFloat(document.getElementById('lc-tax').value)/100;
+  const net = bf * (1 + waste);
+  const sub = net * price;
+  const taxAmt = sub * tax;
+  const total = sub + taxAmt;
+  document.getElementById('lc-net').textContent = fmtDec(net,1) + ' BF';
+  document.getElementById('lc-sub').textContent = '$' + sub.toFixed(2);
+  document.getElementById('lc-taxamt').textContent = '$' + taxAmt.toFixed(2);
+  document.getElementById('lc-total').textContent = '$' + total.toFixed(2);
+  showResult('lc-result');
+}
+function resetLC() {
+  document.getElementById('lc-bf').value=50;
+  document.getElementById('lc-price').value=4.50;
+  document.getElementById('lc-waste').value=15;
+  document.getElementById('lc-tax').value=8;
+  hideResult('lc-result');
+}
+
+// ===================== MITER =====================
+function calcMiter() {
+  const sides = parseInt(document.getElementById('mt-sides').value);
+  let corner = parseFloat(document.getElementById('mt-corner').value);
+  if (!isNaN(sides) && sides >= 3) {
+    corner = ((sides - 2) * 180) / sides;
+    document.getElementById('mt-corner').value = fmtDec(corner, 2);
+  }
+  const miter = (180 - corner) / 2;
+  document.getElementById('mt-main').textContent = fmtDec(miter, 2) + '°';
+  document.getElementById('mt-sub').innerHTML = `Set saw to ${fmtDec(miter,2)}° on each end · Corner angle: ${fmtDec(corner,1)}°<br>Each piece requires 2 cuts at this setting`;
+  showResult('mt-result');
+}
+function resetMT() {
+  document.getElementById('mt-corner').value=90;
+  document.getElementById('mt-sides').value=4;
+  hideResult('mt-result');
+}
+
+function calcCompound() {
+  const cornerDeg = parseFloat(document.getElementById('cm-corner').value);
+  const springDeg = parseFloat(document.getElementById('cm-spring').value);
+  const C = toRad(cornerDeg / 2);
+  const S = toRad(springDeg);
+  const miterRad = Math.atan(Math.cos(S) / Math.tan(C));
+  const bevelRad = Math.asin(Math.sin(S) * Math.sin(C));
+  document.getElementById('cm-miter').textContent = fmtDec(toDeg(miterRad), 2) + '°';
+  document.getElementById('cm-bevel').textContent = fmtDec(toDeg(bevelRad), 2) + '°';
+  document.getElementById('cm-sub').innerHTML = `Spring angle ${springDeg}° · Corner ${cornerDeg}° · Set miter AND bevel simultaneously`;
+  showResult('cm-result');
+}
+function resetCM() {
+  document.getElementById('cm-corner').value=90;
+  document.getElementById('cm-spring').value=38;
+  hideResult('cm-result');
+}
+
+// ===================== DOVETAIL =====================
+function calcDovetail() {
+  const width = parseFloat(document.getElementById('dv-width').value);
+  const tails = parseInt(document.getElementById('dv-tails').value);
+  const ratio = parseFloat(document.getElementById('dv-ratio').value);
+  const halfPin = parseFloat(document.getElementById('dv-halfpin').value);
+  const angleDeg = toDeg(Math.atan(1/ratio));
+  const workingWidth = width - (2 * halfPin);
+  const spacing = workingWidth / tails;
+  let marks = [0, halfPin];
+  for (let i = 0; i < tails; i++) {
+    const tailStart = halfPin + i * spacing;
+    const tailEnd = tailStart + spacing;
+    marks.push(tailStart, tailEnd);
+  }
+  marks.push(width - halfPin, width);
+  marks = [...new Set(marks.map(m => parseFloat(m.toFixed(4))))].sort((a,b) => a-b);
+
+  document.getElementById('dv-main').textContent = `${tails} tail${tails>1?'s':''}, ${fmtDec(spacing,3)}" spacing`;
+  document.getElementById('dv-sub').innerHTML = `Tail spacing: ${fmtDec(spacing,3)}" · Half-pins: ${halfPin}" · Dovetail angle: ${fmtDec(angleDeg,2)}°`;
+
+  let tableHTML = '<table class="ref-table"><thead><tr><th>#</th><th>Feature</th><th>From Left Edge</th></tr></thead><tbody>';
+  const features = [];
+  features.push({ name: 'Left edge', pos: 0 });
+  features.push({ name: 'Left half-pin start', pos: halfPin });
+  for (let i=0; i<tails; i++) {
+    features.push({ name: `Tail ${i+1} left`, pos: halfPin + i*spacing });
+    features.push({ name: `Tail ${i+1} right`, pos: halfPin + (i+1)*spacing });
+  }
+  features.push({ name: 'Right half-pin end', pos: width - halfPin });
+  features.push({ name: 'Right edge', pos: width });
+
+  features.forEach((f,i) => {
+    tableHTML += `<tr><td>${i+1}</td><td>${f.name}</td><td>${fmtDec(f.pos,4)}" ${f.pos > 0 ? '('+fmtIn(f.pos)+')' : ''}</td></tr>`;
+  });
+  tableHTML += '</tbody></table>';
+  document.getElementById('dv-table-wrap').innerHTML = tableHTML;
+  showResult('dv-result');
+}
+function resetDV() {
+  document.getElementById('dv-width').value=6;
+  document.getElementById('dv-tails').value=5;
+  document.getElementById('dv-ratio').value=8;
+  document.getElementById('dv-halfpin').value=0.25;
+  hideResult('dv-result');
+  document.getElementById('dv-table-wrap').innerHTML='';
+}
+
+// ===================== SHELF SAG =====================
+function calcShelf() {
+  const L = parseFloat(document.getElementById('sh-span').value);
+  const b = parseFloat(document.getElementById('sh-depth').value);
+  const h = parseFloat(document.getElementById('sh-thick').value);
+  const W = parseFloat(document.getElementById('sh-load').value);
+  const E = parseInt(document.getElementById('sh-mat').value);
+  // Uniformly distributed load deflection: δ = 5WL³ / (384EI)
+  // I = bh³/12, units in inches, E in psi, W in lbs
+  const I = (b * Math.pow(h, 3)) / 12;
+  const delta = (5 * W * Math.pow(L, 3)) / (384 * E * I);
+  const ratio = L / delta;
+
+  let rating, ratingColor;
+  if (delta < 0.02) { rating = 'Excellent'; }
+  else if (delta < 0.05) { rating = 'Good'; }
+  else if (delta < 0.1) { rating = 'Acceptable'; }
+  else if (delta < 0.2) { rating = 'Marginal'; }
+  else { rating = 'Too Much Sag'; }
+
+  document.getElementById('sh-defl').textContent = fmtDec(delta, 4) + '"';
+  document.getElementById('sh-rating').textContent = rating;
+  document.getElementById('sh-sub').innerHTML = `L/${Math.round(ratio)} deflection ratio · Span/360 limit = ${fmtDec(L/360,3)}" · I = ${fmtDec(I,4)} in⁴<br>Tip: Add a center support or increase thickness to reduce sag`;
+  showResult('sh-result');
+}
+function resetSH() {
+  document.getElementById('sh-span').value=36;
+  document.getElementById('sh-depth').value=12;
+  document.getElementById('sh-thick').value=0.75;
+  document.getElementById('sh-load').value=50;
+  hideResult('sh-result');
+}
+
+// ===================== DADO =====================
+function calcDado() {
+  const t = parseFloat(document.getElementById('dd-thick').value);
+  const depthR = parseFloat(document.getElementById('dd-depth-mode').value);
+  const fit = parseFloat(document.getElementById('dd-fit').value);
+  const dadoW = t + fit;
+  const dadoD = t * depthR;
+  const remain = t - dadoD;
+  document.getElementById('dd-width').textContent = fmtDec(dadoW,4)+'" '+fmtIn(dadoW);
+  document.getElementById('dd-depthr').textContent = fmtDec(dadoD,4)+'" '+fmtIn(dadoD);
+  document.getElementById('dd-remain').textContent = fmtDec(remain,4)+'" '+fmtIn(remain);
+  document.getElementById('dd-sub').innerHTML = `Panel thickness: ${t}" · Width allows ${fit>0?fit+'" play':'snug fit'} · Remaining wall: ${fmtDec(remain,3)}"`;
+  showResult('dd-result');
+}
+function resetDD() {
+  document.getElementById('dd-thick').value=0.75;
+  hideResult('dd-result');
+}
+
+function calcRabbet() {
+  const t = parseFloat(document.getElementById('rb-thick').value);
+  const style = document.getElementById('rb-style').value;
+  let depthR;
+  if (style === 'back') depthR = 0.5;
+  else if (style === 'half') depthR = 0.5;
+  else depthR = parseFloat(document.getElementById('rb-ratio').value);
+  const rbW = t * 0.75;
+  const rbD = t * depthR;
+  document.getElementById('rb-width').textContent = fmtDec(rbW,4)+'" '+fmtIn(rbW);
+  document.getElementById('rb-depth').textContent = fmtDec(rbD,4)+'" '+fmtIn(rbD);
+  document.getElementById('rb-sub').innerHTML = `Style: ${style} · Width = ¾ of thickness · Depth = ${Math.round(depthR*100)}% of thickness`;
+  showResult('rb-result');
+}
+function resetRB() {
+  document.getElementById('rb-thick').value=0.75;
+  hideResult('rb-result');
+}
+
+// ===================== FINISHING =====================
+function updateCoverage() {
+  const sel = document.getElementById('fn-type');
+  document.getElementById('fn-coverage').value = sel.value;
+}
+
+function calcFinish() {
+  const area = parseFloat(document.getElementById('fn-area').value);
+  const coats = parseInt(document.getElementById('fn-coats').value);
+  const cov = parseFloat(document.getElementById('fn-coverage').value);
+  const por = parseFloat(document.getElementById('fn-porous').value);
+  const qtsNeeded = (area * coats * por) / cov;
+  const galNeeded = qtsNeeded / 4;
+  document.getElementById('fn-qts').textContent = Math.ceil(qtsNeeded) + ' qt';
+  document.getElementById('fn-gal').textContent = fmtDec(galNeeded,2) + ' gal';
+  document.getElementById('fn-sub').innerHTML = `${area} sq ft × ${coats} coat(s) × ${por} porosity factor ÷ ${cov} sq ft/qt<br>Buy ${Math.ceil(qtsNeeded)} quarts or ${Math.ceil(galNeeded*4) >= 4 ? Math.ceil(galNeeded)+' gallon(s)' : Math.ceil(qtsNeeded)+' quarts'}`;
+  showResult('fn-result');
+}
+function resetFN() {
+  document.getElementById('fn-area').value=100;
+  document.getElementById('fn-coats').value=2;
+  hideResult('fn-result');
+}
+function addFNRow() {
+  const wrap = document.getElementById('fn-surfaces');
+  const div = document.createElement('div');
+  div.className='field-grid';
+  div.style.cssText='grid-template-columns:1fr 1fr auto; align-items:end;';
+  div.innerHTML=`<div class="field"><label>Length (ft)</label><input type="number" class="fn-l" value="4" step="0.25"></div>
+    <div class="field"><label>Width (ft)</label><input type="number" class="fn-w" value="2" step="0.25"></div>
+    <div class="field"><label>Qty</label><input type="number" class="fn-q" value="1" min="1"></div>`;
+  wrap.appendChild(div);
+}
+function removeFNRow() {
+  const rows = document.querySelectorAll('#fn-surfaces .field-grid');
+  if (rows.length > 1) rows[rows.length-1].remove();
+}
+function calcFNArea() {
+  let total = 0;
+  const ls = document.querySelectorAll('.fn-l');
+  const ws = document.querySelectorAll('.fn-w');
+  const qs = document.querySelectorAll('.fn-q');
+  for (let i=0; i<ls.length; i++) {
+    total += parseFloat(ls[i].value) * parseFloat(ws[i].value) * parseInt(qs[i].value||1);
+  }
+  document.getElementById('fn-area-main').textContent = fmtDec(total,2) + ' sq ft';
+  document.getElementById('fn-area').value = fmtDec(total,2);
+  showResult('fn-area-result');
+}
+
+// ===================== SCREW =====================
+const screwData = {
+  4:  { shank:0.112, soft:'3/64"', hard:'7/64"', cs:'1/4"',  bodyS:0.047, bodyH:0.109, tpi:32 },
+  6:  { shank:0.138, soft:'1/16"', hard:'7/64"', cs:'5/16"', bodyS:0.063, bodyH:0.109, tpi:18 },
+  8:  { shank:0.164, soft:'5/64"', hard:'9/64"', cs:'3/8"',  bodyS:0.078, bodyH:0.141, tpi:15 },
+  10: { shank:0.190, soft:'3/32"', hard:'5/32"', cs:'7/16"', bodyS:0.094, bodyH:0.156, tpi:13 },
+  12: { shank:0.216, soft:'7/64"', hard:'3/16"', cs:'1/2"',  bodyS:0.109, bodyH:0.188, tpi:11 },
+  14: { shank:0.242, soft:'1/8"',  hard:'7/32"', cs:'9/16"', bodyS:0.125, bodyH:0.219, tpi:10 },
+};
+
+function calcScrew() {
+  const size = parseInt(document.getElementById('sc-size').value);
+  const wood = document.getElementById('sc-wood').value;
+  const length = parseFloat(document.getElementById('sc-length').value);
+  const d = screwData[size];
+  const pilot = wood === 'soft' ? d.soft : wood === 'hard' ? d.hard : d.soft;
+  const shankHole = wood === 'hard' ? `${fmtDec(d.shank,3)}"` : 'N/A for softwood';
+  const threadDepth = (length * 0.7);
+  document.getElementById('sc-body').textContent = pilot;
+  document.getElementById('sc-shank').textContent = shankHole;
+  document.getElementById('sc-cs').textContent = d.cs;
+  document.getElementById('sc-depth').textContent = fmtDec(threadDepth,3)+'"';
+  document.getElementById('sc-sub').innerHTML = `#${size} screw, ${length}" length · Shank: ${fmtDec(d.shank,3)}" · ${d.tpi} TPI<br>Thread engagement: ~${fmtDec(threadDepth,2)}" (70% of length)`;
+  showResult('sc-result');
+}
+function resetSC() {
+  document.getElementById('sc-length').value=1.5;
+  hideResult('sc-result');
+}
+</script>
+</body>
+</html>

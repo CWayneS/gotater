@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block-to-Luau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-ui: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --grid-size: 20px;
+  --transition: 180ms ease;
+  --shadow-lg: 0 8px 30px rgba(0,0,0,.35);
+}
+[data-theme="dark"] {
+  --bg-primary: #1b1e24; --bg-secondary: #232730; --bg-tertiary: #2a2f3a;
+  --bg-elevated: #313744; --bg-canvas: #16191f;
+  --border: #3a4050; --border-hover: #4a5060;
+  --text-primary: #eff0f1; --text-secondary: #a0a8b8; --text-muted: #6a7080;
+  --accent: #3daee9; --accent-hover: #5bc0f5; --accent-dim: rgba(61,174,233,.12);
+  --event-color: #27ae60; --event-bg: rgba(39,174,96,.12); --event-border: rgba(39,174,96,.4);
+  --logic-color: #f39c12; --logic-bg: rgba(243,156,18,.12); --logic-border: rgba(243,156,18,.4);
+  --action-color: #3daee9; --action-bg: rgba(61,174,233,.12); --action-border: rgba(61,174,233,.4);
+  --danger: #da4453; --success: #27ae60;
+  --grid-dot: rgba(61,174,233,.15);
+  --scrollbar-thumb: #3a4050; --scrollbar-track: transparent;
+  --code-bg: #0d1117; --code-keyword: #ff7b72; --code-string: #a5d6ff;
+  --code-func: #d2a8ff; --code-comment: #6a7080; --code-number: #79c0ff;
+  --drop-zone: rgba(61,174,233,.08); --drop-zone-active: rgba(61,174,233,.18);
+}
+[data-theme="light"] {
+  --bg-primary: #eff1f5; --bg-secondary: #e6e9ef; --bg-tertiary: #dce0e8;
+  --bg-elevated: #ccd0da; --bg-canvas: #f8f9fc;
+  --border: #bcc0cc; --border-hover: #9ca0b0;
+  --text-primary: #1e1e2e; --text-secondary: #5c5f77; --text-muted: #8c8fa3;
+  --accent: #1e66f5; --accent-hover: #3578f7; --accent-dim: rgba(30,102,245,.1);
+  --event-color: #40a02b; --event-bg: rgba(64,160,43,.1); --event-border: rgba(64,160,43,.4);
+  --logic-color: #df8e1d; --logic-bg: rgba(223,142,29,.1); --logic-border: rgba(223,142,29,.4);
+  --action-color: #1e66f5; --action-bg: rgba(30,102,245,.1); --action-border: rgba(30,102,245,.4);
+  --danger: #d20f39; --success: #40a02b;
+  --grid-dot: rgba(30,102,245,.12);
+  --scrollbar-thumb: #bcc0cc; --scrollbar-track: transparent;
+  --code-bg: #f6f8fa; --code-keyword: #cf222e; --code-string: #0a3069;
+  --code-func: #8250df; --code-comment: #8c8fa3; --code-number: #0550ae;
+  --drop-zone: rgba(30,102,245,.06); --drop-zone-active: rgba(30,102,245,.14);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-family: var(--font-ui); background: var(--bg-primary); color: var(--text-primary); -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+#app { display: grid; grid-template-rows: 48px 1fr 26px; grid-template-columns: 280px 1fr 340px; height: 100vh; gap: 0; }
+#header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); z-index: 100; }
+#header .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -.3px; }
+#header .logo svg { flex-shrink: 0; }
+#header .logo span.accent { color: var(--accent); }
+#header .toolbar { display: flex; align-items: center; gap: 8px; }
+
+#left-sidebar { display: flex; flex-direction: column; border-right: 1px solid var(--border); background: var(--bg-secondary); overflow: hidden; }
+#palette-pane { flex: 1 1 55%; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+#palette-pane .pane-header { padding: 12px 14px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); }
+#search-box { margin: 0 10px 8px; padding: 7px 10px 7px 32px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); font-family: var(--font-ui); font-size: 13px; outline: none; transition: border-color var(--transition); width: calc(100% - 20px); }
+#search-box:focus { border-color: var(--accent); }
+.search-wrapper { position: relative; }
+.search-wrapper svg { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+#palette-list { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
+
+.palette-category { margin-bottom: 2px; }
+.category-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted); padding: 8px 6px 6px; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; border-radius: var(--radius); transition: background var(--transition); }
+.category-label:hover { background: var(--bg-tertiary); }
+.category-label .chevron { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; transition: transform var(--transition); flex-shrink: 0; color: var(--text-muted); }
+.category-label.collapsed .chevron { transform: rotate(-90deg); }
+.category-label .cat-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.category-label[data-cat="event"] .cat-dot { background: var(--event-color); }
+.category-label[data-cat="logic"] .cat-dot { background: var(--logic-color); }
+.category-label[data-cat="action"] .cat-dot { background: var(--action-color); }
+.category-label .cat-count { margin-left: auto; font-size: 9px; color: var(--text-muted); background: var(--bg-tertiary); padding: 1px 6px; border-radius: 8px; font-weight: 500; }
+.category-blocks { overflow: hidden; transition: max-height 250ms ease, opacity 200ms ease; max-height: 2000px; opacity: 1; }
+.category-blocks.collapsed { max-height: 0; opacity: 0; }
+
+.palette-block { display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 1px 0; border-radius: var(--radius); font-size: 12.5px; font-weight: 500; cursor: grab; border: 1px solid transparent; transition: all var(--transition); user-select: none; }
+.palette-block:hover { background: var(--bg-tertiary); border-color: var(--border); }
+.palette-block:active { cursor: grabbing; }
+.palette-block.dragging { opacity: .4; }
+.palette-block[data-category="event"] .block-icon { color: var(--event-color); }
+.palette-block[data-category="logic"] .block-icon { color: var(--logic-color); }
+.palette-block[data-category="action"] .block-icon { color: var(--action-color); }
+.block-icon { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+
+#pane-divider { height: 1px; background: var(--border); flex-shrink: 0; }
+#inspector-pane { flex: 1 1 45%; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+#inspector-pane .pane-header { padding: 12px 14px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; }
+#inspector-content { flex: 1; overflow-y: auto; padding: 0 14px 14px; }
+.inspector-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px; gap: 8px; }
+.inspector-empty svg { opacity: .4; }
+.inspector-block-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.inspector-field { margin-bottom: 10px; }
+.inspector-field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 4px; }
+.inspector-field input, .inspector-field select, .inspector-field textarea { width: 100%; padding: 7px 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); font-family: var(--font-ui); font-size: 13px; outline: none; transition: border-color var(--transition); }
+.inspector-field input:focus, .inspector-field select:focus, .inspector-field textarea:focus { border-color: var(--accent); }
+.inspector-field textarea { font-family: var(--font-mono); font-size: 12px; resize: vertical; min-height: 60px; }
+.inspector-template { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap; word-break: break-all; margin-top: 8px; }
+.inspector-template-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 4px; }
+
+#canvas-pane { position: relative; overflow: auto; background-color: var(--bg-canvas); background-image: radial-gradient(circle, var(--grid-dot) 1px, transparent 1px); background-size: var(--grid-size) var(--grid-size); }
+#canvas { position: relative; min-width: 2000px; min-height: 2000px; padding: 20px; }
+.canvas-block { position: absolute; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: grab; user-select: none; transition: box-shadow var(--transition); z-index: 1; }
+.canvas-block:hover { z-index: 5; }
+.canvas-block.selected { z-index: 10; }
+.canvas-block:active { cursor: grabbing; }
+.canvas-block .block-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--radius) var(--radius) 0 0; font-weight: 600; font-size: 12px; position: relative; }
+.canvas-block .block-header .delete-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 3px; font-size: 14px; opacity: 0; transition: all var(--transition); }
+.canvas-block:hover .delete-btn { opacity: 1; }
+.canvas-block .block-header .delete-btn:hover { background: var(--danger); color: #fff; }
+.canvas-block.container .block-body { min-height: 50px; padding: 8px; border-radius: 0 0 var(--radius) var(--radius); border: 1px dashed var(--border); border-top: none; background: var(--drop-zone); transition: background var(--transition), border-color var(--transition); }
+.canvas-block.container .block-body.drag-over { background: var(--drop-zone-active); border-color: var(--accent); }
+.canvas-block.leaf .block-header { border-radius: var(--radius); }
+.nested-block { position: relative; margin: 4px 0; border-radius: var(--radius); font-size: 12px; }
+.nested-block .block-header { padding: 6px 10px; border-radius: var(--radius); }
+.nested-block.nested-container > .block-header { border-radius: var(--radius) var(--radius) 0 0; }
+.nested-block .delete-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 3px; font-size: 12px; opacity: 0; transition: all var(--transition); }
+.nested-block:hover > .delete-btn, .nested-block:hover > .block-header > .delete-btn { opacity: 1; }
+.nested-block .delete-btn:hover { background: var(--danger); color: #fff; }
+.nested-block.nested-container > .block-body { min-height: 36px; padding: 6px; border-radius: 0 0 var(--radius) var(--radius); border: 1px dashed var(--border); border-top: none; background: var(--drop-zone); transition: background var(--transition), border-color var(--transition); }
+.nested-block.nested-container > .block-body.drag-over { background: var(--drop-zone-active); border-color: var(--accent); }
+
+.canvas-block[data-category="event"] .block-header, .nested-block[data-category="event"] .block-header { background: var(--event-bg); border: 1px solid var(--event-border); color: var(--event-color); }
+.canvas-block[data-category="event"].selected .block-header { box-shadow: 0 0 0 2px var(--event-color); }
+.canvas-block[data-category="logic"] .block-header, .nested-block[data-category="logic"] .block-header { background: var(--logic-bg); border: 1px solid var(--logic-border); color: var(--logic-color); }
+.canvas-block[data-category="logic"].selected .block-header { box-shadow: 0 0 0 2px var(--logic-color); }
+.canvas-block[data-category="action"] .block-header, .nested-block[data-category="action"] .block-header { background: var(--action-bg); border: 1px solid var(--action-border); color: var(--action-color); }
+.canvas-block[data-category="action"].selected .block-header { box-shadow: 0 0 0 2px var(--action-color); }
+
+#canvas-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: var(--text-muted); pointer-events: none; z-index: 0; }
+#canvas-hint svg { opacity: .2; margin-bottom: 10px; }
+#canvas-hint p { font-size: 13px; line-height: 1.6; }
+
+#code-pane { display: flex; flex-direction: column; border-left: 1px solid var(--border); background: var(--bg-secondary); overflow: hidden; }
+#code-pane .pane-header { padding: 12px 14px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+#code-output { flex: 1; overflow: auto; padding: 12px 14px; background: var(--code-bg); margin: 0 10px 10px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+#code-output pre { font-family: var(--font-mono); font-size: 12px; line-height: 1.7; color: var(--text-secondary); white-space: pre-wrap; word-break: break-all; margin: 0; }
+.code-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 12px; text-align: center; gap: 8px; }
+.kw { color: var(--code-keyword); font-weight: 600; }
+.fn { color: var(--code-func); }
+.str { color: var(--code-string); }
+.cm { color: var(--code-comment); font-style: italic; }
+.num { color: var(--code-number); }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-tertiary); color: var(--text-secondary); font-family: var(--font-ui); font-size: 12px; font-weight: 500; cursor: pointer; transition: all var(--transition); white-space: nowrap; }
+.btn:hover { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-hover); }
+.btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-sm { padding: 4px 8px; font-size: 11px; }
+#theme-toggle { position: relative; width: 44px; height: 24px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; transition: all var(--transition); }
+#theme-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); transition: transform var(--transition); }
+[data-theme="light"] #theme-toggle::after { transform: translateX(20px); }
+.toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 18px; background: var(--success); color: #fff; border-radius: var(--radius); font-size: 13px; font-weight: 500; font-family: var(--font-ui); z-index: 9999; animation: toastIn .3s ease, toastOut .3s ease 1.5s forwards; box-shadow: var(--shadow-lg); }
+@keyframes toastIn { from { transform: translateY(20px); opacity: 0; } }
+@keyframes toastOut { to { transform: translateY(20px); opacity: 0; } }
+#status-bar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; height: 26px; background: var(--bg-secondary); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); }
+#status-bar .status-left, #status-bar .status-right { display: flex; align-items: center; gap: 12px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="header">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="9" height="9" rx="2" fill="var(--event-color)"/><rect x="13" y="2" width="9" height="9" rx="2" fill="var(--logic-color)"/><rect x="2" y="13" width="9" height="9" rx="2" fill="var(--action-color)"/><rect x="13" y="13" width="9" height="5" rx="2" fill="var(--accent)" opacity=".5"/><rect x="13" y="20" width="9" height="3" rx="1.5" fill="var(--accent)" opacity=".3"/></svg>
+      <span>Block-to-<span class="accent">Luau</span></span>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="clearCanvas()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg> Clear</button>
+      <button class="btn btn-sm" onclick="exportJSON()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Export</button>
+      <button class="btn btn-sm" onclick="importJSON()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg> Import</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+      <div id="theme-toggle" onclick="toggleTheme()"></div>
+    </div>
+  </header>
+  <div id="left-sidebar">
+    <div id="palette-pane">
+      <div class="pane-header">Block Palette</div>
+      <div class="search-wrapper">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="search-box" placeholder="Search blocks…" oninput="filterPalette(this.value)">
+      </div>
+      <div id="palette-list"></div>
+    </div>
+    <div id="pane-divider"></div>
+    <div id="inspector-pane">
+      <div class="pane-header"><span>Block Inspector</span><span id="inspector-badge" style="display:none" class="btn btn-sm"></span></div>
+      <div id="inspector-content"><div class="inspector-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h4"/></svg><span>Click a block to inspect<br>its parameters</span></div></div>
+    </div>
+  </div>
+  <div id="canvas-pane">
+    <div id="canvas" ondragover="handleCanvasDragOver(event)" ondrop="handleCanvasDrop(event)" ondragleave="handleCanvasDragLeave(event)" onclick="handleCanvasClick(event)">
+      <div id="canvas-hint"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="7" height="7" rx="1"/><path d="M14 4h6M14 8h4M4 14h2M4 18h4M14 14h6v6h-6z"/></svg><p>Drag blocks from the palette<br>to start building your logic</p></div>
+    </div>
+  </div>
+  <div id="code-pane">
+    <div class="pane-header"><span>Luau Output</span><button class="btn btn-sm btn-accent" onclick="copyCode()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy</button></div>
+    <div id="code-output"><div class="code-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span>Your Luau code will<br>appear here live</span></div></div>
+  </div>
+  <div id="status-bar">
+    <div class="status-left"><span><span class="status-dot"></span> Auto-save active</span><span id="block-count">0 blocks</span></div>
+    <div class="status-right"><span id="last-saved">—</span><span>Grid: 20px</span></div>
+  </div>
+</div>
+<input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   BLOCK DEFINITIONS — Expanded Library
+   ═══════════════════════════════════════════════════════════════ */
+const BLOCK_DEFS = {
+  // ══ EVENTS ══
+  touched: { type:'touched', category:'event', label:'On Touched', icon:'⚡', container:true,
+    params:[{key:'part',label:'Part Name',type:'text',default:'Part'}],
+    template:'workspace.{part}.Touched:Connect(function(hit)\n{CHILDREN}\nend)',
+    description:'Fires when a part is touched by another part.' },
+  touchEnded: { type:'touchEnded', category:'event', label:'Touch Ended', icon:'✋', container:true,
+    params:[{key:'part',label:'Part Name',type:'text',default:'Part'}],
+    template:'workspace.{part}.TouchEnded:Connect(function(hit)\n{CHILDREN}\nend)',
+    description:'Fires when a part stops touching another part.' },
+  clickDetector: { type:'clickDetector', category:'event', label:'On Click', icon:'👆', container:true,
+    params:[{key:'part',label:'Part Name',type:'text',default:'Part'}],
+    template:'workspace.{part}.ClickDetector.MouseClick:Connect(function(player)\n{CHILDREN}\nend)',
+    description:'Fires when a ClickDetector is activated.' },
+  proximityPrompt: { type:'proximityPrompt', category:'event', label:'Proximity Prompt', icon:'📍', container:true,
+    params:[{key:'part',label:'Part Name',type:'text',default:'Part'}],
+    template:'workspace.{part}.ProximityPrompt.Triggered:Connect(function(player)\n{CHILDREN}\nend)',
+    description:'Fires when a ProximityPrompt is triggered by a player.' },
+  playerAdded: { type:'playerAdded', category:'event', label:'Player Added', icon:'👤', container:true, params:[],
+    template:'game:GetService("Players").PlayerAdded:Connect(function(player)\n{CHILDREN}\nend)',
+    description:'Fires when a player joins the game.' },
+  playerRemoving: { type:'playerRemoving', category:'event', label:'Player Removing', icon:'👋', container:true, params:[],
+    template:'game:GetService("Players").PlayerRemoving:Connect(function(player)\n{CHILDREN}\nend)',
+    description:'Fires when a player leaves the game.' },
+  charAdded: { type:'charAdded', category:'event', label:'Character Added', icon:'🧍', container:true,
+    params:[{key:'playerVar',label:'Player Variable',type:'text',default:'player'}],
+    template:'{playerVar}.CharacterAdded:Connect(function(character)\n{CHILDREN}\nend)',
+    description:"Fires when a player's character spawns." },
+  charRemoving: { type:'charRemoving', category:'event', label:'Character Removing', icon:'💀', container:true,
+    params:[{key:'playerVar',label:'Player Variable',type:'text',default:'player'}],
+    template:'{playerVar}.CharacterRemoving:Connect(function(character)\n{CHILDREN}\nend)',
+    description:"Fires when a player's character is about to be removed." },
+  heartbeat: { type:'heartbeat', category:'event', label:'Heartbeat', icon:'💓', container:true, params:[],
+    template:'game:GetService("RunService").Heartbeat:Connect(function(deltaTime)\n{CHILDREN}\nend)',
+    description:'Fires every frame after physics (~30Hz server, ~60Hz client).' },
+  stepped: { type:'stepped', category:'event', label:'Stepped', icon:'🦶', container:true, params:[],
+    template:'game:GetService("RunService").Stepped:Connect(function(totalTime, deltaTime)\n{CHILDREN}\nend)',
+    description:'Fires every frame before physics simulation.' },
+  remoteOnServer: { type:'remoteOnServer', category:'event', label:'Remote → Server', icon:'📡', container:true,
+    params:[{key:'name',label:'RemoteEvent Name',type:'text',default:'MyRemote'}],
+    template:'game.ReplicatedStorage.{name}.OnServerEvent:Connect(function(player, ...)\n{CHILDREN}\nend)',
+    description:'Listens for a RemoteEvent fired from the client.' },
+  remoteOnClient: { type:'remoteOnClient', category:'event', label:'Remote → Client', icon:'📲', container:true,
+    params:[{key:'name',label:'RemoteEvent Name',type:'text',default:'MyRemote'}],
+    template:'game.ReplicatedStorage.{name}.OnClientEvent:Connect(function(...)\n{CHILDREN}\nend)',
+    description:'Listens for a RemoteEvent fired from the server.' },
+  childAdded: { type:'childAdded', category:'event', label:'Child Added', icon:'📦', container:true,
+    params:[{key:'parent',label:'Parent Object',type:'text',default:'workspace'}],
+    template:'{parent}.ChildAdded:Connect(function(child)\n{CHILDREN}\nend)',
+    description:'Fires when a new child is added to an instance.' },
+  childRemoved: { type:'childRemoved', category:'event', label:'Child Removed', icon:'🗑️', container:true,
+    params:[{key:'parent',label:'Parent Object',type:'text',default:'workspace'}],
+    template:'{parent}.ChildRemoved:Connect(function(child)\n{CHILDREN}\nend)',
+    description:'Fires when a child is removed from an instance.' },
+  valueChanged: { type:'valueChanged', category:'event', label:'Value Changed', icon:'🔄', container:true,
+    params:[{key:'object',label:'Value Object Path',type:'text',default:'workspace.IntValue'}],
+    template:'{object}.Changed:Connect(function(newValue)\n{CHILDREN}\nend)',
+    description:"Fires when a ValueBase object's value changes." },
+  attrChanged: { type:'attrChanged', category:'event', label:'Attribute Changed', icon:'🏷️', container:true,
+    params:[{key:'object',label:'Object Path',type:'text',default:'workspace.Part'},{key:'attr',label:'Attribute Name',type:'text',default:'MyAttribute'}],
+    template:'{object}:GetAttributeChangedSignal("{attr}"):Connect(function()\n{CHILDREN}\nend)',
+    description:'Fires when a specific attribute changes on an instance.' },
+  inputBegan: { type:'inputBegan', category:'event', label:'Input Began', icon:'⌨️', container:true,
+    params:[{key:'keyCode',label:'Key Code',type:'text',default:'Enum.KeyCode.E'}],
+    template:'game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)\n\tif gameProcessed then return end\n\tif input.KeyCode == {keyCode} then\n{CHILDREN}\n\tend\nend)',
+    description:'Fires when a key or button is pressed (client-side).' },
+  inputEnded: { type:'inputEnded', category:'event', label:'Input Ended', icon:'🔚', container:true,
+    params:[{key:'keyCode',label:'Key Code',type:'text',default:'Enum.KeyCode.E'}],
+    template:'game:GetService("UserInputService").InputEnded:Connect(function(input, gameProcessed)\n\tif input.KeyCode == {keyCode} then\n{CHILDREN}\n\tend\nend)',
+    description:'Fires when a key or button is released (client-side).' },
+  collectionTag: { type:'collectionTag', category:'event', label:'Tagged Instance', icon:'🔖', container:true,
+    params:[{key:'tag',label:'Tag Name',type:'text',default:'MyTag'}],
+    template:'local CollectionService = game:GetService("CollectionService")\nfor _, obj in CollectionService:GetTagged("{tag}") do\n\ttask.spawn(function()\n{CHILDREN}\n\tend)\nend\nCollectionService:GetInstanceAddedSignal("{tag}"):Connect(function(obj)\n{CHILDREN}\nend)',
+    description:'Runs for each existing + future instance with the given tag.' },
+  died: { type:'died', category:'event', label:'Humanoid Died', icon:'☠️', container:true,
+    params:[{key:'humanoidVar',label:'Humanoid Variable',type:'text',default:'character:WaitForChild("Humanoid")'}],
+    template:'{humanoidVar}.Died:Connect(function()\n{CHILDREN}\nend)',
+    description:"Fires when a Humanoid's health reaches zero." },
+
+  // ══ LOGIC ══
+  ifThen: { type:'ifThen', category:'logic', label:'If / Then', icon:'❓', container:true,
+    params:[{key:'condition',label:'Condition',type:'text',default:'true'}],
+    template:'if {condition} then\n{CHILDREN}\nend',
+    description:'Conditional branch — runs children when condition is truthy.' },
+  ifElse: { type:'ifElse', category:'logic', label:'If / Else', icon:'🔀', container:true,
+    params:[{key:'condition',label:'Condition',type:'text',default:'true'},{key:'elseCode',label:'Else Body',type:'textarea',default:'-- else branch'}],
+    template:'if {condition} then\n{CHILDREN}\nelse\n\t{elseCode}\nend',
+    description:'If-else conditional — runs children on true, else body on false.' },
+  elseIf: { type:'elseIf', category:'logic', label:'If / ElseIf / Else', icon:'🔃', container:true,
+    params:[{key:'cond1',label:'If Condition',type:'text',default:'true'},{key:'cond2',label:'ElseIf Condition',type:'text',default:'false'},{key:'elseIfCode',label:'ElseIf Body',type:'textarea',default:'-- elseif branch'},{key:'elseCode',label:'Else Body',type:'textarea',default:'-- else branch'}],
+    template:'if {cond1} then\n{CHILDREN}\nelseif {cond2} then\n\t{elseIfCode}\nelse\n\t{elseCode}\nend',
+    description:'Multi-branch conditional with elseif and else.' },
+  whileLoop: { type:'whileLoop', category:'logic', label:'While Loop', icon:'🔁', container:true,
+    params:[{key:'condition',label:'Condition',type:'text',default:'true'}],
+    template:'while {condition} do\n{CHILDREN}\nend',
+    description:'Repeats children while the condition is truthy.' },
+  forLoop: { type:'forLoop', category:'logic', label:'For Loop', icon:'🔢', container:true,
+    params:[{key:'var',label:'Variable',type:'text',default:'i'},{key:'start',label:'Start',type:'number',default:'1'},{key:'stop',label:'Stop',type:'number',default:'10'},{key:'step',label:'Step',type:'number',default:'1'}],
+    template:'for {var} = {start}, {stop}, {step} do\n{CHILDREN}\nend',
+    description:'Numeric for loop iterating from start to stop.' },
+  forEachIPairs: { type:'forEachIPairs', category:'logic', label:'For Each (ipairs)', icon:'📊', container:true,
+    params:[{key:'indexVar',label:'Index Variable',type:'text',default:'i'},{key:'valVar',label:'Value Variable',type:'text',default:'v'},{key:'table',label:'Table / Array',type:'text',default:'myTable'}],
+    template:'for {indexVar}, {valVar} in ipairs({table}) do\n{CHILDREN}\nend',
+    description:'Iterates over an array-like table in order.' },
+  forEachPairs: { type:'forEachPairs', category:'logic', label:'For Each (pairs)', icon:'🗂️', container:true,
+    params:[{key:'keyVar',label:'Key Variable',type:'text',default:'key'},{key:'valVar',label:'Value Variable',type:'text',default:'value'},{key:'table',label:'Table / Dictionary',type:'text',default:'myDict'}],
+    template:'for {keyVar}, {valVar} in pairs({table}) do\n{CHILDREN}\nend',
+    description:'Iterates over all key-value pairs in a table.' },
+  forChildren: { type:'forChildren', category:'logic', label:'For Each Child', icon:'👶', container:true,
+    params:[{key:'childVar',label:'Child Variable',type:'text',default:'child'},{key:'parent',label:'Parent Object',type:'text',default:'workspace.Folder'}],
+    template:'for _, {childVar} in {parent}:GetChildren() do\n{CHILDREN}\nend',
+    description:'Iterates over all children of an instance.' },
+  repeatUntil: { type:'repeatUntil', category:'logic', label:'Repeat / Until', icon:'🔄', container:true,
+    params:[{key:'condition',label:'Until Condition',type:'text',default:'false'}],
+    template:'repeat\n{CHILDREN}\nuntil {condition}',
+    description:'Repeats children until the condition becomes true.' },
+  localFunction: { type:'localFunction', category:'logic', label:'Function', icon:'🧩', container:true,
+    params:[{key:'name',label:'Function Name',type:'text',default:'myFunction'},{key:'args',label:'Arguments',type:'text',default:''}],
+    template:'local function {name}({args})\n{CHILDREN}\nend',
+    description:'Declares a local function.' },
+  taskSpawn: { type:'taskSpawn', category:'logic', label:'Task Spawn', icon:'🧵', container:true, params:[],
+    template:'task.spawn(function()\n{CHILDREN}\nend)',
+    description:'Runs children in a separate coroutine thread.' },
+  taskDefer: { type:'taskDefer', category:'logic', label:'Task Defer', icon:'⏳', container:true, params:[],
+    template:'task.defer(function()\n{CHILDREN}\nend)',
+    description:'Defers children to run at the end of the current resumption cycle.' },
+  pcall: { type:'pcall', category:'logic', label:'Protected Call', icon:'🛡️', container:true,
+    params:[{key:'errVar',label:'Error Variable',type:'text',default:'err'}],
+    template:'local success, {errVar} = pcall(function()\n{CHILDREN}\nend)\nif not success then\n\twarn("Error: " .. tostring({errVar}))\nend',
+    description:'Wraps children in pcall for error handling.' },
+  debounce: { type:'debounce', category:'logic', label:'Debounce Gate', icon:'🚧', container:true,
+    params:[{key:'varName',label:'Debounce Variable',type:'text',default:'debounce'},{key:'cooldown',label:'Cooldown (sec)',type:'number',default:'1'}],
+    template:'if not {varName} then\n\t{varName} = true\n{CHILDREN}\n\ttask.wait({cooldown})\n\t{varName} = false\nend',
+    description:'Prevents code from running again until cooldown expires.' },
+  isA: { type:'isA', category:'logic', label:'IsA Check', icon:'🏗️', container:true,
+    params:[{key:'object',label:'Object Variable',type:'text',default:'hit'},{key:'className',label:'Class Name',type:'text',default:'BasePart'}],
+    template:'if {object}:IsA("{className}") then\n{CHILDREN}\nend',
+    description:'Checks if an instance is of a certain class.' },
+  findFirstChild: { type:'findFirstChild', category:'logic', label:'FindFirstChild', icon:'🔍', container:true,
+    params:[{key:'parent',label:'Parent Object',type:'text',default:'hit.Parent'},{key:'childName',label:'Child Name',type:'text',default:'Humanoid'},{key:'varName',label:'Variable Name',type:'text',default:'humanoid'}],
+    template:'local {varName} = {parent}:FindFirstChild("{childName}")\nif {varName} then\n{CHILDREN}\nend',
+    description:'Searches for a child and runs children if found.' },
+  playerCheck: { type:'playerCheck', category:'logic', label:'Is Player?', icon:'🎮', container:true,
+    params:[{key:'hitVar',label:'Hit Part Variable',type:'text',default:'hit'}],
+    template:'local player = game:GetService("Players"):GetPlayerFromCharacter({hitVar}.Parent)\nif player then\n{CHILDREN}\nend',
+    description:'Checks if a touched part belongs to a player.' },
+
+  // ══ ACTIONS ══
+  wait: { type:'wait', category:'action', label:'Wait', icon:'⏱', container:false,
+    params:[{key:'seconds',label:'Seconds',type:'number',default:'1'}],
+    template:'task.wait({seconds})', description:'Pauses execution for the specified duration.' },
+  print: { type:'print', category:'action', label:'Print', icon:'📝', container:false,
+    params:[{key:'message',label:'Message',type:'text',default:'Hello, world!'}],
+    template:'print("{message}")', description:'Outputs a message to the dev console.' },
+  warn: { type:'warn', category:'action', label:'Warn', icon:'⚠️', container:false,
+    params:[{key:'message',label:'Message',type:'text',default:'Warning!'}],
+    template:'warn("{message}")', description:'Outputs a warning to the dev console.' },
+  setProperty: { type:'setProperty', category:'action', label:'Set Property', icon:'🔧', container:false,
+    params:[{key:'object',label:'Object Path',type:'text',default:'workspace.Part'},{key:'property',label:'Property',type:'text',default:'BrickColor'},{key:'value',label:'Value',type:'text',default:'BrickColor.new("Bright red")'}],
+    template:'{object}.{property} = {value}', description:'Sets a property on a Roblox instance.' },
+  destroy: { type:'destroy', category:'action', label:'Destroy', icon:'💥', container:false,
+    params:[{key:'object',label:'Object Path',type:'text',default:'hit'}],
+    template:'{object}:Destroy()', description:'Destroys a Roblox instance.' },
+  clone: { type:'clone', category:'action', label:'Clone', icon:'📋', container:false,
+    params:[{key:'source',label:'Source Object',type:'text',default:'game.ServerStorage.Template'},{key:'parent',label:'Parent',type:'text',default:'workspace'},{key:'varName',label:'Variable Name',type:'text',default:'newClone'}],
+    template:'local {varName} = {source}:Clone()\n{varName}.Parent = {parent}', description:'Clones an object and parents it.' },
+  playSound: { type:'playSound', category:'action', label:'Play Sound', icon:'🔊', container:false,
+    params:[{key:'soundId',label:'Sound ID',type:'text',default:'rbxassetid://0'},{key:'parent',label:'Parent Object',type:'text',default:'workspace'}],
+    template:'local sound = Instance.new("Sound")\nsound.SoundId = "{soundId}"\nsound.Parent = {parent}\nsound:Play()\nsound.Ended:Wait()\nsound:Destroy()', description:'Creates and plays a sound, then cleans up.' },
+  setVar: { type:'setVar', category:'action', label:'Set Variable', icon:'📌', container:false,
+    params:[{key:'name',label:'Variable Name',type:'text',default:'myVar'},{key:'value',label:'Value',type:'text',default:'0'}],
+    template:'local {name} = {value}', description:'Declares a local variable.' },
+  assignVar: { type:'assignVar', category:'action', label:'Assign Variable', icon:'✏️', container:false,
+    params:[{key:'name',label:'Variable Name',type:'text',default:'myVar'},{key:'value',label:'New Value',type:'text',default:'0'}],
+    template:'{name} = {value}', description:'Reassigns an existing variable (no "local").' },
+  createInstance: { type:'createInstance', category:'action', label:'New Instance', icon:'🏭', container:false,
+    params:[{key:'className',label:'Class Name',type:'text',default:'Part'},{key:'varName',label:'Variable Name',type:'text',default:'newPart'},{key:'parent',label:'Parent',type:'text',default:'workspace'}],
+    template:'local {varName} = Instance.new("{className}")\n{varName}.Parent = {parent}', description:'Creates a new Roblox instance and parents it.' },
+  setParent: { type:'setParent', category:'action', label:'Set Parent', icon:'📂', container:false,
+    params:[{key:'object',label:'Object',type:'text',default:'part'},{key:'parent',label:'New Parent',type:'text',default:'workspace'}],
+    template:'{object}.Parent = {parent}', description:'Moves an instance to a new parent.' },
+  setName: { type:'setName', category:'action', label:'Set Name', icon:'🏷️', container:false,
+    params:[{key:'object',label:'Object',type:'text',default:'part'},{key:'name',label:'New Name',type:'text',default:'MyPart'}],
+    template:'{object}.Name = "{name}"', description:'Renames an instance.' },
+  setAttribute: { type:'setAttribute', category:'action', label:'Set Attribute', icon:'🔖', container:false,
+    params:[{key:'object',label:'Object Path',type:'text',default:'workspace.Part'},{key:'attr',label:'Attribute Name',type:'text',default:'Score'},{key:'value',label:'Value',type:'text',default:'0'}],
+    template:'{object}:SetAttribute("{attr}", {value})', description:'Sets an attribute on an instance.' },
+  getAttribute: { type:'getAttribute', category:'action', label:'Get Attribute', icon:'📥', container:false,
+    params:[{key:'varName',label:'Variable Name',type:'text',default:'val'},{key:'object',label:'Object Path',type:'text',default:'workspace.Part'},{key:'attr',label:'Attribute Name',type:'text',default:'Score'}],
+    template:'local {varName} = {object}:GetAttribute("{attr}")', description:'Reads an attribute from an instance.' },
+  waitForChild: { type:'waitForChild', category:'action', label:'WaitForChild', icon:'⏳', container:false,
+    params:[{key:'varName',label:'Variable Name',type:'text',default:'child'},{key:'parent',label:'Parent Object',type:'text',default:'character'},{key:'childName',label:'Child Name',type:'text',default:'Humanoid'}],
+    template:'local {varName} = {parent}:WaitForChild("{childName}")', description:'Waits until a child exists, then returns it.' },
+  getService: { type:'getService', category:'action', label:'Get Service', icon:'🏢', container:false,
+    params:[{key:'varName',label:'Variable Name',type:'text',default:'Players'},{key:'service',label:'Service Name',type:'text',default:'Players'}],
+    template:'local {varName} = game:GetService("{service}")', description:'Gets a Roblox service reference.' },
+  tween: { type:'tween', category:'action', label:'Tween', icon:'🎬', container:false,
+    params:[{key:'object',label:'Object Path',type:'text',default:'workspace.Part'},{key:'duration',label:'Duration (sec)',type:'number',default:'1'},{key:'easingStyle',label:'Easing Style',type:'text',default:'Enum.EasingStyle.Quad'},{key:'easingDir',label:'Easing Direction',type:'text',default:'Enum.EasingDirection.Out'},{key:'properties',label:'Properties (table)',type:'text',default:'{Position = Vector3.new(0, 10, 0)}'}],
+    template:'local tweenInfo = TweenInfo.new({duration}, {easingStyle}, {easingDir})\nlocal tween = game:GetService("TweenService"):Create({object}, tweenInfo, {properties})\ntween:Play()', description:'Smoothly animates properties over time.' },
+  tweenWait: { type:'tweenWait', category:'action', label:'Tween & Wait', icon:'🎞️', container:false,
+    params:[{key:'object',label:'Object Path',type:'text',default:'workspace.Part'},{key:'duration',label:'Duration (sec)',type:'number',default:'1'},{key:'easingStyle',label:'Easing Style',type:'text',default:'Enum.EasingStyle.Quad'},{key:'easingDir',label:'Easing Direction',type:'text',default:'Enum.EasingDirection.Out'},{key:'properties',label:'Properties (table)',type:'text',default:'{Transparency = 1}'}],
+    template:'local tweenInfo = TweenInfo.new({duration}, {easingStyle}, {easingDir})\nlocal tween = game:GetService("TweenService"):Create({object}, tweenInfo, {properties})\ntween:Play()\ntween.Completed:Wait()', description:'Tweens properties and yields until done.' },
+  setCFrame: { type:'setCFrame', category:'action', label:'Set CFrame', icon:'📐', container:false,
+    params:[{key:'object',label:'Part Path',type:'text',default:'workspace.Part'},{key:'x',label:'X',type:'number',default:'0'},{key:'y',label:'Y',type:'number',default:'10'},{key:'z',label:'Z',type:'number',default:'0'}],
+    template:'{object}.CFrame = CFrame.new({x}, {y}, {z})', description:"Sets a part's CFrame (position + rotation)." },
+  setSize: { type:'setSize', category:'action', label:'Set Size', icon:'📏', container:false,
+    params:[{key:'object',label:'Part Path',type:'text',default:'workspace.Part'},{key:'x',label:'X',type:'number',default:'4'},{key:'y',label:'Y',type:'number',default:'1'},{key:'z',label:'Z',type:'number',default:'2'}],
+    template:'{object}.Size = Vector3.new({x}, {y}, {z})', description:"Sets a part's size." },
+  setColor: { type:'setColor', category:'action', label:'Set Color', icon:'🎨', container:false,
+    params:[{key:'object',label:'Part Path',type:'text',default:'workspace.Part'},{key:'r',label:'Red (0-1)',type:'number',default:'1'},{key:'g',label:'Green (0-1)',type:'number',default:'0'},{key:'b',label:'Blue (0-1)',type:'number',default:'0'}],
+    template:'{object}.Color = Color3.new({r}, {g}, {b})', description:"Sets a part's color using RGB values." },
+  setTransparency: { type:'setTransparency', category:'action', label:'Set Transparency', icon:'👻', container:false,
+    params:[{key:'object',label:'Part Path',type:'text',default:'workspace.Part'},{key:'value',label:'Transparency (0-1)',type:'number',default:'0.5'}],
+    template:'{object}.Transparency = {value}', description:"Sets a part's transparency." },
+  setAnchored: { type:'setAnchored', category:'action', label:'Set Anchored', icon:'⚓', container:false,
+    params:[{key:'object',label:'Part Path',type:'text',default:'workspace.Part'},{key:'anchored',label:'Anchored (true/false)',type:'text',default:'true'}],
+    template:'{object}.Anchored = {anchored}', description:'Anchors or unanchors a part.' },
+  setCanCollide: { type:'setCanCollide', category:'action', label:'Set CanCollide', icon:'🧱', container:false,
+    params:[{key:'object',label:'Part Path',type:'text',default:'workspace.Part'},{key:'value',label:'CanCollide (true/false)',type:'text',default:'false'}],
+    template:'{object}.CanCollide = {value}', description:'Enables or disables collision on a part.' },
+  applyImpulse: { type:'applyImpulse', category:'action', label:'Apply Impulse', icon:'💨', container:false,
+    params:[{key:'object',label:'Part Path',type:'text',default:'workspace.Part'},{key:'x',label:'X Force',type:'number',default:'0'},{key:'y',label:'Y Force',type:'number',default:'500'},{key:'z',label:'Z Force',type:'number',default:'0'}],
+    template:'{object}:ApplyImpulse(Vector3.new({x}, {y}, {z}))', description:'Applies an instant force to a part.' },
+  setHealth: { type:'setHealth', category:'action', label:'Set Health', icon:'❤️', container:false,
+    params:[{key:'humanoid',label:'Humanoid Variable',type:'text',default:'humanoid'},{key:'value',label:'Health Value',type:'number',default:'100'}],
+    template:'{humanoid}.Health = {value}', description:"Sets a Humanoid's health." },
+  takeDamage: { type:'takeDamage', category:'action', label:'Take Damage', icon:'🗡️', container:false,
+    params:[{key:'humanoid',label:'Humanoid Variable',type:'text',default:'humanoid'},{key:'amount',label:'Damage Amount',type:'number',default:'25'}],
+    template:'{humanoid}:TakeDamage({amount})', description:'Deals damage to a Humanoid.' },
+  setWalkSpeed: { type:'setWalkSpeed', category:'action', label:'Set WalkSpeed', icon:'🏃', container:false,
+    params:[{key:'humanoid',label:'Humanoid Variable',type:'text',default:'humanoid'},{key:'speed',label:'Walk Speed',type:'number',default:'16'}],
+    template:'{humanoid}.WalkSpeed = {speed}', description:"Sets a Humanoid's walk speed." },
+  setJumpPower: { type:'setJumpPower', category:'action', label:'Set JumpPower', icon:'🦘', container:false,
+    params:[{key:'humanoid',label:'Humanoid Variable',type:'text',default:'humanoid'},{key:'power',label:'Jump Power',type:'number',default:'50'}],
+    template:'{humanoid}.JumpPower = {power}', description:"Sets a Humanoid's jump power." },
+  teleportPlayer: { type:'teleportPlayer', category:'action', label:'Teleport Player', icon:'🌀', container:false,
+    params:[{key:'character',label:'Character Variable',type:'text',default:'player.Character'},{key:'x',label:'X',type:'number',default:'0'},{key:'y',label:'Y',type:'number',default:'50'},{key:'z',label:'Z',type:'number',default:'0'}],
+    template:'local hrp = {character}:FindFirstChild("HumanoidRootPart")\nif hrp then\n\thrp.CFrame = CFrame.new({x}, {y}, {z})\nend', description:'Teleports a player to coordinates.' },
+  fireRemoteServer: { type:'fireRemoteServer', category:'action', label:'Fire Remote → Server', icon:'📤', container:false,
+    params:[{key:'name',label:'RemoteEvent Name',type:'text',default:'MyRemote'},{key:'args',label:'Arguments',type:'text',default:''}],
+    template:'game.ReplicatedStorage.{name}:FireServer({args})', description:'Fires a RemoteEvent to the server (client-side).' },
+  fireRemoteClient: { type:'fireRemoteClient', category:'action', label:'Fire Remote → Client', icon:'📩', container:false,
+    params:[{key:'name',label:'RemoteEvent Name',type:'text',default:'MyRemote'},{key:'playerVar',label:'Player Variable',type:'text',default:'player'},{key:'args',label:'Arguments',type:'text',default:''}],
+    template:'game.ReplicatedStorage.{name}:FireClient({playerVar}, {args})', description:'Fires a RemoteEvent to a specific client (server-side).' },
+  fireRemoteAll: { type:'fireRemoteAll', category:'action', label:'Fire Remote → All', icon:'📢', container:false,
+    params:[{key:'name',label:'RemoteEvent Name',type:'text',default:'MyRemote'},{key:'args',label:'Arguments',type:'text',default:''}],
+    template:'game.ReplicatedStorage.{name}:FireAllClients({args})', description:'Fires a RemoteEvent to all connected clients.' },
+  createLeaderstats: { type:'createLeaderstats', category:'action', label:'Create Leaderstats', icon:'🏆', container:false,
+    params:[{key:'playerVar',label:'Player Variable',type:'text',default:'player'},{key:'statName',label:'Stat Name',type:'text',default:'Score'},{key:'statValue',label:'Initial Value',type:'number',default:'0'}],
+    template:'local leaderstats = Instance.new("Folder")\nleaderstats.Name = "leaderstats"\nleaderstats.Parent = {playerVar}\nlocal stat = Instance.new("IntValue")\nstat.Name = "{statName}"\nstat.Value = {statValue}\nstat.Parent = leaderstats', description:'Creates a leaderstats folder with an IntValue stat.' },
+  changeStat: { type:'changeStat', category:'action', label:'Change Stat', icon:'📊', container:false,
+    params:[{key:'playerVar',label:'Player Variable',type:'text',default:'player'},{key:'statName',label:'Stat Name',type:'text',default:'Score'},{key:'amount',label:'Amount (+/-)',type:'text',default:'1'}],
+    template:'{playerVar}.leaderstats.{statName}.Value += {amount}', description:'Increments or decrements a leaderstats value.' },
+  sendNotification: { type:'sendNotification', category:'action', label:'Send Notification', icon:'🔔', container:false,
+    params:[{key:'playerVar',label:'Player Variable',type:'text',default:'player'},{key:'title',label:'Title',type:'text',default:'Alert'},{key:'text',label:'Text',type:'text',default:'Something happened!'},{key:'duration',label:'Duration (sec)',type:'number',default:'5'}],
+    template:'game:GetService("StarterGui"):SetCore("SendNotification", {\n\tTitle = "{title}",\n\tText = "{text}",\n\tDuration = {duration}\n})', description:'Sends an in-game notification to the local player.' },
+  chatMessage: { type:'chatMessage', category:'action', label:'System Message', icon:'💬', container:false,
+    params:[{key:'message',label:'Message',type:'text',default:'Hello from the server!'},{key:'color',label:'Color',type:'text',default:'Color3.fromRGB(0, 200, 255)'}],
+    template:'game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {\n\tText = "{message}",\n\tColor = {color}\n})', description:'Sends a colored system message in chat (client-side).' },
+  requireMod: { type:'requireMod', category:'action', label:'Require Module', icon:'📚', container:false,
+    params:[{key:'varName',label:'Variable Name',type:'text',default:'module'},{key:'path',label:'Module Path',type:'text',default:'game.ServerScriptService.MyModule'}],
+    template:'local {varName} = require({path})', description:'Requires a ModuleScript.' },
+  returnVal: { type:'returnVal', category:'action', label:'Return', icon:'↩️', container:false,
+    params:[{key:'value',label:'Return Value',type:'text',default:''}],
+    template:'return {value}', description:'Returns a value from a function.' },
+  breakLoop: { type:'breakLoop', category:'action', label:'Break', icon:'🛑', container:false, params:[],
+    template:'break', description:'Breaks out of the current loop.' },
+  continueLoop: { type:'continueLoop', category:'action', label:'Continue', icon:'⏭️', container:false, params:[],
+    template:'continue', description:'Skips to the next loop iteration.' },
+  tableInsert: { type:'tableInsert', category:'action', label:'Table Insert', icon:'➕', container:false,
+    params:[{key:'table',label:'Table Name',type:'text',default:'myTable'},{key:'value',label:'Value',type:'text',default:'"item"'}],
+    template:'table.insert({table}, {value})', description:'Inserts a value at the end of a table.' },
+  tableRemove: { type:'tableRemove', category:'action', label:'Table Remove', icon:'➖', container:false,
+    params:[{key:'table',label:'Table Name',type:'text',default:'myTable'},{key:'index',label:'Index',type:'number',default:'1'}],
+    template:'table.remove({table}, {index})', description:'Removes the element at the given index.' },
+  createTable: { type:'createTable', category:'action', label:'Create Table', icon:'📋', container:false,
+    params:[{key:'varName',label:'Variable Name',type:'text',default:'myTable'},{key:'content',label:'Initial Content',type:'text',default:'{}'}],
+    template:'local {varName} = {content}', description:'Creates a new table variable.' },
+  mathRandom: { type:'mathRandom', category:'action', label:'Random Number', icon:'🎲', container:false,
+    params:[{key:'varName',label:'Variable Name',type:'text',default:'roll'},{key:'min',label:'Min',type:'number',default:'1'},{key:'max',label:'Max',type:'number',default:'100'}],
+    template:'local {varName} = math.random({min}, {max})', description:'Generates a random integer between min and max.' },
+  addTag: { type:'addTag', category:'action', label:'Add Tag', icon:'🏷️', container:false,
+    params:[{key:'object',label:'Object',type:'text',default:'workspace.Part'},{key:'tag',label:'Tag Name',type:'text',default:'MyTag'}],
+    template:'game:GetService("CollectionService"):AddTag({object}, "{tag}")', description:'Adds a CollectionService tag to an instance.' },
+  removeTag: { type:'removeTag', category:'action', label:'Remove Tag', icon:'🔓', container:false,
+    params:[{key:'object',label:'Object',type:'text',default:'workspace.Part'},{key:'tag',label:'Tag Name',type:'text',default:'MyTag'}],
+    template:'game:GetService("CollectionService"):RemoveTag({object}, "{tag}")', description:'Removes a CollectionService tag from an instance.' },
+  customCode: { type:'customCode', category:'action', label:'Custom Code', icon:'🖊️', container:false,
+    params:[{key:'code',label:'Luau Code',type:'textarea',default:'-- your code here'}],
+    template:'{code}', description:'Insert arbitrary Luau code.' },
+  comment: { type:'comment', category:'action', label:'Comment', icon:'💭', container:false,
+    params:[{key:'text',label:'Comment Text',type:'text',default:'TODO'}],
+    template:'-- {text}', description:'Inserts a Luau comment.' }
+};
+
+/* ═══════ STATE ═══════ */
+let logicTree = [], nextId = 1, selectedBlockId = null, dragData = null, collapsedCategories = {};
+
+/* ═══════ INIT ═══════ */
+document.addEventListener('DOMContentLoaded', () => { loadState(); renderPalette(); render(); });
+
+/* ═══════ PALETTE with Collapsible Groups ═══════ */
+const CHEVRON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+function renderPalette(filter = '') {
+  const list = document.getElementById('palette-list');
+  const cats = { event: 'Events', logic: 'Logic', action: 'Actions' };
+  let html = '';
+  for (const [cat, catLabel] of Object.entries(cats)) {
+    const blocks = Object.values(BLOCK_DEFS).filter(b => b.category === cat && (filter === '' || b.label.toLowerCase().includes(filter.toLowerCase()) || b.type.toLowerCase().includes(filter.toLowerCase())));
+    if (!blocks.length) continue;
+    const isColl = collapsedCategories[cat] && filter === '';
+    const cc = isColl ? ' collapsed' : '';
+    html += '<div class="palette-category">';
+    html += '<div class="category-label'+cc+'" data-cat="'+cat+'" onclick="toggleCategory(\''+cat+'\')">';
+    html += '<span class="chevron'+cc+'">'+CHEVRON+'</span><span class="cat-dot"></span><span>'+catLabel+'</span><span class="cat-count">'+blocks.length+'</span></div>';
+    html += '<div class="category-blocks'+cc+'">';
+    for (const b of blocks) {
+      html += '<div class="palette-block" data-type="'+b.type+'" data-category="'+b.category+'" draggable="true" ondragstart="handlePaletteDragStart(event,\''+b.type+'\')" ondragend="handlePaletteDragEnd(event)" onclick="inspectDefinition(\''+b.type+'\')">';
+      html += '<span class="block-icon">'+b.icon+'</span><span>'+b.label+'</span></div>';
+    }
+    html += '</div></div>';
+  }
+  list.innerHTML = html;
+}
+
+function toggleCategory(cat) {
+  collapsedCategories[cat] = !collapsedCategories[cat];
+  document.querySelectorAll('.category-label[data-cat="'+cat+'"]').forEach(el => {
+    el.classList.toggle('collapsed', collapsedCategories[cat]);
+    el.querySelector('.chevron').classList.toggle('collapsed', collapsedCategories[cat]);
+  });
+  document.querySelectorAll('.category-label[data-cat="'+cat+'"] + .category-blocks').forEach(el => el.classList.toggle('collapsed', collapsedCategories[cat]));
+}
+
+function filterPalette(val) { renderPalette(val); }
+
+/* ═══════ DRAG — Palette ═══════ */
+function handlePaletteDragStart(e, type) { dragData={source:'palette',type}; e.dataTransfer.setData('text/plain',type); e.dataTransfer.effectAllowed='copy'; e.target.classList.add('dragging'); }
+function handlePaletteDragEnd(e) { e.target.classList.remove('dragging'); dragData=null; }
+
+/* ═══════ DRAG — Canvas ═══════ */
+function handleCanvasDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect='copy'; }
+function handleCanvasDragLeave(e) {}
+function handleCanvasDrop(e) {
+  e.preventDefault(); e.stopPropagation();
+  const type = e.dataTransfer.getData('text/plain');
+  if (!type || !BLOCK_DEFS[type]) return;
+  const cr = document.getElementById('canvas').getBoundingClientRect();
+  const x = Math.round((e.clientX - cr.left + document.getElementById('canvas-pane').scrollLeft) / 20) * 20;
+  const y = Math.round((e.clientY - cr.top + document.getElementById('canvas-pane').scrollTop) / 20) * 20;
+  const node = createNode(type, x, y);
+  logicTree.push(node); render(); selectBlock(node.id); saveState();
+}
+
+/* ═══════ DRAG — Nesting ═══════ */
+function handleBodyDragOver(e, pid) { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect='copy'; e.currentTarget.classList.add('drag-over'); }
+function handleBodyDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function handleBodyDrop(e, pid) {
+  e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('drag-over');
+  const type = e.dataTransfer.getData('text/plain');
+  if (!type || !BLOCK_DEFS[type]) return;
+  const child = createNode(type, 0, 0);
+  const parent = findNode(pid);
+  if (parent) { parent.children.push(child); render(); selectBlock(child.id); saveState(); }
+}
+
+/* ═══════ Canvas Block Dragging ═══════ */
+let canvasDrag = null;
+let hoverBody = null;
+function startBlockDrag(e, id) {
+  if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) return;
+  e.stopPropagation();
+  const node = findNode(id);
+  if (!node || !logicTree.includes(node)) return;
+  const el = e.currentTarget.closest('.canvas-block');
+  const rect = el.getBoundingClientRect();
+  canvasDrag = { id, offsetX: e.clientX-rect.left, offsetY: e.clientY-rect.top, el };
+  selectBlock(id);
+  document.addEventListener('mousemove', onBlockDrag);
+  document.addEventListener('mouseup', endBlockDrag);
+}
+function onBlockDrag(e) {
+  if (!canvasDrag) return;
+  const pane = document.getElementById('canvas-pane');
+  const cr = document.getElementById('canvas').getBoundingClientRect();
+  const x = Math.max(0, Math.round((e.clientX-cr.left+pane.scrollLeft-canvasDrag.offsetX)/20)*20);
+  const y = Math.max(0, Math.round((e.clientY-cr.top+pane.scrollTop-canvasDrag.offsetY)/20)*20);
+  canvasDrag.el.style.left = x+'px'; canvasDrag.el.style.top = y+'px';
+  const node = findNode(canvasDrag.id);
+  if (node) { node.x = x; node.y = y; }
+  /* Highlight drop zones when hovering */
+  if (hoverBody) { hoverBody.classList.remove('drag-over'); hoverBody = null; }
+  canvasDrag.el.style.pointerEvents = 'none';
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  canvasDrag.el.style.pointerEvents = '';
+  if (under) {
+    const body = under.closest('.block-body');
+    if (body) {
+      const parentBlock = body.parentElement;
+      const parentId = parentBlock ? parseInt(parentBlock.dataset.id) : null;
+      if (parentId && parentId !== canvasDrag.id && !isDescendant(canvasDrag.id, parentId)) {
+        body.classList.add('drag-over');
+        hoverBody = body;
+      }
+    }
+  }
+}
+function endBlockDrag(e) {
+  if (canvasDrag) {
+    /* Check if dropped over a container body */
+    let reparented = false;
+    if (e) {
+      canvasDrag.el.style.pointerEvents = 'none';
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      canvasDrag.el.style.pointerEvents = '';
+      if (under) {
+        const body = under.closest('.block-body');
+        if (body) {
+          const parentBlock = body.parentElement;
+          const parentId = parentBlock ? parseInt(parentBlock.dataset.id) : null;
+          if (parentId && parentId !== canvasDrag.id && !isDescendant(canvasDrag.id, parentId)) {
+            const parentNode = findNode(parentId);
+            const dragIdx = logicTree.findIndex(n => n.id === canvasDrag.id);
+            if (parentNode && dragIdx !== -1) {
+              const moved = logicTree.splice(dragIdx, 1)[0];
+              parentNode.children.push(moved);
+              reparented = true;
+            }
+          }
+        }
+      }
+    }
+    if (hoverBody) { hoverBody.classList.remove('drag-over'); hoverBody = null; }
+    if (reparented) render();
+    saveState();
+    canvasDrag = null;
+  }
+  document.removeEventListener('mousemove', onBlockDrag);
+  document.removeEventListener('mouseup', endBlockDrag);
+}
+/* Prevent circular nesting: check if possibleChild is inside possibleParent's tree */
+function isDescendant(parentId, childId) {
+  const parent = findNode(parentId);
+  if (!parent) return false;
+  function walk(nodes) { for (const n of nodes) { if (n.id === childId) return true; if (walk(n.children)) return true; } return false; }
+  return walk(parent.children);
+}
+
+/* ═══════ Node Helpers ═══════ */
+function createNode(type, x, y) {
+  const def = BLOCK_DEFS[type]; const params = {};
+  for (const p of def.params) params[p.key] = p.default;
+  return { id: nextId++, type, params, children: [], x, y };
+}
+function findNode(id, nodes=logicTree) {
+  for (const n of nodes) { if (n.id===id) return n; const f=findNode(id,n.children); if (f) return f; }
+  return null;
+}
+function deleteNode(id) {
+  const idx = logicTree.findIndex(n=>n.id===id);
+  if (idx!==-1) logicTree.splice(idx,1); else removeChild(logicTree,id);
+  if (selectedBlockId===id) { selectedBlockId=null; renderInspector(); }
+  render(); saveState();
+}
+function removeChild(nodes, id) {
+  for (const n of nodes) { const ci=n.children.findIndex(c=>c.id===id); if (ci!==-1){n.children.splice(ci,1);return true;} if(removeChild(n.children,id))return true; }
+  return false;
+}
+function countBlocks(nodes=logicTree) { let c=nodes.length; for(const n of nodes) c+=countBlocks(n.children); return c; }
+
+/* ═══════ Rendering ═══════ */
+function render() { renderCanvas(); renderCode(); updateStatus(); }
+function renderCanvas() {
+  const canvas = document.getElementById('canvas');
+  const hint = document.getElementById('canvas-hint');
+  canvas.querySelectorAll('.canvas-block').forEach(el=>el.remove());
+  hint.style.display = logicTree.length===0?'':'none';
+  for (const node of logicTree) canvas.appendChild(createBlockElement(node, false));
+}
+function createBlockElement(node, nested) {
+  const def = BLOCK_DEFS[node.type]; const isCon = def.container;
+  const el = document.createElement('div');
+  el.dataset.id = node.id; el.dataset.category = def.category;
+  if (!nested) { el.className = 'canvas-block '+(isCon?'container':'leaf')+(node.id===selectedBlockId?' selected':''); el.style.left=node.x+'px'; el.style.top=node.y+'px'; }
+  else { el.className = 'nested-block'+(isCon?' nested-container':''); }
+  let label = def.label;
+  if (def.params.length>0) { const mp=node.params[def.params[0].key]; if(mp&&mp!==def.params[0].default) label+=': '+truncate(mp,18); }
+  const header = document.createElement('div'); header.className='block-header';
+  header.innerHTML='<span class="block-icon">'+def.icon+'</span><span>'+escHtml(label)+'</span><button class="delete-btn" onclick="event.stopPropagation();deleteNode('+node.id+')" title="Remove">×</button>';
+  if (!nested) header.addEventListener('mousedown', e=>startBlockDrag(e,node.id));
+  header.addEventListener('click', e=>{e.stopPropagation();selectBlock(node.id);});
+  el.appendChild(header);
+  if (isCon) {
+    const body = document.createElement('div'); body.className='block-body';
+    body.setAttribute('ondragover','handleBodyDragOver(event,'+node.id+')');
+    body.setAttribute('ondragleave','handleBodyDragLeave(event)');
+    body.setAttribute('ondrop','handleBodyDrop(event,'+node.id+')');
+    if (!node.children.length) body.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:11px;padding:'+(!nested?'12':'8')+'px 0;pointer-events:none;">Drop blocks here</div>';
+    else for (const child of node.children) body.appendChild(createBlockElement(child, true));
+    el.appendChild(body);
+  }
+  return el;
+}
+
+/* ═══════ Selection & Inspector ═══════ */
+function selectBlock(id) { selectedBlockId=id; document.querySelectorAll('.canvas-block,.nested-block').forEach(el=>el.classList.toggle('selected',parseInt(el.dataset.id)===id)); renderInspector(); }
+function handleCanvasClick(e) { if(e.target===document.getElementById('canvas')||e.target===document.getElementById('canvas-hint')){selectedBlockId=null;document.querySelectorAll('.canvas-block,.nested-block').forEach(el=>el.classList.remove('selected'));renderInspector();} }
+
+function inspectDefinition(type) {
+  const def = BLOCK_DEFS[type]; const content = document.getElementById('inspector-content'); const badge = document.getElementById('inspector-badge');
+  badge.style.display='inline-flex'; badge.textContent=def.category; badge.style.color='var(--'+def.category+'-color)';
+  let html = '<div class="inspector-block-title"><span>'+def.icon+'</span> '+def.label+'</div>';
+  html += '<p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">'+escHtml(def.description)+'</p>';
+  if (def.params.length) { html+='<div class="inspector-template-label">Parameters</div>'; for(const p of def.params) html+='<div style="font-size:12px;color:var(--text-secondary);padding:3px 0;"><span style="color:var(--accent);font-family:var(--font-mono)">'+p.key+'</span> <span style="color:var(--text-muted)">('+p.type+')</span> — default: <code style="font-family:var(--font-mono);color:var(--text-primary)">'+escHtml(p.default)+'</code></div>'; }
+  html += '<div class="inspector-template-label" style="margin-top:14px;">Luau Template</div><div class="inspector-template">'+escHtml(def.template)+'</div>';
+  content.innerHTML = html;
+}
+
+function renderInspector() {
+  const content = document.getElementById('inspector-content'); const badge = document.getElementById('inspector-badge');
+  if (!selectedBlockId) { badge.style.display='none'; content.innerHTML='<div class="inspector-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h4"/></svg><span>Click a block to inspect<br>its parameters</span></div>'; return; }
+  const node = findNode(selectedBlockId); if (!node) return;
+  const def = BLOCK_DEFS[node.type];
+  badge.style.display='inline-flex'; badge.textContent=def.category; badge.style.color='var(--'+def.category+'-color)';
+  let html = '<div class="inspector-block-title"><span>'+def.icon+'</span> '+def.label+'</div>';
+  html += '<p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">'+escHtml(def.description)+'</p>';
+  for (const p of def.params) {
+    const val = escAttr(node.params[p.key]||'');
+    html += '<div class="inspector-field"><label>'+p.label+'</label>';
+    if (p.type==='textarea') html+='<textarea data-node="'+node.id+'" data-key="'+p.key+'" oninput="updateParam('+node.id+",'"+p.key+"',this.value)\">"+escHtml(node.params[p.key]||'')+'</textarea>';
+    else if (p.type==='number') html+='<input type="number" value="'+val+'" oninput="updateParam('+node.id+",'"+p.key+"',this.value)\">";
+    else html+='<input type="text" value="'+val+'" oninput="updateParam('+node.id+",'"+p.key+"',this.value)\">";
+    html += '</div>';
+  }
+  html += '<div class="inspector-template-label" style="margin-top:8px;">Luau Template</div><div class="inspector-template">'+escHtml(def.template)+'</div>';
+  const resolved = resolveTemplate(def.template, node.params).replace('{CHILDREN}','  -- ...');
+  html += '<div class="inspector-template-label" style="margin-top:10px;">Resolved Output</div><div class="inspector-template" style="color:var(--accent)">'+escHtml(resolved)+'</div>';
+  content.innerHTML = html;
+}
+
+function updateParam(nodeId, key, value) {
+  const node = findNode(nodeId); if (!node) return;
+  node.params[key] = value; render(); saveState();
+  const def = BLOCK_DEFS[node.type];
+  const resolved = resolveTemplate(def.template, node.params).replace('{CHILDREN}','  -- ...');
+  const els = document.querySelectorAll('.inspector-template');
+  if (els[1]) els[1].textContent = resolved;
+}
+
+/* ═══════ Transpiler ═══════ */
+function transpile(nodes, indent=0) {
+  const lines=[]; const tab='\t'.repeat(indent);
+  for (const node of nodes) {
+    const def = BLOCK_DEFS[node.type]; if (!def) continue;
+    let code = resolveTemplate(def.template, node.params);
+    if (def.container && code.includes('{CHILDREN}')) {
+      const cc = node.children.length>0 ? transpile(node.children,indent+1) : '\t'.repeat(indent+1)+'-- TODO: add actions';
+      code = code.replace('{CHILDREN}', cc);
+    }
+    lines.push(code.split('\n').map(l=>tab+l).join('\n'));
+  }
+  return lines.join('\n\n');
+}
+function resolveTemplate(tmpl, params) { let r=tmpl; for(const[k,v] of Object.entries(params)) r=r.replace(new RegExp('\\{'+k+'\\}','g'),v); return r; }
+
+/* ═══════ Code Rendering ═══════ */
+function renderCode() {
+  const output = document.getElementById('code-output');
+  if (!logicTree.length) { output.innerHTML='<div class="code-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span>Your Luau code will<br>appear here live</span></div>'; return; }
+  let raw = '-- Generated by Block-to-Luau\n-- https://block-to-luau.pages.dev\n\n' + transpile(logicTree, 0);
+  output.innerHTML = '<pre>'+highlightLuau(raw)+'</pre>';
+}
+function highlightLuau(code) {
+  let s = escHtml(code);
+  s = s.replace(/(--[^\n]*)/g,'<span class="cm">$1</span>');
+  s = s.replace(/(&quot;[^&]*?&quot;)/g,'<span class="str">$1</span>');
+  const kw=['local','function','end','if','then','else','elseif','while','do','for','in','return','true','false','nil','and','or','not','repeat','until','break','continue'];
+  s = s.replace(new RegExp('\\b('+kw.join('|')+')\\b','g'),'<span class="kw">$1</span>');
+  s = s.replace(/\b(\d+\.?\d*)\b/g,'<span class="num">$1</span>');
+  const fns=['Connect','GetService','Clone','Destroy','Play','Wait','wait','print','warn','require','Instance\\.new','task\\.wait','task\\.spawn','task\\.defer','game','workspace','Players','pcall','ipairs','pairs','tostring','tonumber','table\\.insert','table\\.remove','math\\.random','FindFirstChild','WaitForChild','GetChildren','IsA','TakeDamage','SetAttribute','GetAttribute','AddTag','RemoveTag','ApplyImpulse','SetCore','FireServer','FireClient','FireAllClients','TweenInfo\\.new','TweenService','CFrame\\.new','Vector3\\.new','Color3\\.new','Color3\\.fromRGB','BrickColor\\.new','GetPlayerFromCharacter','GetTagged','GetInstanceAddedSignal','GetAttributeChangedSignal'];
+  s = s.replace(new RegExp('\\b('+fns.join('|')+')','g'),'<span class="fn">$1</span>');
+  return s;
+}
+
+/* ═══════ Persistence ═══════ */
+const STORAGE_KEY = 'block-to-luau-state';
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({logicTree,nextId,theme:document.documentElement.dataset.theme,collapsedCategories})); document.getElementById('last-saved').textContent='Saved '+new Date().toLocaleTimeString(); } catch(e){} }
+function loadState() { try { const raw=localStorage.getItem(STORAGE_KEY); if(!raw)return; const s=JSON.parse(raw); if(s.logicTree)logicTree=s.logicTree; if(s.nextId)nextId=s.nextId; if(s.theme)document.documentElement.dataset.theme=s.theme; if(s.collapsedCategories)collapsedCategories=s.collapsedCategories; }catch(e){} }
+
+/* ═══════ Actions ═══════ */
+function clearCanvas() { if(!logicTree.length)return; if(!confirm('Clear all blocks from the canvas?'))return; logicTree=[]; selectedBlockId=null; render(); renderInspector(); saveState(); }
+function copyCode() { if(!logicTree.length)return; navigator.clipboard.writeText('-- Generated by Block-to-Luau\n\n'+transpile(logicTree,0)).then(()=>showToast('Copied to clipboard!')); }
+function exportJSON() { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify({logicTree,nextId},null,2)],{type:'application/json'})); a.download='block-to-luau-project.json'; a.click(); URL.revokeObjectURL(a.href); showToast('Project exported!'); }
+function importJSON() { document.getElementById('import-input').click(); }
+function handleImport(e) { const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{try{const d=JSON.parse(r.result);if(d.logicTree){logicTree=d.logicTree;if(d.nextId)nextId=d.nextId;selectedBlockId=null;render();renderInspector();saveState();showToast('Project imported!');}}catch(err){alert('Invalid project file.');}}; r.readAsText(f); e.target.value=''; }
+function toggleTheme() { const h=document.documentElement; h.dataset.theme=h.dataset.theme==='dark'?'light':'dark'; saveState(); }
+function updateStatus() { const c=countBlocks(); document.getElementById('block-count').textContent=c+' block'+(c!==1?'s':''); }
+
+/* ═══════ Utilities ═══════ */
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function truncate(s,n){return s.length>n?s.slice(0,n)+'…':s;}
+function showToast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2000);}
+</script></body></html>
