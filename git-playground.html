@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git Playground</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --bg: #0e1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --working: #f0883e;
+    --staging: #a371f7;
+    --local: #58a6ff;
+    --remote: #3fb950;
+    --file-bg: #21262d;
+    --glow-working: rgba(240,136,62,0.15);
+    --glow-staging: rgba(163,113,247,0.15);
+    --glow-local: rgba(88,166,255,0.15);
+    --glow-remote: rgba(63,185,80,0.15);
+  }
+
+  html, body { 
+    height:100%; 
+    background: var(--bg); 
+    color: var(--text); 
+    font-family: 'DM Mono', monospace;
+    overflow: hidden;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+  }
+  header h1 span { color: var(--remote); }
+  .header-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .help-btn, .reset-btn {
+    background: var(--file-bg);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .help-btn:hover, .reset-btn:hover {
+    color: var(--text);
+    border-color: var(--text-dim);
+  }
+
+  /* ── Main Zones ── */
+  .zones-container {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .zone {
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .zone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .zone[data-zone="working"]::before { background: var(--working); }
+  .zone[data-zone="staging"]::before { background: var(--staging); }
+  .zone[data-zone="local"]::before   { background: var(--local); }
+  .zone[data-zone="remote"]::before  { background: var(--remote); }
+
+  .zone-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .zone-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .zone[data-zone="working"] .zone-icon { background: var(--glow-working); color: var(--working); }
+  .zone[data-zone="staging"] .zone-icon { background: var(--glow-staging); color: var(--staging); }
+  .zone[data-zone="local"] .zone-icon   { background: var(--glow-local); color: var(--local); }
+  .zone[data-zone="remote"] .zone-icon  { background: var(--glow-remote); color: var(--remote); }
+
+  .zone-title {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .zone[data-zone="working"] .zone-title { color: var(--working); }
+  .zone[data-zone="staging"] .zone-title { color: var(--staging); }
+  .zone[data-zone="local"] .zone-title   { color: var(--local); }
+  .zone[data-zone="remote"] .zone-title  { color: var(--remote); }
+
+  .zone-subtitle {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .file-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* ── Files ── */
+  .file-card {
+    background: var(--file-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: default;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    animation: fileAppear 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  @keyframes fileAppear {
+    from { opacity: 0; transform: translateY(8px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .file-card:hover {
+    border-color: var(--text-dim);
+    transform: translateY(-1px);
+  }
+  .file-card .file-icon { font-size: 1rem; flex-shrink:0; }
+  .file-card .file-name {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-card .file-status {
+    margin-left: auto;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .file-card.modified .file-status { background: rgba(240,136,62,0.15); color: var(--working); }
+  .file-card.new .file-status      { background: rgba(63,185,80,0.15); color: var(--remote); }
+  .file-card.staged .file-status   { background: rgba(163,113,247,0.15); color: var(--staging); }
+  .file-card.committed .file-status { background: rgba(88,166,255,0.15); color: var(--local); }
+
+  .file-card.flying {
+    position: fixed;
+    z-index: 1000;
+    pointer-events: none;
+    transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .empty-state {
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    text-align: center;
+    padding: 20px 8px;
+    line-height: 1.6;
+    opacity: 0.6;
+  }
+
+  /* ── Arrows between zones ── */
+  .zone-arrows {
+    position: absolute;
+    bottom: 12px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── Terminal ── */
+  .terminal-container {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    max-height: 240px;
+  }
+  .terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 16px;
+    font-size: 0.75rem;
+    line-height: 1.7;
+    min-height: 60px;
+    max-height: 140px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .terminal-output .log-line { margin-bottom: 2px; }
+  .terminal-output .log-cmd { color: var(--remote); }
+  .terminal-output .log-info { color: var(--text-dim); }
+  .terminal-output .log-success { color: #3fb950; }
+  .terminal-output .log-error { color: #f85149; }
+  .terminal-output .log-hint { color: var(--staging); font-style: italic; }
+
+  .terminal-input-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    gap: 8px;
+  }
+  .terminal-prompt {
+    color: var(--remote);
+    font-size: 0.8rem;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .terminal-input-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    outline: none;
+  }
+  .terminal-input-row input::placeholder { color: #484f58; }
+
+  /* Quick buttons */
+  .quick-cmds {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .quick-cmd {
+    background: var(--file-bg);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .quick-cmd:hover {
+    color: var(--text);
+    border-color: var(--text-dim);
+    transform: translateY(-1px);
+  }
+
+  /* ── Help Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 5000;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    max-width: 560px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .modal h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+  }
+  .modal h3 {
+    font-size: 0.8rem;
+    color: var(--staging);
+    margin: 16px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .modal p, .modal li {
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+  .modal code {
+    background: var(--file-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--remote);
+    font-size: 0.72rem;
+  }
+  .modal ul { list-style: none; padding: 0; }
+  .modal li { padding: 3px 0; }
+  .modal li::before { content: '→ '; color: var(--staging); }
+  .modal-close {
+    margin-top: 20px;
+    background: var(--file-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { border-color: var(--text-dim); }
+
+  /* Tabs */
+  .modal-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-tab {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 8px 14px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .modal-tab:hover { color: var(--text); }
+  .modal-tab.active {
+    color: var(--remote);
+    border-bottom-color: var(--remote);
+  }
+  .modal-panel { display: none; }
+  .modal-panel.active { display: block; }
+
+  /* Workflow cards */
+  .workflow-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .workflow-card h4 {
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .workflow-card h4 .wf-emoji { font-size: 1rem; }
+  .workflow-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .wf-beginner .workflow-label { background: rgba(63,185,80,0.12); color: var(--remote); }
+  .wf-intermediate .workflow-label { background: rgba(88,166,255,0.12); color: var(--local); }
+  .wf-advanced .workflow-label { background: rgba(163,113,247,0.12); color: var(--staging); }
+  .workflow-desc {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .workflow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .wf-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.7rem;
+    line-height: 1.5;
+  }
+  .wf-step-num {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--file-bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+  .wf-step code {
+    background: var(--file-bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--remote);
+    font-size: 0.68rem;
+  }
+  .wf-step .wf-note {
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 0.65rem;
+  }
+  .wf-runall {
+    margin-top: 10px;
+    background: var(--file-bg);
+    border: 1px solid var(--border);
+    color: var(--remote);
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .wf-runall:hover {
+    border-color: var(--remote);
+    transform: translateY(-1px);
+  }
+
+  /* ── Branch indicator ── */
+  .branch-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+  }
+  .branch-tag {
+    background: rgba(88,166,255,0.12);
+    color: var(--local);
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.68rem;
+  }
+
+  /* ── Commit graph (mini) ── */
+  .commit-graph {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .commit-node {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    animation: fileAppear 0.3s ease backwards;
+  }
+  .commit-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .commit-hash {
+    color: var(--local);
+    font-size: 0.62rem;
+  }
+
+  /* Pulse animation for active zone */
+  .zone.active-target {
+    animation: zonePulse 0.5s ease;
+  }
+  @keyframes zonePulse {
+    0%, 100% { background: var(--bg); }
+    50% { background: #1a1f27; }
+  }
+
+  /* Responsive */
+  @media (max-width: 800px) {
+    .zones-container {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: 1fr 1fr;
+    }
+    .quick-cmds { gap: 4px; }
+    .quick-cmd { font-size: 0.6rem; padding: 3px 7px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Git <span>Playground</span></h1>
+    <div class="header-controls">
+      <div class="branch-bar">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--local)">
+          <path d="M11.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25zM4.25 12a.75.75 0 100 1.5.75.75 0 000-1.5zM3.5 3.25a.75.75 0 101.5 0 .75.75 0 00-1.5 0z"/>
+        </svg>
+        <span class="branch-tag" id="branchName">main</span>
+      </div>
+      <button class="help-btn" onclick="toggleHelp()">?  help</button>
+      <button class="reset-btn" onclick="resetAll()">↺  reset</button>
+    </div>
+  </header>
+
+  <div class="zones-container">
+    <!-- Working Directory -->
+    <div class="zone" data-zone="working">
+      <div class="zone-header">
+        <div class="zone-icon">📂</div>
+        <div>
+          <div class="zone-title">Working Directory</div>
+          <div class="zone-subtitle">Your actual files on disk</div>
+        </div>
+      </div>
+      <div class="file-list" id="workingFiles"></div>
+    </div>
+
+    <!-- Staging Area -->
+    <div class="zone" data-zone="staging">
+      <div class="zone-header">
+        <div class="zone-icon">📋</div>
+        <div>
+          <div class="zone-title">Staging Area</div>
+          <div class="zone-subtitle">Snapshot ready for commit</div>
+        </div>
+      </div>
+      <div class="file-list" id="stagingFiles"></div>
+    </div>
+
+    <!-- Local Repo -->
+    <div class="zone" data-zone="local">
+      <div class="zone-header">
+        <div class="zone-icon">💾</div>
+        <div>
+          <div class="zone-title">Local Repo</div>
+          <div class="zone-subtitle">Your commit history (.git)</div>
+        </div>
+      </div>
+      <div class="file-list" id="localFiles"></div>
+      <div class="commit-graph" id="commitGraph"></div>
+    </div>
+
+    <!-- Remote -->
+    <div class="zone" data-zone="remote">
+      <div class="zone-header">
+        <div class="zone-icon">☁️</div>
+        <div>
+          <div class="zone-title">Remote (GitHub)</div>
+          <div class="zone-subtitle">Shared repository in the cloud</div>
+        </div>
+      </div>
+      <div class="file-list" id="remoteFiles"></div>
+      <div class="commit-graph" id="remoteCommitGraph"></div>
+    </div>
+  </div>
+
+  <div class="terminal-container">
+    <div class="quick-cmds">
+      <button class="quick-cmd" onclick="runCmd('touch app.js')">touch app.js</button>
+      <button class="quick-cmd" onclick="runCmd('edit app.js')">edit app.js</button>
+      <button class="quick-cmd" onclick="runCmd('touch README.md')">touch README.md</button>
+      <button class="quick-cmd" onclick="runCmd('git add .')">git add .</button>
+      <button class="quick-cmd" onclick="runCmd('git commit -m &quot;update&quot;')">git commit</button>
+      <button class="quick-cmd" onclick="runCmd('git push')">git push</button>
+      <button class="quick-cmd" onclick="runCmd('git pull')">git pull</button>
+      <button class="quick-cmd" onclick="runCmd('git stash')">git stash</button>
+      <button class="quick-cmd" onclick="runCmd('git stash pop')">git stash pop</button>
+      <button class="quick-cmd" onclick="runCmd('git log')">git log</button>
+      <button class="quick-cmd" onclick="runCmd('git status')">git status</button>
+      <button class="quick-cmd" onclick="runCmd('git diff')">git diff</button>
+    </div>
+    <div class="terminal-output" id="termOutput"></div>
+    <div class="terminal-input-row">
+      <span class="terminal-prompt">$</span>
+      <input type="text" id="termInput" placeholder="Type a git command... (try 'help' for ideas)" autofocus autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal">
+    <h2>How to use Git Playground</h2>
+    <p>A visual simulation. Type commands and watch files move between zones.</p>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('commands')">Commands</button>
+      <button class="modal-tab" onclick="switchTab('workflows')">Workflows</button>
+      <button class="modal-tab" onclick="switchTab('concepts')">Mental Models</button>
+    </div>
+
+    <!-- Commands Tab -->
+    <div class="modal-panel active" id="panel-commands">
+      <h3>Create & Edit Files</h3>
+      <ul>
+        <li><code>touch filename</code> — create a new file in working directory</li>
+        <li><code>edit filename</code> — modify an existing file (marks it as changed)</li>
+        <li><code>rm filename</code> — delete a file from working directory</li>
+      </ul>
+
+      <h3>Core Git Flow</h3>
+      <ul>
+        <li><code>git add filename</code> or <code>git add .</code> — stage files (Working → Staging)</li>
+        <li><code>git commit -m "msg"</code> — commit staged files (Staging → Local Repo)</li>
+        <li><code>git push</code> — push commits to remote (Local → Remote)</li>
+        <li><code>git pull</code> — pull from remote (Remote → Working + Local)</li>
+      </ul>
+
+      <h3>Inspect & Undo</h3>
+      <ul>
+        <li><code>git status</code> — see what's changed and staged</li>
+        <li><code>git log</code> — view commit history</li>
+        <li><code>git diff</code> — show unstaged changes</li>
+        <li><code>git stash</code> — temporarily shelve changes</li>
+        <li><code>git stash pop</code> — restore shelved changes</li>
+        <li><code>git reset filename</code> — unstage a file (Staging → Working)</li>
+        <li><code>git checkout -- filename</code> — discard working changes</li>
+      </ul>
+
+      <h3>Branching</h3>
+      <ul>
+        <li><code>git branch branchname</code> — create a new branch</li>
+        <li><code>git checkout branchname</code> — switch to a branch</li>
+        <li><code>git merge branchname</code> — merge another branch into current</li>
+      </ul>
+    </div>
+
+    <!-- Workflows Tab -->
+    <div class="modal-panel" id="panel-workflows">
+
+      <div class="workflow-card wf-beginner">
+        <h4>
+          <span class="wf-emoji">🚀</span> First Push — New Project Setup
+          <span class="workflow-label">beginner</span>
+        </h4>
+        <div class="workflow-desc">You just created a project and want to get it on GitHub for the first time.</div>
+        <div class="workflow-steps">
+          <div class="wf-step"><span class="wf-step-num">1</span><span><code>touch index.html</code> <span class="wf-note">— create your files</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">2</span><span><code>touch styles.css</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">3</span><span><code>touch app.js</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">4</span><span><code>git add .</code> <span class="wf-note">— stage everything</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">5</span><span><code>git commit -m "initial commit"</code> <span class="wf-note">— save snapshot</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">6</span><span><code>git push</code> <span class="wf-note">— upload to GitHub</span></span></div>
+        </div>
+        <button class="wf-runall" onclick="runWorkflow('first-push')">▶ Run this workflow</button>
+      </div>
+
+      <div class="workflow-card wf-beginner">
+        <h4>
+          <span class="wf-emoji">🔄</span> Daily Driver — Edit, Commit, Push
+          <span class="workflow-label">beginner</span>
+        </h4>
+        <div class="workflow-desc">Your everyday loop: make changes, save them, push them up. This is probably what you do most.</div>
+        <div class="workflow-steps">
+          <div class="wf-step"><span class="wf-step-num">1</span><span><code>edit app.js</code> <span class="wf-note">— make changes to an existing file</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">2</span><span><code>git status</code> <span class="wf-note">— see what changed</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">3</span><span><code>git add .</code> <span class="wf-note">— stage changes</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">4</span><span><code>git commit -m "update app logic"</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">5</span><span><code>git push</code></span></div>
+        </div>
+        <button class="wf-runall" onclick="runWorkflow('daily-driver')">▶ Run this workflow</button>
+      </div>
+
+      <div class="workflow-card wf-intermediate">
+        <h4>
+          <span class="wf-emoji">🎯</span> Selective Staging — Commit Only Some Files
+          <span class="workflow-label">intermediate</span>
+        </h4>
+        <div class="workflow-desc">You changed several files but only want to commit a few. This keeps your history clean and logical.</div>
+        <div class="workflow-steps">
+          <div class="wf-step"><span class="wf-step-num">1</span><span><code>edit index.html</code> <span class="wf-note">— bug fix</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">2</span><span><code>edit styles.css</code> <span class="wf-note">— bug fix</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">3</span><span><code>edit app.js</code> <span class="wf-note">— unrelated experiment</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">4</span><span><code>git add index.html</code> <span class="wf-note">— stage only the fix</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">5</span><span><code>git add styles.css</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">6</span><span><code>git commit -m "fix layout bug"</code> <span class="wf-note">— clean commit!</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">7</span><span><code>git status</code> <span class="wf-note">— app.js still in working dir</span></span></div>
+        </div>
+        <button class="wf-runall" onclick="runWorkflow('selective')">▶ Run this workflow</button>
+      </div>
+
+      <div class="workflow-card wf-intermediate">
+        <h4>
+          <span class="wf-emoji">📦</span> Stash & Switch — Pause Work Temporarily
+          <span class="workflow-label">intermediate</span>
+        </h4>
+        <div class="workflow-desc">You're mid-task but need to quickly do something else. Stash shelves your changes so you can come back later.</div>
+        <div class="workflow-steps">
+          <div class="wf-step"><span class="wf-step-num">1</span><span><code>edit app.js</code> <span class="wf-note">— you're mid-feature</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">2</span><span><code>git stash</code> <span class="wf-note">— shelve it, working dir is clean</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">3</span><span><code>git status</code> <span class="wf-note">— clean! safe to switch tasks</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">4</span><span><code>git stash pop</code> <span class="wf-note">— bring your changes back</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">5</span><span><code>git status</code> <span class="wf-note">— changes are back, keep working</span></span></div>
+        </div>
+        <button class="wf-runall" onclick="runWorkflow('stash')">▶ Run this workflow</button>
+      </div>
+
+      <div class="workflow-card wf-intermediate">
+        <h4>
+          <span class="wf-emoji">↩️</span> Oops, Unstage — Remove from Staging
+          <span class="workflow-label">intermediate</span>
+        </h4>
+        <div class="workflow-desc">You accidentally staged a file you didn't mean to. Move it back to working without losing changes.</div>
+        <div class="workflow-steps">
+          <div class="wf-step"><span class="wf-step-num">1</span><span><code>edit index.html</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">2</span><span><code>edit app.js</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">3</span><span><code>git add .</code> <span class="wf-note">— oops, staged everything</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">4</span><span><code>git reset app.js</code> <span class="wf-note">— unstage just app.js</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">5</span><span><code>git status</code> <span class="wf-note">— app.js back in working, index.html still staged</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">6</span><span><code>git commit -m "update index"</code></span></div>
+        </div>
+        <button class="wf-runall" onclick="runWorkflow('unstage')">▶ Run this workflow</button>
+      </div>
+
+      <div class="workflow-card wf-advanced">
+        <h4>
+          <span class="wf-emoji">🌿</span> Feature Branch — Build, Then Merge
+          <span class="workflow-label">advanced</span>
+        </h4>
+        <div class="workflow-desc">Work on a feature in isolation, then merge it back to main when it's ready.</div>
+        <div class="workflow-steps">
+          <div class="wf-step"><span class="wf-step-num">1</span><span><code>git branch new-feature</code> <span class="wf-note">— create branch</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">2</span><span><code>git checkout new-feature</code> <span class="wf-note">— switch to it</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">3</span><span><code>touch feature.js</code> <span class="wf-note">— build the feature</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">4</span><span><code>git add .</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">5</span><span><code>git commit -m "add feature"</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">6</span><span><code>git checkout main</code> <span class="wf-note">— switch back</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">7</span><span><code>git merge new-feature</code> <span class="wf-note">— bring feature into main</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">8</span><span><code>git push</code></span></div>
+        </div>
+        <button class="wf-runall" onclick="runWorkflow('feature-branch')">▶ Run this workflow</button>
+      </div>
+
+      <div class="workflow-card wf-beginner">
+        <h4>
+          <span class="wf-emoji">⬇️</span> Pull First — Start Your Day
+          <span class="workflow-label">beginner</span>
+        </h4>
+        <div class="workflow-desc">Good habit: always pull before starting work to make sure you have the latest code (especially with collaborators).</div>
+        <div class="workflow-steps">
+          <div class="wf-step"><span class="wf-step-num">1</span><span><code>git pull</code> <span class="wf-note">— grab latest from remote</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">2</span><span><code>git log</code> <span class="wf-note">— see what's new</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">3</span><span><code>touch newfile.js</code> <span class="wf-note">— now start your work</span></span></div>
+          <div class="wf-step"><span class="wf-step-num">4</span><span><code>git add .</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">5</span><span><code>git commit -m "add newfile"</code></span></div>
+          <div class="wf-step"><span class="wf-step-num">6</span><span><code>git push</code></span></div>
+        </div>
+        <button class="wf-runall" onclick="runWorkflow('pull-first')">▶ Run this workflow</button>
+      </div>
+
+    </div>
+
+    <!-- Concepts Tab -->
+    <div class="modal-panel" id="panel-concepts">
+      <h3>The Conveyor Belt</h3>
+      <p style="margin-top:8px;">Think of it as a conveyor belt flowing left to right: you <strong>create</strong> files in your working directory, <strong>stage</strong> the ones you want to snapshot, <strong>commit</strong> that snapshot to your local history, then <strong>push</strong> it to the shared cloud. <code>pull</code> goes the other way.</p>
+
+      <h3>Why Staging Exists</h3>
+      <p style="margin-top:8px;">Staging is like a loading dock. You pick which boxes (files) go on the truck (commit) before it leaves. Without it, every commit would be "everything I changed" — staging lets you say "just these specific changes go together."</p>
+
+      <h3>Local vs Remote</h3>
+      <p style="margin-top:8px;">Your local repo is your personal history. You can commit all day without anyone seeing it. <code>push</code> is when you share. This means you can experiment, make messy commits, even reset — all before anyone else knows.</p>
+
+      <h3>Branches Are Parallel Timelines</h3>
+      <p style="margin-top:8px;">A branch is a copy of your project's timeline where you can make changes without affecting the original. When you're happy with the result, you <strong>merge</strong> it back. Think of it like a "save slot" — you branch off, try something, and if it works, bring it home.</p>
+
+      <h3>Stash Is a Clipboard</h3>
+      <p style="margin-top:8px;">Stash temporarily copies your uncommitted changes to a shelf. Your working directory becomes clean (as if you hadn't changed anything). <code>stash pop</code> pastes them back. Useful when you need to quickly switch tasks without committing half-done work.</p>
+    </div>
+
+    <button class="modal-close" onclick="toggleHelp()">Got it</button>
+  </div>
+</div>
+
+<script>
+// ─── State ───
+const state = {
+  working: [],   // { name, status: 'new'|'modified', content: number }
+  staging: [],   // { name, content }
+  localCommits: [],  // { hash, message, files: [{name, content}], timestamp }
+  remoteCommits: [],
+  stash: [],
+  branches: { main: [] },
+  currentBranch: 'main',
+  fileCounter: 0,
+  cmdHistory: [],
+  historyIndex: -1
+};
+
+const fileIcons = {
+  js: '📜', ts: '📘', md: '📝', html: '🌐', css: '🎨',
+  json: '📦', py: '🐍', rb: '💎', go: '🔵', rs: '⚙️',
+  txt: '📄', default: '📄'
+};
+
+function getIcon(name) {
+  const ext = name.split('.').pop();
+  return fileIcons[ext] || fileIcons.default;
+}
+
+function genHash() {
+  return Math.random().toString(16).slice(2, 9);
+}
+
+// ─── Rendering ───
+function render() {
+  renderZone('workingFiles', state.working, 'working');
+  renderZone('stagingFiles', state.staging, 'staging');
+  renderLocalFiles();
+  renderRemoteFiles();
+  renderCommitGraph('commitGraph', state.localCommits);
+  renderCommitGraph('remoteCommitGraph', state.remoteCommits);
+  document.getElementById('branchName').textContent = state.currentBranch;
+}
+
+function renderZone(elId, files, zone) {
+  const el = document.getElementById(elId);
+  if (files.length === 0) {
+    const hints = {
+      working: 'No files yet.<br>Try <code>touch app.js</code>',
+      staging: 'Nothing staged.<br>Use <code>git add</code>',
+    };
+    el.innerHTML = `<div class="empty-state">${hints[zone] || 'Empty'}</div>`;
+    return;
+  }
+  el.innerHTML = files.map((f, i) => {
+    const statusClass = zone === 'working' ? f.status : (zone === 'staging' ? 'staged' : 'committed');
+    const statusLabel = zone === 'working' ? f.status : (zone === 'staging' ? 'staged' : 'committed');
+    return `<div class="file-card ${statusClass}" style="animation-delay:${i * 0.05}s">
+      <span class="file-icon">${getIcon(f.name)}</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-status">${statusLabel}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderLocalFiles() {
+  const el = document.getElementById('localFiles');
+  if (state.localCommits.length === 0) {
+    el.innerHTML = '<div class="empty-state">No commits yet.<br>Use <code>git commit</code></div>';
+    return;
+  }
+  // Show files from latest commit
+  const latest = state.localCommits[state.localCommits.length - 1];
+  el.innerHTML = latest.files.map((f, i) => `
+    <div class="file-card committed" style="animation-delay:${i * 0.05}s">
+      <span class="file-icon">${getIcon(f.name)}</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-status">committed</span>
+    </div>
+  `).join('');
+}
+
+function renderRemoteFiles() {
+  const el = document.getElementById('remoteFiles');
+  if (state.remoteCommits.length === 0) {
+    el.innerHTML = '<div class="empty-state">Nothing pushed yet.<br>Use <code>git push</code></div>';
+    return;
+  }
+  const latest = state.remoteCommits[state.remoteCommits.length - 1];
+  el.innerHTML = latest.files.map((f, i) => `
+    <div class="file-card committed" style="animation-delay:${i * 0.05}s">
+      <span class="file-icon">${getIcon(f.name)}</span>
+      <span class="file-name">${f.name}</span>
+      <span class="file-status">synced</span>
+    </div>
+  `).join('');
+}
+
+function renderCommitGraph(elId, commits) {
+  const el = document.getElementById(elId);
+  if (commits.length === 0) { el.innerHTML = ''; return; }
+  const colors = ['var(--local)', 'var(--staging)', 'var(--working)', 'var(--remote)'];
+  // Show last 4 commits, newest first
+  const recent = commits.slice(-4).reverse();
+  el.innerHTML = recent.map((c, i) => `
+    <div class="commit-node" style="animation-delay:${i * 0.08}s">
+      <div class="commit-dot" style="background:${colors[i % colors.length]};${i === 0 ? 'box-shadow:0 0 6px ' + colors[i % colors.length] : ''}"></div>
+      <span class="commit-hash">${c.hash}</span>
+      <span>${c.message}</span>
+    </div>
+  `).join('');
+}
+
+// ─── Animation: pulse zone ───
+function pulseZone(zoneName) {
+  const el = document.querySelector(`.zone[data-zone="${zoneName}"]`);
+  el.classList.remove('active-target');
+  void el.offsetWidth;
+  el.classList.add('active-target');
+}
+
+// ─── Terminal Logging ───
+function log(text, cls = 'info') {
+  const output = document.getElementById('termOutput');
+  const div = document.createElement('div');
+  div.className = 'log-line log-' + cls;
+  div.innerHTML = text;
+  output.appendChild(div);
+  output.scrollTop = output.scrollHeight;
+}
+
+// ─── Command Processing ───
+function runCmd(raw) {
+  const input = raw.trim();
+  if (!input) return;
+
+  state.cmdHistory.push(input);
+  state.historyIndex = state.cmdHistory.length;
+  log(`<span class="log-cmd">$ ${escHtml(input)}</span>`, 'cmd');
+
+  const parts = input.split(/\s+/);
+  const cmd = parts[0];
+
+  if (cmd === 'help') { toggleHelp(); return; }
+  if (cmd === 'clear') { document.getElementById('termOutput').innerHTML = ''; return; }
+
+  if (cmd === 'touch') return cmdTouch(parts.slice(1));
+  if (cmd === 'edit')  return cmdEdit(parts.slice(1));
+  if (cmd === 'rm')    return cmdRm(parts.slice(1));
+  if (cmd === 'git')   return cmdGit(parts.slice(1), input);
+
+  log(`Command not recognized: ${escHtml(cmd)}. Try <code>help</code>.`, 'error');
+}
+
+function cmdTouch(args) {
+  if (!args[0]) { log('Usage: touch &lt;filename&gt;', 'error'); return; }
+  const name = args[0];
+  if (state.working.find(f => f.name === name)) {
+    log(`File '${name}' already exists. Use <code>edit ${name}</code> to modify.`, 'error');
+    return;
+  }
+  state.fileCounter++;
+  state.working.push({ name, status: 'new', content: state.fileCounter });
+  log(`Created <strong>${name}</strong> in working directory`, 'success');
+  log(`💡 Now stage it with <code>git add ${name}</code>`, 'hint');
+  pulseZone('working');
+  render();
+}
+
+function cmdEdit(args) {
+  if (!args[0]) { log('Usage: edit &lt;filename&gt;', 'error'); return; }
+  const name = args[0];
+  const f = state.working.find(f => f.name === name);
+  if (!f) { log(`File '${name}' not found in working directory`, 'error'); return; }
+  state.fileCounter++;
+  f.content = state.fileCounter;
+  f.status = 'modified';
+  log(`Modified <strong>${name}</strong>`, 'success');
+  log(`💡 Stage changes with <code>git add ${name}</code>`, 'hint');
+  pulseZone('working');
+  render();
+}
+
+function cmdRm(args) {
+  if (!args[0]) { log('Usage: rm &lt;filename&gt;', 'error'); return; }
+  const name = args[0];
+  const idx = state.working.findIndex(f => f.name === name);
+  if (idx === -1) { log(`File '${name}' not found`, 'error'); return; }
+  state.working.splice(idx, 1);
+  log(`Deleted <strong>${name}</strong>`, 'success');
+  pulseZone('working');
+  render();
+}
+
+function cmdGit(args, raw) {
+  const sub = args[0];
+  if (!sub) { log('Usage: git &lt;command&gt;', 'error'); return; }
+
+  switch (sub) {
+    case 'add': return gitAdd(args.slice(1));
+    case 'commit': return gitCommit(args.slice(1), raw);
+    case 'push': return gitPush();
+    case 'pull': return gitPull();
+    case 'status': return gitStatus();
+    case 'log': return gitLog();
+    case 'diff': return gitDiff();
+    case 'stash': return gitStash(args.slice(1));
+    case 'reset': return gitReset(args.slice(1));
+    case 'checkout': return gitCheckout(args.slice(1));
+    case 'branch': return gitBranch(args.slice(1));
+    case 'merge': return gitMerge(args.slice(1));
+    case 'init': log('Repository already initialized! This playground starts with a repo ready.', 'info'); return;
+    case 'clone': log('Simulated: Cloned remote repository. Try <code>git pull</code> to see it in action.', 'info'); return;
+    default: log(`git: '${sub}' is not a recognized command. Try <code>help</code>.`, 'error');
+  }
+}
+
+function gitAdd(args) {
+  if (!args[0]) { log('Usage: git add &lt;filename&gt; or git add .', 'error'); return; }
+
+  let toStage = [];
+  if (args[0] === '.') {
+    toStage = [...state.working];
+  } else {
+    const f = state.working.find(f => f.name === args[0]);
+    if (!f) { log(`File '${args[0]}' not found in working directory`, 'error'); return; }
+    toStage = [f];
+  }
+
+  if (toStage.length === 0) {
+    log('Nothing to stage. Create files first with <code>touch</code>.', 'info');
+    return;
+  }
+
+  toStage.forEach(f => {
+    const existing = state.staging.findIndex(s => s.name === f.name);
+    if (existing >= 0) state.staging[existing] = { name: f.name, content: f.content };
+    else state.staging.push({ name: f.name, content: f.content });
+  });
+
+  const names = toStage.map(f => f.name).join(', ');
+  log(`Staged: <strong>${names}</strong> → moved to staging area`, 'success');
+  log('💡 Ready to commit with <code>git commit -m "message"</code>', 'hint');
+  pulseZone('staging');
+  render();
+}
+
+function gitCommit(args, raw) {
+  if (state.staging.length === 0) {
+    log('Nothing to commit. Stage files first with <code>git add</code>.', 'error');
+    return;
+  }
+
+  let message = 'update';
+  const msgMatch = raw.match(/-m\s+["'](.+?)["']/);
+  if (msgMatch) message = msgMatch[1];
+  else if (raw.match(/-m\s+(\S+)/)) message = raw.match(/-m\s+(\S+)/)[1];
+
+  const hash = genHash();
+
+  // Build full file snapshot: previous committed files + new staged files
+  const prevFiles = state.localCommits.length > 0
+    ? [...state.localCommits[state.localCommits.length - 1].files]
+    : [];
+
+  state.staging.forEach(sf => {
+    const idx = prevFiles.findIndex(f => f.name === sf.name);
+    if (idx >= 0) prevFiles[idx] = { ...sf };
+    else prevFiles.push({ ...sf });
+  });
+
+  state.localCommits.push({ hash, message, files: prevFiles, timestamp: Date.now() });
+
+  // Clear staging, mark working files as committed (remove staged ones from working)
+  state.staging.forEach(sf => {
+    const wi = state.working.findIndex(w => w.name === sf.name);
+    if (wi >= 0) state.working.splice(wi, 1);
+  });
+  state.staging = [];
+
+  log(`Committed <strong>${hash}</strong>: "${escHtml(message)}" (${prevFiles.length} files)`, 'success');
+  log('💡 Push to remote with <code>git push</code>', 'hint');
+  pulseZone('local');
+  render();
+}
+
+function gitPush() {
+  if (state.localCommits.length === 0) {
+    log('Nothing to push. Make a commit first.', 'error');
+    return;
+  }
+  const newCommits = state.localCommits.length - state.remoteCommits.length;
+  if (newCommits <= 0) {
+    log('Everything up-to-date. Nothing to push.', 'info');
+    return;
+  }
+  state.remoteCommits = JSON.parse(JSON.stringify(state.localCommits));
+  log(`Pushed <strong>${newCommits} commit(s)</strong> to origin/${state.currentBranch} ☁️`, 'success');
+  pulseZone('remote');
+  render();
+}
+
+function gitPull() {
+  if (state.remoteCommits.length === 0) {
+    log('Remote is empty. Nothing to pull.', 'info');
+    // Simulate a fake remote commit for demo
+    const hash = genHash();
+    const fakeFiles = [{ name: 'README.md', content: 999 }, { name: 'config.yml', content: 998 }];
+    state.remoteCommits.push({ hash, message: 'Initial commit (from remote)', files: fakeFiles, timestamp: Date.now() });
+    log('Simulating: Remote has a commit to pull...', 'hint');
+  }
+
+  // Merge remote commits into local
+  state.localCommits = JSON.parse(JSON.stringify(state.remoteCommits));
+  const latest = state.localCommits[state.localCommits.length - 1];
+
+  // Add remote files to working directory if not already there with local changes
+  latest.files.forEach(rf => {
+    if (!state.working.find(w => w.name === rf.name)) {
+      state.working.push({ name: rf.name, status: 'new', content: rf.content });
+    }
+  });
+
+  log(`Pulled <strong>${state.remoteCommits.length} commit(s)</strong> from origin/${state.currentBranch}`, 'success');
+  pulseZone('working');
+  pulseZone('local');
+  render();
+}
+
+function gitStatus() {
+  const unstaged = state.working.filter(f => f.status === 'modified' || f.status === 'new');
+  const staged = state.staging;
+
+  log(`On branch <strong>${state.currentBranch}</strong>`, 'info');
+  if (staged.length > 0) {
+    log('Changes to be committed:', 'info');
+    staged.forEach(f => log(`&nbsp;&nbsp;<span style="color:var(--staging)">staged: ${f.name}</span>`, 'info'));
+  }
+  if (unstaged.length > 0) {
+    log('Changes not staged for commit:', 'info');
+    unstaged.forEach(f => log(`&nbsp;&nbsp;<span style="color:var(--working)">${f.status}: ${f.name}</span>`, 'info'));
+  }
+  if (staged.length === 0 && unstaged.length === 0) {
+    log('Working tree clean ✓', 'success');
+  }
+}
+
+function gitLog() {
+  if (state.localCommits.length === 0) {
+    log('No commits yet.', 'info'); return;
+  }
+  [...state.localCommits].reverse().forEach(c => {
+    log(`<span style="color:var(--local)">${c.hash}</span> — ${escHtml(c.message)} (${c.files.length} files)`, 'info');
+  });
+}
+
+function gitDiff() {
+  const modified = state.working.filter(f => f.status === 'modified');
+  if (modified.length === 0) { log('No modifications to diff.', 'info'); return; }
+  modified.forEach(f => {
+    log(`<span style="color:var(--working)">modified: ${f.name}</span> — content version #${f.content}`, 'info');
+  });
+}
+
+function gitStash(args) {
+  if (args[0] === 'pop') {
+    if (state.stash.length === 0) { log('No stash entries to pop.', 'error'); return; }
+    const stashed = state.stash.pop();
+    state.working.push(...stashed);
+    log(`Popped stash: restored <strong>${stashed.length} file(s)</strong> to working directory`, 'success');
+    pulseZone('working');
+    render();
+    return;
+  }
+
+  const toStash = state.working.filter(f => f.status === 'modified' || f.status === 'new');
+  if (toStash.length === 0) { log('No local changes to stash.', 'info'); return; }
+  state.stash.push(JSON.parse(JSON.stringify(toStash)));
+  state.working = state.working.filter(f => f.status !== 'modified' && f.status !== 'new');
+  log(`Stashed <strong>${toStash.length} file(s)</strong>. Working directory clean.`, 'success');
+  log(`💡 Restore with <code>git stash pop</code>`, 'hint');
+  render();
+}
+
+function gitReset(args) {
+  if (!args[0]) {
+    // Reset all staging
+    state.staging.forEach(f => {
+      if (!state.working.find(w => w.name === f.name)) {
+        state.working.push({ name: f.name, status: 'modified', content: f.content });
+      }
+    });
+    const count = state.staging.length;
+    state.staging = [];
+    log(`Unstaged <strong>${count} file(s)</strong> → back to working directory`, 'success');
+    pulseZone('working');
+    render();
+    return;
+  }
+  const name = args[0];
+  const idx = state.staging.findIndex(f => f.name === name);
+  if (idx === -1) { log(`'${name}' is not staged.`, 'error'); return; }
+  const f = state.staging.splice(idx, 1)[0];
+  if (!state.working.find(w => w.name === f.name)) {
+    state.working.push({ name: f.name, status: 'modified', content: f.content });
+  }
+  log(`Unstaged <strong>${name}</strong>`, 'success');
+  pulseZone('working');
+  render();
+}
+
+function gitCheckout(args) {
+  if (args[0] === '--' && args[1]) {
+    const name = args[1];
+    const idx = state.working.findIndex(f => f.name === name);
+    if (idx === -1) { log(`'${name}' not in working directory.`, 'error'); return; }
+    state.working.splice(idx, 1);
+    log(`Discarded changes to <strong>${name}</strong>`, 'success');
+    pulseZone('working');
+    render();
+    return;
+  }
+
+  if (!args[0]) { log('Usage: git checkout &lt;branch&gt; or git checkout -- &lt;file&gt;', 'error'); return; }
+
+  // Switch branch
+  const branch = args[0];
+  if (!state.branches[branch]) {
+    log(`Branch '${branch}' not found. Create it with <code>git branch ${branch}</code>`, 'error');
+    return;
+  }
+  state.currentBranch = branch;
+  log(`Switched to branch <strong>${branch}</strong>`, 'success');
+  render();
+}
+
+function gitBranch(args) {
+  if (!args[0]) {
+    const branches = Object.keys(state.branches);
+    branches.forEach(b => {
+      const prefix = b === state.currentBranch ? '* ' : '  ';
+      log(`${prefix}<strong>${b}</strong>`, 'info');
+    });
+    return;
+  }
+  const name = args[0];
+  if (state.branches[name]) { log(`Branch '${name}' already exists.`, 'error'); return; }
+  state.branches[name] = JSON.parse(JSON.stringify(state.localCommits));
+  log(`Created branch <strong>${name}</strong>`, 'success');
+  log(`💡 Switch to it with <code>git checkout ${name}</code>`, 'hint');
+}
+
+function gitMerge(args) {
+  if (!args[0]) { log('Usage: git merge &lt;branch&gt;', 'error'); return; }
+  const name = args[0];
+  if (!state.branches[name]) { log(`Branch '${name}' not found.`, 'error'); return; }
+  if (name === state.currentBranch) { log('Cannot merge a branch into itself.', 'error'); return; }
+
+  const hash = genHash();
+  const prevFiles = state.localCommits.length > 0
+    ? [...state.localCommits[state.localCommits.length - 1].files]
+    : [];
+
+  state.localCommits.push({ hash, message: `Merge branch '${name}'`, files: prevFiles, timestamp: Date.now() });
+  log(`Merged <strong>${name}</strong> into <strong>${state.currentBranch}</strong> (${hash})`, 'success');
+  pulseZone('local');
+  render();
+}
+
+// ─── Helpers ───
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleHelp() {
+  document.getElementById('helpModal').classList.toggle('active');
+}
+
+function resetAll() {
+  state.working = [];
+  state.staging = [];
+  state.localCommits = [];
+  state.remoteCommits = [];
+  state.stash = [];
+  state.branches = { main: [] };
+  state.currentBranch = 'main';
+  state.fileCounter = 0;
+  document.getElementById('termOutput').innerHTML = '';
+  log('Repository reset. Starting fresh!', 'success');
+  log('💡 Try: <code>touch index.html</code> → <code>git add .</code> → <code>git commit -m "first commit"</code> → <code>git push</code>', 'hint');
+  render();
+}
+
+// ─── Input handling ───
+document.getElementById('termInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    runCmd(e.target.value);
+    e.target.value = '';
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (state.historyIndex > 0) {
+      state.historyIndex--;
+      e.target.value = state.cmdHistory[state.historyIndex] || '';
+    }
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (state.historyIndex < state.cmdHistory.length - 1) {
+      state.historyIndex++;
+      e.target.value = state.cmdHistory[state.historyIndex] || '';
+    } else {
+      state.historyIndex = state.cmdHistory.length;
+      e.target.value = '';
+    }
+  }
+});
+
+// Close modal on overlay click
+document.getElementById('helpModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) toggleHelp();
+});
+
+// ─── Help Tabs ───
+function switchTab(name) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.modal-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`#panel-${name}`).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ─── Workflow Runner ───
+const workflows = {
+  'first-push': [
+    'touch index.html', 'touch styles.css', 'touch app.js',
+    'git add .', 'git commit -m "initial commit"', 'git push'
+  ],
+  'daily-driver': [
+    'edit app.js', 'git status', 'git add .', 'git commit -m "update app logic"', 'git push'
+  ],
+  'selective': [
+    'edit index.html', 'edit styles.css', 'edit app.js',
+    'git add index.html', 'git add styles.css', 'git commit -m "fix layout bug"', 'git status'
+  ],
+  'stash': [
+    'edit app.js', 'git stash', 'git status', 'git stash pop', 'git status'
+  ],
+  'unstage': [
+    'edit index.html', 'edit app.js', 'git add .', 'git reset app.js', 'git status', 'git commit -m "update index"'
+  ],
+  'feature-branch': [
+    'git branch new-feature', 'git checkout new-feature', 'touch feature.js',
+    'git add .', 'git commit -m "add feature"', 'git checkout main', 'git merge new-feature', 'git push'
+  ],
+  'pull-first': [
+    'git pull', 'git log', 'touch newfile.js', 'git add .', 'git commit -m "add newfile"', 'git push'
+  ]
+};
+
+function runWorkflow(name) {
+  const cmds = workflows[name];
+  if (!cmds) return;
+
+  // Close modal
+  toggleHelp();
+
+  // Need some prerequisite files for certain workflows
+  const needsFiles = ['daily-driver', 'selective', 'stash', 'unstage'];
+  if (needsFiles.includes(name)) {
+    // Make sure base files exist and are committed
+    const baseFiles = ['index.html', 'styles.css', 'app.js'];
+    const missingFiles = baseFiles.filter(f => !state.working.find(w => w.name === f) &&
+      !(state.localCommits.length > 0 && state.localCommits[state.localCommits.length - 1].files.find(c => c.name === f)));
+    if (missingFiles.length > 0 && state.localCommits.length === 0) {
+      // Silently set up base state
+      const setupCmds = [
+        ...baseFiles.filter(f => !state.working.find(w => w.name === f)).map(f => `touch ${f}`),
+        'git add .', 'git commit -m "setup"', 'git push'
+      ];
+      let setupDelay = 0;
+      setupCmds.forEach((cmd, i) => {
+        setTimeout(() => runCmd(cmd), setupDelay);
+        setupDelay += 200;
+      });
+      // Then run actual workflow after setup
+      cmds.forEach((cmd, i) => {
+        setTimeout(() => runCmd(cmd), setupDelay + (i + 1) * 500);
+      });
+      return;
+    }
+  }
+
+  // Run commands with staggered timing
+  cmds.forEach((cmd, i) => {
+    setTimeout(() => runCmd(cmd), (i + 1) * 500);
+  });
+}
+
+// ─── Init ───
+log('Welcome to <strong>Git Playground</strong> — an interactive visual simulator', 'success');
+log('Watch files move through the four zones as you type git commands.', 'info');
+log('💡 Start with: <code>touch index.html</code>', 'hint');
+render();
+</script>
+</body>
+</html>
