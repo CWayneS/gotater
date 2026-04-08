@@ -93,15 +93,33 @@
         </div>
 
         <div class="flex gap-2 mb-20 sm:mb-2">
-            <div id="weapons-container" class="flex gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-800"></div>
+            <div id="weapons-container" class="flex gap-1.5 bg-gray-900/70 p-2 rounded-lg border border-gray-800"></div>
         </div>
     </div>
 
     <!-- Pause Overlay -->
     <div id="pause-overlay" class="overlay pointer-events-auto flex items-center justify-center hidden">
-        <div class="glass-panel p-10 rounded-2xl shadow-2xl text-center">
-            <h2 class="text-5xl font-black mb-3 text-white tracking-widest">PAUSED</h2>
-            <p class="text-gray-400 text-sm">Press ESC to resume</p>
+        <div class="glass-panel p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4">
+            <h2 class="text-5xl font-black mb-5 text-white tracking-widest">PAUSED</h2>
+            <div class="grid grid-cols-2 gap-3 mb-5 text-sm text-left">
+                <div class="bg-gray-800/60 rounded-lg p-3">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Wave</div>
+                    <div id="pause-wave" class="font-bold text-blue-400 text-base">1</div>
+                </div>
+                <div class="bg-gray-800/60 rounded-lg p-3">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Kills</div>
+                    <div id="pause-kills" class="font-bold text-red-400 text-base">0</div>
+                </div>
+                <div class="bg-gray-800/60 rounded-lg p-3">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Dmg Dealt</div>
+                    <div id="pause-dmg" class="font-bold text-orange-400 text-base">0</div>
+                </div>
+                <div class="bg-gray-800/60 rounded-lg p-3">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Dmg Taken</div>
+                    <div id="pause-taken" class="font-bold text-yellow-400 text-base">0</div>
+                </div>
+            </div>
+            <p class="text-gray-500 text-xs">Press ESC to resume</p>
         </div>
     </div>
 
@@ -124,6 +142,7 @@
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between"><span>Kills:</span> <span id="stat-kills" class="font-bold">0</span></div>
                         <div class="flex justify-between"><span>Dmg Dealt:</span> <span id="stat-dmg" class="font-bold">0</span></div>
+                        <div class="flex justify-between"><span>Dmg Taken:</span> <span id="stat-taken" class="font-bold text-yellow-400">0</span></div>
                         <div class="flex justify-between"><span>Items:</span> <span id="stat-items" class="font-bold">0</span></div>
                     </div>
                 </div>
@@ -133,6 +152,7 @@
                         <div class="flex justify-between"><span>Max HP:</span> <span id="attr-hp" class="font-bold text-red-400">100</span></div>
                         <div class="flex justify-between"><span>Speed:</span> <span id="attr-spd" class="font-bold text-green-400">100%</span></div>
                         <div class="flex justify-between"><span>Damage:</span> <span id="attr-dmg-attr" class="font-bold text-purple-400">100%</span></div>
+                        <div class="flex justify-between"><span>Fire Rate:</span> <span id="attr-rate" class="font-bold text-yellow-400">100%</span></div>
                     </div>
                 </div>
             </div>
@@ -145,18 +165,30 @@
         <div class="glass-panel p-8 rounded-2xl shadow-2xl text-center max-w-md w-full mx-4">
             <h1 id="end-title" class="text-5xl font-black mb-4">GAME OVER</h1>
             <p id="end-desc" class="text-gray-300 mb-4"></p>
-            <div id="endless-stats" class="hidden grid grid-cols-3 gap-3 mb-6 text-sm">
-                <div class="bg-gray-800/60 rounded-lg p-3">
-                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Time</div>
-                    <div id="es-time" class="font-bold text-blue-400 text-lg">0:00</div>
-                </div>
+            <div id="end-stats" class="hidden grid grid-cols-2 gap-3 mb-6 text-sm">
                 <div class="bg-gray-800/60 rounded-lg p-3">
                     <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Kills</div>
                     <div id="es-kills" class="font-bold text-red-400 text-lg">0</div>
                 </div>
                 <div class="bg-gray-800/60 rounded-lg p-3">
-                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Damage</div>
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Dmg Dealt</div>
                     <div id="es-dmg" class="font-bold text-orange-400 text-lg">0</div>
+                </div>
+                <div class="bg-gray-800/60 rounded-lg p-3">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Dmg Taken</div>
+                    <div id="es-taken" class="font-bold text-yellow-400 text-lg">0</div>
+                </div>
+                <div class="bg-gray-800/60 rounded-lg p-3">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Boss Kills</div>
+                    <div id="es-bosses" class="font-bold text-purple-400 text-lg">0</div>
+                </div>
+                <div id="es-time-box" class="bg-gray-800/60 rounded-lg p-3 hidden">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Time</div>
+                    <div id="es-time" class="font-bold text-blue-400 text-lg">0:00</div>
+                </div>
+                <div id="es-wave-box" class="bg-gray-800/60 rounded-lg p-3 hidden">
+                    <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Wave Reached</div>
+                    <div id="es-wave" class="font-bold text-blue-400 text-lg">1</div>
                 </div>
             </div>
             <div class="space-y-4">
@@ -328,6 +360,7 @@ class Player {
     takeDamage(amt) {
         if (this.hitTimer > 0) return;
         this.hp -= amt; this.hitTimer = 0.5; AudioSys.playerHit();
+        Game.totalDmgTaken += amt; Game.waveStats.taken = (Game.waveStats.taken || 0) + amt;
         Game.updateHUDHealth();
         Game.addFloatingText(this.pos, `-${Math.ceil(amt)}`, "#ef4444", 24);
         if (this.hp <= 0) Game.endGame(false);
@@ -359,19 +392,28 @@ class Enemy {
         if (this.pos.dist(Game.player.pos) < this.radius + Game.player.radius) Game.player.takeDamage(this.dmg);
     }
     takeDamage(amt) {
-        this.hp -= amt; this.hitTimer = 0.1; Game.waveStats.dmg += amt;
+        this.hp -= amt; this.hitTimer = 0.1;
+        Game.waveStats.dmg += amt; Game.totalDmg += amt;
         if (Game.isEndless) Game.endlessTotalDmg += amt;
         if (this.hp <= 0) {
-            Game.waveStats.kills++;
+            Game.waveStats.kills++; Game.totalKills++;
             if (Game.isEndless) Game.endlessTotalKills++;
             AudioSys.hitEnemy();
             Game.spawnParticles(this.pos, this.type.color, 8);
             if (this.type === ENEMY_TYPES.BOSS) {
+                Game.bossKills++;
+                Game.pickupRadiusBonus += 50;
                 Game.spawnForcedWeapon(this.pos, WEAPON_TYPES.GRENADE);
                 Game.spawnPickup(this.pos);
                 if (!Game.isEndless && Game.currentWave === 9) Game.triggerFlood();
             } else if (Math.random() < 0.08) {
                 Game.spawnPickup(this.pos);
+            }
+            // Spawn pending weapon drop at this kill's position
+            if (Game.weaponDropPending) {
+                Game.weaponDropPending = false;
+                let p = new Pickup(this.pos, PICKUP_TYPES.WEAPON);
+                Game.pickups.push(p);
             }
             return true;
         }
@@ -456,7 +498,7 @@ class Projectile {
 
 class Pickup {
     constructor(pos, type) {
-        this.pos = pos; this.type = type; this.radius = 12;
+        this.pos = pos; this.type = type; this.radius = 12 + Game.pickupRadiusBonus;
         this.life = 120.0; // Despawn after 2 minutes
     }
     update(dt) {
@@ -527,8 +569,10 @@ const Game = {
     keys: {}, currentWave: 0, waveTimer: 0, spawnTimer: 0, waveStats: {},
     isEndless: false, diffMult: 1.0, endlessScaleTimer: 0, endlessBossTimer: 0, endlessDensityMult: 1.0,
     endlessTime: 0, endlessTotalKills: 0, endlessTotalDmg: 0,
-    weaponDropTimer: 0, isPaused: false,
+    weaponDropTimer: 0, weaponDropPending: false, isPaused: false,
     floodActive: false, floodTimer: 0, floodSpawnAccum: 0,
+    pickupRadiusBonus: 0, bossKills: 0,
+    totalKills: 0, totalDmg: 0, totalDmgTaken: 0,
     gridCache: null,
     joystickActive: false, joystickVector: new Vec2(0,0),
 
@@ -539,6 +583,12 @@ const Game = {
             this.keys[e.key] = true;
             if (e.key === 'Escape' && (this.state === 'playing' || this.isPaused)) {
                 this.isPaused = !this.isPaused;
+                if (this.isPaused && this.player) {
+                    document.getElementById('pause-wave').innerText = this.isEndless ? 'Endless' : `Wave ${this.currentWave + 1}`;
+                    document.getElementById('pause-kills').innerText = this.totalKills.toLocaleString();
+                    document.getElementById('pause-dmg').innerText = Math.floor(this.totalDmg).toLocaleString();
+                    document.getElementById('pause-taken').innerText = Math.floor(this.totalDmgTaken).toLocaleString();
+                }
                 document.getElementById('pause-overlay').classList.toggle('hidden', !this.isPaused);
             }
         });
@@ -588,7 +638,9 @@ const Game = {
         this.player = new Player(); this.player.addWeapon(WEAPON_TYPES.PISTOL);
         this.currentWave = -1; this.isEndless = false; this.diffMult = 1.0;
         this.isPaused = false; this.floodActive = false;
-        this.weaponDropTimer = rand(75, 105);
+        this.weaponDropTimer = rand(75, 105); this.weaponDropPending = false;
+        this.pickupRadiusBonus = 0; this.bossKills = 0;
+        this.totalKills = 0; this.totalDmg = 0; this.totalDmgTaken = 0;
         this.enemies = []; this.projectiles = []; this.pickups = []; this.floatingTexts = []; this.particles = [];
         document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('end-screen').classList.add('hidden');
@@ -601,7 +653,9 @@ const Game = {
         this.diffMult = 2.6; // Scale of Wave 9
         this.endlessScaleTimer = 0; this.endlessBossTimer = 0; this.endlessDensityMult = 1.0;
         this.endlessTime = 0; this.endlessTotalKills = 0; this.endlessTotalDmg = 0;
-        this.weaponDropTimer = rand(75, 105);
+        this.weaponDropTimer = rand(75, 105); this.weaponDropPending = false;
+        this.pickupRadiusBonus = 0; this.bossKills = 0;
+        this.totalKills = 0; this.totalDmg = 0; this.totalDmgTaken = 0;
         document.getElementById('end-screen').classList.add('hidden');
         document.getElementById('hud').classList.remove('hidden');
         this.startWave();
@@ -609,7 +663,7 @@ const Game = {
     startWave() {
         this.currentWave++;
         if (!this.isEndless && this.currentWave >= WAVES.length) { this.endGame(true); return; }
-        this.state = 'playing'; this.waveStats = { kills:0, dmg:0, pickups:0 };
+        this.state = 'playing'; this.waveStats = { kills:0, dmg:0, pickups:0, taken:0 };
         document.getElementById('wave-summary').classList.add('hidden');
         let w = this.isEndless ? WAVES[8] : WAVES[this.currentWave];
         this.waveTimer = this.isEndless ? 999999 : w.duration;
@@ -646,29 +700,37 @@ const Game = {
         document.getElementById('pause-overlay').classList.add('hidden');
         const end = document.getElementById('end-screen'); end.classList.remove('hidden');
         document.getElementById('end-title').innerText = vic ? "SURVIVED!" : "GAME OVER";
-        const endlessStats = document.getElementById('endless-stats');
+        const stats = document.getElementById('end-stats');
+        stats.classList.remove('hidden');
+        document.getElementById('es-kills').innerText = this.totalKills.toLocaleString();
+        document.getElementById('es-dmg').innerText = Math.floor(this.totalDmg).toLocaleString();
+        document.getElementById('es-taken').innerText = Math.floor(this.totalDmgTaken).toLocaleString();
+        document.getElementById('es-bosses').innerText = this.bossKills;
         if (this.isEndless) {
             let t = this.endlessTime;
             let fmt = `${Math.floor(t/60)}:${(Math.floor(t)%60).toString().padStart(2,'0')}`;
             document.getElementById('end-desc').innerText = "Endless Mode";
             document.getElementById('es-time').innerText = fmt;
-            document.getElementById('es-kills').innerText = this.endlessTotalKills;
-            document.getElementById('es-dmg').innerText = Math.floor(this.endlessTotalDmg).toLocaleString();
-            endlessStats.classList.remove('hidden');
+            document.getElementById('es-time-box').classList.remove('hidden');
+            document.getElementById('es-wave-box').classList.add('hidden');
         } else {
-            document.getElementById('end-desc').innerText = `Reached Wave ${this.currentWave + 1}`;
-            endlessStats.classList.add('hidden');
+            document.getElementById('end-desc').innerText = vic ? "All 10 waves cleared!" : `Fell on Wave ${this.currentWave + 1}`;
+            document.getElementById('es-wave').innerText = this.currentWave + 1;
+            document.getElementById('es-wave-box').classList.remove('hidden');
+            document.getElementById('es-time-box').classList.add('hidden');
         }
         document.getElementById('btn-continue-endless').classList.toggle('hidden', !vic);
     },
     showSummary() {
         this.state = 'summary'; document.getElementById('wave-summary').classList.remove('hidden');
         document.getElementById('stat-kills').innerText = this.waveStats.kills;
-        document.getElementById('stat-dmg').innerText = Math.floor(this.waveStats.dmg);
+        document.getElementById('stat-dmg').innerText = Math.floor(this.waveStats.dmg).toLocaleString();
+        document.getElementById('stat-taken').innerText = Math.floor(this.waveStats.taken || 0).toLocaleString();
         document.getElementById('stat-items').innerText = this.waveStats.pickups;
         document.getElementById('attr-hp').innerText = this.player.getMaxHp();
         document.getElementById('attr-spd').innerText = Math.floor(this.player.speedMult*100) + "%";
         document.getElementById('attr-dmg-attr').innerText = Math.floor(this.player.damageMult*100) + "%";
+        document.getElementById('attr-rate').innerText = Math.floor(this.player.fireRateMult*100) + "%";
     },
     updateHUDHealth() {
         let p = Math.max(0, this.player.hp/this.player.getMaxHp()*100);
@@ -678,10 +740,19 @@ const Game = {
     updateHUDWeapons() {
         const c = document.getElementById('weapons-container'); c.innerHTML = '';
         this.player.weapons.forEach(w => {
+            let dps = (w.dmg / w.fireRate * (w.count || 1)).toFixed(0);
             let d = document.createElement('div');
-            d.className = 'w-10 rounded border flex flex-col items-center justify-center py-1 gap-0';
-            d.style.borderColor = w.color; d.style.color = w.color;
-            d.innerHTML = `<span class="text-[11px] font-black leading-none">${w.name[0]}</span><span class="text-[9px] leading-none opacity-75">Lv${w.level}</span>`;
+            d.className = 'rounded border px-2 py-1 flex flex-col items-center gap-0.5 min-w-[52px]';
+            d.style.borderColor = w.color;
+            d.innerHTML = `
+                <div class="flex items-center justify-between w-full gap-1">
+                    <span style="color:${w.color}" class="text-[11px] font-black leading-none truncate">${w.name}</span>
+                    <span class="text-[9px] font-bold leading-none text-gray-400">Lv${w.level}</span>
+                </div>
+                <div class="flex items-center justify-between w-full gap-1">
+                    <span class="text-[8px] text-gray-500 leading-none">${dps} dps</span>
+                    <span class="text-[8px] text-gray-500 leading-none">${w.fireRate.toFixed(2)}s</span>
+                </div>`;
             c.appendChild(d);
         });
     },
@@ -695,14 +766,13 @@ const Game = {
     update(dt) {
         this.player.update(dt);
 
-        // Weapon drop timer (time-based, 1 per 60-120s)
-        this.weaponDropTimer -= dt;
-        if (this.weaponDropTimer <= 0) {
-            let angle = rand(0, 6.28);
-            let offset = new Vec2(Math.cos(angle) * rand(100, 200), Math.sin(angle) * rand(100, 200));
-            let p = new Pickup(this.player.pos.add(offset), PICKUP_TYPES.WEAPON);
-            this.pickups.push(p);
-            this.weaponDropTimer = rand(75, 105);
+        // Weapon drop timer — arms on timer, spawns at next enemy kill position
+        if (!this.weaponDropPending) {
+            this.weaponDropTimer -= dt;
+            if (this.weaponDropTimer <= 0) {
+                this.weaponDropPending = true;
+                this.weaponDropTimer = rand(75, 105);
+            }
         }
 
         if (this.isEndless) {
