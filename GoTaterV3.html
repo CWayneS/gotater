@@ -336,12 +336,9 @@ class Player {
                     move = move.add(repel.mult((220 - d) / 220 * 3.5));
                 }
             });
-            // Push away from edges only when within 400px of the boundary
-            const edgeStart = 1100, edgeRange = 400;
-            if (this.pos.x > edgeStart)  move = move.add(new Vec2(-(this.pos.x - edgeStart) / edgeRange * 2.5, 0));
-            if (this.pos.x < -edgeStart) move = move.add(new Vec2( (Math.abs(this.pos.x) - edgeStart) / edgeRange * 2.5, 0));
-            if (this.pos.y > edgeStart)  move = move.add(new Vec2(0, -(this.pos.y - edgeStart) / edgeRange * 2.5));
-            if (this.pos.y < -edgeStart) move = move.add(new Vec2(0,  (Math.abs(this.pos.y) - edgeStart) / edgeRange * 2.5));
+            // Attract toward center, scaled by distance from it
+            let distFromCenter = this.pos.mag();
+            if (distFromCenter > 0) move = move.add(this.pos.normalize().mult(-distFromCenter / 1500 * 1.5));
             move = move.normalize();
         } else {
             if (Game.keys['w'] || Game.keys['ArrowUp']) move.y -= 1;
@@ -604,7 +601,7 @@ const Game = {
     floodActive: false, floodTimer: 0, floodSpawnAccum: 0,
     pickupRadiusBonus: 0, bossKills: 0,
     totalKills: 0, totalDmg: 0, totalDmgTaken: 0,
-    gridCache: null,
+    gridCache: null, camX: 0, camY: 0,
     joystickActive: false, joystickVector: new Vec2(0,0),
 
     init() {
@@ -677,6 +674,7 @@ const Game = {
         this.weaponDropTimer = rand(75, 105); this.weaponDropPending = false;
         this.pickupRadiusBonus = 0; this.bossKills = 0;
         this.totalKills = 0; this.totalDmg = 0; this.totalDmgTaken = 0;
+        this.camX = 0; this.camY = 0;
         this.enemies = []; this.projectiles = []; this.pickups = []; this.floatingTexts = []; this.particles = [];
         document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('end-screen').classList.add('hidden');
@@ -692,6 +690,7 @@ const Game = {
         this.weaponDropTimer = rand(75, 105); this.weaponDropPending = false;
         this.pickupRadiusBonus = 0; this.bossKills = 0;
         this.totalKills = 0; this.totalDmg = 0; this.totalDmgTaken = 0;
+        this.camX = 0; this.camY = 0;
         document.getElementById('end-screen').classList.add('hidden');
         document.getElementById('hud').classList.remove('hidden');
         this.startWave();
@@ -802,6 +801,15 @@ const Game = {
     update(dt) {
         this.player.update(dt);
 
+        // Camera deadzone — only pan when player is within 20% of screen edge
+        const sw = this.canvas.width, sh = this.canvas.height, m = 0.2;
+        const psx = sw/2 + this.player.pos.x - this.camX;
+        const psy = sh/2 + this.player.pos.y - this.camY;
+        if (psx < sw * m)       this.camX -= sw * m - psx;
+        if (psx > sw * (1 - m)) this.camX += psx - sw * (1 - m);
+        if (psy < sh * m)       this.camY -= sh * m - psy;
+        if (psy > sh * (1 - m)) this.camY += psy - sh * (1 - m);
+
         // Weapon drop timer — arms on timer, spawns at next enemy kill position
         if (!this.weaponDropPending) {
             this.weaponDropTimer -= dt;
@@ -867,7 +875,7 @@ const Game = {
         this.ctx.fillStyle = "#0f172a"; this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
         if (!this.player) return;
         this.ctx.save();
-        this.ctx.translate(this.canvas.width/2 - this.player.pos.x, this.canvas.height/2 - this.player.pos.y);
+        this.ctx.translate(this.canvas.width/2 - this.camX, this.canvas.height/2 - this.camY);
         // Grid (pre-rendered offscreen cache)
         if (this.gridCache) this.ctx.drawImage(this.gridCache, -1502, -1502);
 
