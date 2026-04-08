@@ -336,9 +336,12 @@ class Player {
                     move = move.add(repel.mult((220 - d) / 220 * 3.5));
                 }
             });
-            // Attract toward center, scaled by distance from it
-            let distFromCenter = this.pos.mag();
-            if (distFromCenter > 0) move = move.add(this.pos.normalize().mult(-distFromCenter / 1500 * 1.5));
+            // Push away from edges only when within 400px of the boundary
+            const edgeStart = 1100, edgeRange = 400;
+            if (this.pos.x > edgeStart)  move = move.add(new Vec2(-(this.pos.x - edgeStart) / edgeRange * 2.5, 0));
+            if (this.pos.x < -edgeStart) move = move.add(new Vec2( (Math.abs(this.pos.x) - edgeStart) / edgeRange * 2.5, 0));
+            if (this.pos.y > edgeStart)  move = move.add(new Vec2(0, -(this.pos.y - edgeStart) / edgeRange * 2.5));
+            if (this.pos.y < -edgeStart) move = move.add(new Vec2(0,  (Math.abs(this.pos.y) - edgeStart) / edgeRange * 2.5));
             move = move.normalize();
         } else {
             if (Game.keys['w'] || Game.keys['ArrowUp']) move.y -= 1;
