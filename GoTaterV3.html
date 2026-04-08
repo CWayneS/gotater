@@ -320,9 +320,13 @@ class Player {
     update(dt) {
         let move = new Vec2(0,0);
         if (Game.autopilot) {
-            // Seek nearest pickup
+            // Seek nearest pickup (skip heals when at full HP)
             let target = null, minD = Infinity;
-            Game.pickups.forEach(p => { let d = this.pos.dist(p.pos); if (d < minD) { minD = d; target = p; } });
+            let atFullHp = this.hp >= this.getMaxHp();
+            Game.pickups.forEach(p => {
+                if (atFullHp && p.type === PICKUP_TYPES.HEAL) return;
+                let d = this.pos.dist(p.pos); if (d < minD) { minD = d; target = p; }
+            });
             if (target) move = target.pos.sub(this.pos).normalize();
             // Repel from nearby enemies
             Game.enemies.forEach(e => {
