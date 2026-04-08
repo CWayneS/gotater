@@ -87,7 +87,10 @@
             </div>
 
             <div class="text-center bg-gray-900/60 px-6 py-2 rounded-xl border border-gray-700/50">
-                <div id="wave-display" class="text-xl font-black text-blue-400 uppercase tracking-widest">Wave 1</div>
+                <div class="flex items-center justify-center gap-2">
+                    <div id="wave-display" class="text-xl font-black text-blue-400 uppercase tracking-widest">Wave 1</div>
+                    <div id="autopilot-badge" class="hidden text-xs font-bold text-green-300 bg-green-900/50 border border-green-700/50 px-2 py-0.5 rounded">AUTO</div>
+                </div>
                 <div id="timer-display" class="text-3xl font-mono font-bold">0:30</div>
             </div>
         </div>
@@ -276,16 +279,16 @@ const PICKUP_TYPES = {
 };
 
 const WAVES = [
-    { duration: 120, spawnRate: 1.0, types: ['BASIC'] },
-    { duration: 120, spawnRate: 0.85, types: ['BASIC', 'FAST'] },
-    { duration: 120, spawnRate: 0.75, types: ['BASIC', 'FAST'] },
-    { duration: 120, spawnRate: 1.1, types: ['BASIC', 'SWARM'] },
-    { duration: 120, spawnRate: 0.9, types: ['BASIC', 'FAST', 'TANK'] },
-    { duration: 120, spawnRate: 0.65, types: ['FAST', 'SWARM'] },
-    { duration: 120, spawnRate: 0.8, types: ['BASIC', 'TANK'] },
-    { duration: 120, spawnRate: 0.45, types: ['SWARM'] },
-    { duration: 120, spawnRate: 0.55, types: ['BASIC', 'FAST', 'TANK', 'SWARM'] },
-    { duration: 120, spawnRate: 1.4, types: ['BASIC', 'FAST'], boss: true }
+    { duration: 120, spawnRate: 0.83, types: ['BASIC'] },
+    { duration: 120, spawnRate: 0.71, types: ['BASIC', 'FAST'] },
+    { duration: 120, spawnRate: 0.63, types: ['BASIC', 'FAST'] },
+    { duration: 120, spawnRate: 0.92, types: ['BASIC', 'SWARM'] },
+    { duration: 120, spawnRate: 0.75, types: ['BASIC', 'FAST', 'TANK'] },
+    { duration: 120, spawnRate: 0.54, types: ['FAST', 'SWARM'] },
+    { duration: 120, spawnRate: 0.67, types: ['BASIC', 'TANK'] },
+    { duration: 120, spawnRate: 0.38, types: ['SWARM'] },
+    { duration: 120, spawnRate: 0.46, types: ['BASIC', 'FAST', 'TANK', 'SWARM'] },
+    { duration: 120, spawnRate: 1.17, types: ['BASIC', 'FAST'], boss: true }
 ];
 
 /**
@@ -316,12 +319,28 @@ class Player {
     }
     update(dt) {
         let move = new Vec2(0,0);
-        if (Game.keys['w'] || Game.keys['ArrowUp']) move.y -= 1;
-        if (Game.keys['s'] || Game.keys['ArrowDown']) move.y += 1;
-        if (Game.keys['a'] || Game.keys['ArrowLeft']) move.x -= 1;
-        if (Game.keys['d'] || Game.keys['ArrowRight']) move.x += 1;
-        if (Game.joystickActive) move = Game.joystickVector;
-        else move = move.normalize();
+        if (Game.autopilot) {
+            // Seek nearest pickup
+            let target = null, minD = Infinity;
+            Game.pickups.forEach(p => { let d = this.pos.dist(p.pos); if (d < minD) { minD = d; target = p; } });
+            if (target) move = target.pos.sub(this.pos).normalize();
+            // Repel from nearby enemies
+            Game.enemies.forEach(e => {
+                let d = this.pos.dist(e.pos);
+                if (d < 220) {
+                    let repel = this.pos.sub(e.pos).normalize();
+                    move = move.add(repel.mult((220 - d) / 220 * 3.5));
+                }
+            });
+            move = move.normalize();
+        } else {
+            if (Game.keys['w'] || Game.keys['ArrowUp']) move.y -= 1;
+            if (Game.keys['s'] || Game.keys['ArrowDown']) move.y += 1;
+            if (Game.keys['a'] || Game.keys['ArrowLeft']) move.x -= 1;
+            if (Game.keys['d'] || Game.keys['ArrowRight']) move.x += 1;
+            if (Game.joystickActive) move = Game.joystickVector;
+            else move = move.normalize();
+        }
         this.pos = this.pos.add(move.mult(this.getSpeed() * dt));
         const limit = 1500;
         this.pos.x = Math.max(-limit, Math.min(limit, this.pos.x));
@@ -569,7 +588,7 @@ const Game = {
     keys: {}, currentWave: 0, waveTimer: 0, spawnTimer: 0, waveStats: {},
     isEndless: false, diffMult: 1.0, endlessScaleTimer: 0, endlessBossTimer: 0, endlessDensityMult: 1.0,
     endlessTime: 0, endlessTotalKills: 0, endlessTotalDmg: 0,
-    weaponDropTimer: 0, weaponDropPending: false, isPaused: false,
+    weaponDropTimer: 0, weaponDropPending: false, isPaused: false, autopilot: false,
     floodActive: false, floodTimer: 0, floodSpawnAccum: 0,
     pickupRadiusBonus: 0, bossKills: 0,
     totalKills: 0, totalDmg: 0, totalDmgTaken: 0,
@@ -581,6 +600,11 @@ const Game = {
         window.addEventListener('resize', () => this.resize()); this.resize();
         window.addEventListener('keydown', e => {
             this.keys[e.key] = true;
+            if (e.ctrlKey && e.key === 'a') {
+                e.preventDefault();
+                this.autopilot = !this.autopilot;
+                document.getElementById('autopilot-badge').classList.toggle('hidden', !this.autopilot);
+            }
             if (e.key === 'Escape' && (this.state === 'playing' || this.isPaused)) {
                 this.isPaused = !this.isPaused;
                 if (this.isPaused && this.player) {
