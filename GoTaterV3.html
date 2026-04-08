@@ -588,7 +588,7 @@ const Game = {
         this.player = new Player(); this.player.addWeapon(WEAPON_TYPES.PISTOL);
         this.currentWave = -1; this.isEndless = false; this.diffMult = 1.0;
         this.isPaused = false; this.floodActive = false;
-        this.weaponDropTimer = rand(60, 120);
+        this.weaponDropTimer = rand(75, 105);
         this.enemies = []; this.projectiles = []; this.pickups = []; this.floatingTexts = []; this.particles = [];
         document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('end-screen').classList.add('hidden');
@@ -601,7 +601,7 @@ const Game = {
         this.diffMult = 2.6; // Scale of Wave 9
         this.endlessScaleTimer = 0; this.endlessBossTimer = 0; this.endlessDensityMult = 1.0;
         this.endlessTime = 0; this.endlessTotalKills = 0; this.endlessTotalDmg = 0;
-        this.weaponDropTimer = rand(60, 120);
+        this.weaponDropTimer = rand(75, 105);
         document.getElementById('end-screen').classList.add('hidden');
         document.getElementById('hud').classList.remove('hidden');
         this.startWave();
@@ -702,7 +702,7 @@ const Game = {
             let offset = new Vec2(Math.cos(angle) * rand(100, 200), Math.sin(angle) * rand(100, 200));
             let p = new Pickup(this.player.pos.add(offset), PICKUP_TYPES.WEAPON);
             this.pickups.push(p);
-            this.weaponDropTimer = rand(60, 120);
+            this.weaponDropTimer = rand(75, 105);
         }
 
         if (this.isEndless) {
