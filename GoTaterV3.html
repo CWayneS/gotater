@@ -222,7 +222,7 @@ const WEAPON_TYPES = {
     PISTOL: { name: "Pistol", color: "#9ca3af", fireRate: 0.5, dmg: 10, range: 450, speed: 800, pierce: 1, type: 'bullet' },
     SMG: { name: "SMG", color: "#facc15", fireRate: 0.15, dmg: 4, range: 400, speed: 1000, pierce: 1, type: 'bullet' },
     SHOTGUN: { name: "Shotgun", color: "#f87171", fireRate: 1.1, dmg: 7, range: 300, speed: 600, pierce: 2, type: 'spread', count: 5 },
-    BLASTER: { name: "Blaster", color: "#c084fc", fireRate: 0.8, dmg: 18, range: 500, speed: 500, pierce: 1, type: 'energy', size: 10 },
+    BLASTER: { name: "Blaster", color: "#c084fc", fireRate: 0.8, dmg: 18, range: 500, speed: 500, pierce: 1, type: 'energy', size: 10, bounces: 3 },
     GRENADE: { name: "Grenade", color: "#fb923c", fireRate: 2.4, dmg: 60, range: 420, speed: 380, pierce: 99, type: 'grenade', splashRadius: 90, size: 9 }
 };
 
@@ -318,7 +318,9 @@ class Player {
             } else if (w.type === 'grenade') {
                 Game.projectiles.push(new Projectile(this.pos, dir, w.speed, d, w.pierce, w.color, w.size, w.splashRadius));
             } else {
-                Game.projectiles.push(new Projectile(this.pos, dir, w.speed, d, w.pierce, w.color, w.size || 4, 0));
+                let proj = new Projectile(this.pos, dir, w.speed, d, w.pierce, w.color, w.size || 4, 0);
+                if (w.bounces) proj.bouncesLeft = w.bounces;
+                Game.projectiles.push(proj);
             }
             AudioSys.shoot();
         }
@@ -393,7 +395,25 @@ class Projectile {
         this.pos = pos; this.dir = dir; this.speed = speed; this.dmg = dmg;
         this.pierce = pierce; this.color = color; this.size = size;
         this.splashRadius = splashRadius; this.life = 2.0; this.hits = new Set();
-        this.exploded = false;
+        this.exploded = false; this.bouncesLeft = 0;
+    }
+    bounce() {
+        let nearest = null; let minDist = 500;
+        Game.enemies.forEach(e => {
+            if (!this.hits.has(e.id)) {
+                let d = this.pos.dist(e.pos);
+                if (d < minDist) { minDist = d; nearest = e; }
+            }
+        });
+        if (!nearest) { this.life = 0; return; }
+        this.dir = nearest.pos.sub(this.pos).normalize();
+        this.life = 2.0; this.bouncesLeft--;
+        // 30% chance to do bonus damage on bounce
+        if (Math.random() < 0.3) {
+            this.dmg *= 1.5;
+            Game.spawnParticles(this.pos, "#fff", 5);
+            Game.addFloatingText(this.pos, "CRIT!", "#facc15", 16);
+        }
     }
     explode() {
         if (this.exploded) return; this.exploded = true;
@@ -416,7 +436,8 @@ class Projectile {
                 this.hits.add(e.id); this.pierce--;
                 if (e.takeDamage(this.dmg)) Game.enemies.splice(i, 1);
                 if (this.pierce <= 0) {
-                    if (this.splashRadius > 0) this.explode();
+                    if (this.splashRadius > 0) { this.explode(); this.life = 0; break; }
+                    if (this.bouncesLeft > 0) { this.pierce = 1; this.bounce(); break; }
                     this.life = 0; break;
                 }
             }
@@ -658,8 +679,10 @@ const Game = {
         const c = document.getElementById('weapons-container'); c.innerHTML = '';
         this.player.weapons.forEach(w => {
             let d = document.createElement('div');
-            d.className = 'w-8 h-8 rounded border flex items-center justify-center text-[10px] font-bold';
-            d.style.borderColor = w.color; d.style.color = w.color; d.innerText = w.name[0]; c.appendChild(d);
+            d.className = 'w-10 rounded border flex flex-col items-center justify-center py-1 gap-0';
+            d.style.borderColor = w.color; d.style.color = w.color;
+            d.innerHTML = `<span class="text-[11px] font-black leading-none">${w.name[0]}</span><span class="text-[9px] leading-none opacity-75">Lv${w.level}</span>`;
+            c.appendChild(d);
         });
     },
     loop(t) {
