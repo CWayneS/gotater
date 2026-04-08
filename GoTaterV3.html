@@ -635,7 +635,7 @@ const Game = {
         this.pickups.push(p);
     },
     triggerFlood() {
-        this.floodActive = true; this.floodTimer = 5.0; this.floodSpawnAccum = 0;
+        this.floodActive = true; this.floodTimer = 30.0; this.floodSpawnAccum = 0;
         this.addFloatingText(this.player.pos, "THE FLOOD COMES!", "#ef4444", 28);
     },
     addFloatingText(pos, t, c, s=16) { this.floatingTexts.push(new FloatingText(pos, t, c, s)); },
