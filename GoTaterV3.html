@@ -320,14 +320,14 @@ class Player {
     update(dt) {
         let move = new Vec2(0,0);
         if (Game.autopilot) {
-            // Seek nearest pickup (skip heals when at full HP)
-            let target = null, minD = Infinity;
-            let atFullHp = this.hp >= this.getMaxHp();
-            Game.pickups.forEach(p => {
-                if (atFullHp && p.type === PICKUP_TYPES.HEAL) return;
-                let d = this.pos.dist(p.pos); if (d < minD) { minD = d; target = p; }
-            });
-            if (target) move = target.pos.sub(this.pos).normalize();
+            // Cycle through 4 patrol waypoints every 15 seconds
+            const waypoints = [new Vec2(800, 800), new Vec2(-800, 800), new Vec2(-800, -800), new Vec2(800, -800)];
+            Game.autopilotWaypointTimer += dt;
+            if (Game.autopilotWaypointTimer >= 15) {
+                Game.autopilotWaypointTimer = 0;
+                Game.autopilotWaypoint = (Game.autopilotWaypoint + 1) % 4;
+            }
+            move = waypoints[Game.autopilotWaypoint].sub(this.pos).normalize();
             // Repel from nearby enemies
             Game.enemies.forEach(e => {
                 let d = this.pos.dist(e.pos);
@@ -336,9 +336,6 @@ class Player {
                     move = move.add(repel.mult((220 - d) / 220 * 3.5));
                 }
             });
-            // Attract toward center, scaled by distance from it
-            let distFromCenter = this.pos.mag();
-            if (distFromCenter > 0) move = move.add(this.pos.normalize().mult(-distFromCenter / 1500 * 1.5));
             move = move.normalize();
         } else {
             if (Game.keys['w'] || Game.keys['ArrowUp']) move.y -= 1;
@@ -598,6 +595,7 @@ const Game = {
     isEndless: false, diffMult: 1.0, endlessScaleTimer: 0, endlessBossTimer: 0, endlessDensityMult: 1.0,
     endlessTime: 0, endlessTotalKills: 0, endlessTotalDmg: 0,
     weaponDropTimer: 0, weaponDropPending: false, isPaused: false, autopilot: false,
+    autopilotWaypoint: 0, autopilotWaypointTimer: 0,
     floodActive: false, floodTimer: 0, floodSpawnAccum: 0,
     pickupRadiusBonus: 0, bossKills: 0,
     totalKills: 0, totalDmg: 0, totalDmgTaken: 0,
@@ -674,7 +672,7 @@ const Game = {
         this.weaponDropTimer = rand(75, 105); this.weaponDropPending = false;
         this.pickupRadiusBonus = 0; this.bossKills = 0;
         this.totalKills = 0; this.totalDmg = 0; this.totalDmgTaken = 0;
-        this.camX = 0; this.camY = 0;
+        this.camX = 0; this.camY = 0; this.autopilotWaypoint = 0; this.autopilotWaypointTimer = 0;
         this.enemies = []; this.projectiles = []; this.pickups = []; this.floatingTexts = []; this.particles = [];
         document.getElementById('main-menu').classList.add('hidden');
         document.getElementById('end-screen').classList.add('hidden');
@@ -690,7 +688,7 @@ const Game = {
         this.weaponDropTimer = rand(75, 105); this.weaponDropPending = false;
         this.pickupRadiusBonus = 0; this.bossKills = 0;
         this.totalKills = 0; this.totalDmg = 0; this.totalDmgTaken = 0;
-        this.camX = 0; this.camY = 0;
+        this.camX = 0; this.camY = 0; this.autopilotWaypoint = 0; this.autopilotWaypointTimer = 0;
         document.getElementById('end-screen').classList.add('hidden');
         document.getElementById('hud').classList.remove('hidden');
         this.startWave();
