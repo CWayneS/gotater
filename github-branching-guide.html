@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Branching Guide for Two People</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; margin-bottom: 0.5rem; font-size: 28px; }
+    .subtitle { color: #666; font-size: 16px; }
+    
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 2rem;
+      background: white;
+      border-radius: 12px 12px 0 0;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    .tab {
+      flex: 1;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      background: #f5f5f5;
+      border: none;
+      font-size: 15px;
+      font-weight: 500;
+      color: #666;
+      transition: all 0.3s ease;
+    }
+    .tab.active {
+      background: white;
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+    }
+    .tab:hover { background: #fafafa; }
+    
+    .content {
+      background: white;
+      border-radius: 0 0 12px 12px;
+      padding: 2rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+      display: none;
+    }
+    .content.active { display: block; }
+    
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .concept-card {
+      background: #f9f9f9;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    .concept-card h3 {
+      color: #333;
+      margin-bottom: 0.75rem;
+      font-size: 16px;
+    }
+    .concept-card p {
+      color: #666;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    
+    .workflow-step {
+      background: #f9f9f9;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    .workflow-step h3 {
+      color: #333;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 16px;
+    }
+    .step-number {
+      width: 30px;
+      height: 30px;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .code-block {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      line-height: 1.5;
+    }
+    .code-block code { color: inherit; }
+    
+    .simulator {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: #2d3748;
+      border-radius: 8px;
+      color: #e2e8f0;
+    }
+    .simulator h3 { margin-bottom: 1rem; color: #fff; font-size: 16px; }
+    .branches-visual {
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 2;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin: 1rem 0;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin: 1rem 0;
+    }
+    button {
+      padding: 0.75rem 1.25rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    .btn-primary:hover { background: #5568d3; transform: translateY(-2px); }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #2d3748;
+    }
+    .btn-secondary:hover { background: #cbd5e0; }
+    
+    .common-mistake {
+      background: #fff5f5;
+      border-left: 4px solid #e53e3e;
+      padding: 1rem;
+      border-radius: 4px;
+      margin: 1rem 0;
+    }
+    .common-mistake strong { color: #e53e3e; }
+    
+    .success-tip {
+      background: #f0fff4;
+      border-left: 4px solid #38a169;
+      padding: 1rem;
+      border-radius: 4px;
+      margin: 1rem 0;
+    }
+    .success-tip strong { color: #38a169; }
+    
+    .footer {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🌳 GitHub Branching: A Guide for Two</h1>
+      <p class="subtitle">Learn how to work together on the same project without stepping on each other's toes</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(0)">Concepts</button>
+      <button class="tab" onclick="switchTab(1)">Your First Workflow</button>
+      <button class="tab" onclick="switchTab(2)">Merging & PRs</button>
+      <button class="tab" onclick="switchTab(3)">Commands Cheat Sheet</button>
+      <button class="tab" onclick="switchTab(4)">Simulator</button>
+    </div>
+
+    <!-- TAB 1: Concepts -->
+    <div class="content active">
+      <h2 style="color: #333; margin-bottom: 1.5rem;">What is a Branch?</h2>
+      <p style="color: #666; font-size: 15px; line-height: 1.8; margin-bottom: 2rem;">
+        A branch is like a parallel copy of your entire project where you can make changes without touching the main code. 
+        Think of it like creating a backup of your game before you try a big new feature—if it breaks, your original is still safe.
+      </p>
+
+      <h3 style="color: #333; margin: 2rem 0 1.5rem;">Core Concepts</h3>
+      <div class="concept-grid">
+        <div class="concept-card">
+          <h3>Main Branch</h3>
+          <p>The "official" version of your project. In GitHub, this is usually called <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">main</code> or <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">master</code>. You keep it clean and working.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>Feature Branch</h3>
+          <p>A branch you create to work on one thing—a new feature, a bug fix, or a new game level. You name it something descriptive like <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">add-multiplayer</code> or <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">fix-collision-bug</code>.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>Commit</h3>
+          <p>A snapshot of your code at one moment in time. Every commit has a message describing what changed. Think of it like saving your game.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>Pull Request (PR)</h3>
+          <p>Your way of saying "Hey, I made some changes on my branch—can you review them and merge them into main?" It's like asking "Does this look good?"</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>Merge</h3>
+          <p>Combining two branches. When your changes are approved, you merge your feature branch back into main. Both people's work comes together smoothly.</p>
+        </div>
+
+        <div class="concept-card">
+          <h3>Conflict</h3>
+          <p>When two people changed the same line of code in different ways, Git doesn't know which version to keep. Don't panic—GitHub helps you fix it.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Your First Workflow -->
+    <div class="content">
+      <h2 style="color: #333; margin-bottom: 1.5rem;">Getting Started: Step by Step</h2>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">1</span>One of You: Set Up the Repo (Owner)</h3>
+        <p style="color: #666; margin-bottom: 1rem;">If you already have a GitHub repo, skip to step 3.</p>
+        <p style="color: #666; margin-bottom: 1rem;"><strong>The project owner:</strong> Create a new repo on GitHub and add a <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">README.md</code> file. Then invite your collaborator to the repo (Settings → Collaborators).</p>
+      </div>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">2</span>Both of You: Clone the Repo</h3>
+        <p style="color: #666; margin-bottom: 1rem;">Clone means "download a copy of the entire project and all its history."</p>
+        <div class="code-block">
+git clone https://github.com/yourusername/your-repo.git
+cd your-repo
+        </div>
+        <p style="color: #666; margin-top: 1rem;">Now you both have the same code on your computers, and Git is tracking it.</p>
+      </div>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">3</span>You (Person A): Create a Feature Branch</h3>
+        <p style="color: #666; margin-bottom: 1rem;">You want to add a new feature. First, make sure you're on <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">main</code>, then create a new branch.</p>
+        <div class="code-block">
+git checkout main
+git pull origin main
+git checkout -b add-score-system
+        </div>
+        <p style="color: #666; margin-top: 1rem;">Now you're on the <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">add-score-system</code> branch. Your changes won't affect anyone else.</p>
+        
+        <div class="success-tip">
+          <strong>✓ Naming tip:</strong> Branch names should be short and clear: <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">add-lives-mechanic</code>, <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">fix-audio-bug</code>, <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">improve-ui-buttons</code>. Use hyphens between words, no spaces.
+        </div>
+      </div>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">4</span>You (Person A): Make Changes & Commit</h3>
+        <p style="color: #666; margin-bottom: 1rem;">Edit your files, save them, and then tell Git to save them as a commit.</p>
+        <div class="code-block">
+git add .
+git commit -m "Add score system with multiplier logic"
+        </div>
+        <p style="color: #666; margin-top: 1rem;">You can make multiple commits as you work. Each one is a checkpoint.</p>
+      </div>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">5</span>You (Person A): Push Your Branch</h3>
+        <p style="color: #666; margin-bottom: 1rem;">Push sends your branch to GitHub so your partner can see it.</p>
+        <div class="code-block">
+git push origin add-score-system
+        </div>
+        <p style="color: #666; margin-top: 1rem;">Your branch is now on GitHub. Your partner's code is untouched.</p>
+      </div>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">6</span>Your Partner (Person B): Works on Their Own Branch</h3>
+        <p style="color: #666; margin-bottom: 1rem;">While you're working, your partner does the exact same thing on their own branch.</p>
+        <div class="code-block">
+git checkout main
+git pull origin main
+git checkout -b add-sound-effects
+# ... make changes ...
+git add .
+git commit -m "Add victory and collision sounds"
+git push origin add-sound-effects
+        </div>
+        <p style="color: #666; margin-top: 1rem;">Now you have two feature branches on GitHub, and you haven't interfered with each other at all.</p>
+      </div>
+
+      <div class="success-tip">
+        <strong>✓ The golden rule:</strong> Never commit directly to <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">main</code>. Always create a feature branch first. This keeps main clean and lets you review each other's work.
+      </div>
+    </div>
+
+    <!-- TAB 3: Merging & PRs -->
+    <div class="content">
+      <h2 style="color: #333; margin-bottom: 1.5rem;">Merging Your Changes Back</h2>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">1</span>Create a Pull Request (PR) on GitHub</h3>
+        <p style="color: #666; margin-bottom: 1rem;">After you push your branch, go to your GitHub repo. You'll see a prompt to "Compare & pull request." Click it.</p>
+        <p style="color: #666; margin-bottom: 1rem;"><strong>Write a good PR description:</strong></p>
+        <div class="code-block">
+## What does this do?
+Added a scoring system that tracks player points and applies 
+a 2x multiplier when the player gets 5 consecutive hits.
+
+## How do I test it?
+1. Click on a target 5 times without missing
+2. Check that the score displays the multiplier correctly
+3. Verify the score resets when you miss
+
+## Checklist
+- [x] Tested the feature myself
+- [x] No console errors
+- [x] Didn't break any existing code
+        </div>
+      </div>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">2</span>Your Partner Reviews the PR</h3>
+        <p style="color: #666; margin-bottom: 1rem;">They look at your changes, test them, and either approve or ask for fixes.</p>
+        <p style="color: #666; margin-bottom: 1rem;"><strong>Things to look for:</strong></p>
+        <ul style="color: #666; margin-left: 1rem; line-height: 1.8;">
+          <li>Does the code make sense?</li>
+          <li>Did they break anything?</li>
+          <li>Are there any typos or obvious bugs?</li>
+          <li>Is it organized and readable?</li>
+        </ul>
+        <p style="color: #666; margin-top: 1rem;">If something needs fixing, they leave a comment, and you push a new commit to the same branch to fix it.</p>
+      </div>
+
+      <div class="workflow-step">
+        <h3><span class="step-number">3</span>Merge the PR</h3>
+        <p style="color: #666; margin-bottom: 1rem;">Once approved, click "Merge pull request" on GitHub. Your feature branch is now combined with <code style="background: #e2e8f0; padding: 2px 4px; border-radius: 3px;">main</code>.</p>
+        <div class="code-block">
+git checkout main
+git pull origin main
+        </div>
+        <p style="color: #666; margin-top: 1rem;">Now both of you have the new feature on your computers.</p>
+      </div>
+
+      <h3 style="color: #333; margin: 2rem 0 1rem;">Handling Merge Conflicts</h3>
+      <p style="color: #666; margin-bottom: 1rem;">If both people changed the same line, GitHub will say there's a conflict. Don't panic—it's easy to fix.</p>
+
+      <div class="common-mistake">
+        <strong>⚠ How conflicts happen:</strong> You and your partner both edit the same function in different ways on different branches. When you try to merge, Git doesn't know which version to keep.
+      </div>
+
+      <p style="color: #666; margin: 1rem 0;">GitHub will show you the conflict in the PR. Look for lines like this:</p>
+      <div class="code-block">
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+// Your version
+function calculateScore() { return points * 2; }
+=======
+// Their version
+function calculateScore() { return points + 10; }
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; add-sound-effects
+      </div>
+
+      <p style="color: #666; margin: 1rem 0;"><strong>To fix it:</strong> Talk to your partner. Decide which code is better, or combine both ideas. Then delete the conflict markers and keep only the code you want.</p>
+
+      <div class="code-block">
+function calculateScore() { return (points * 2) + 10; }
+      </div>
+
+      <p style="color: #666; margin-top: 1rem;">Commit this fix, and the conflict is resolved.</p>
+
+      <div class="success-tip">
+        <strong>✓ How to avoid conflicts:</strong> Talk to each other about what you're working on. If you're both editing the same file, coordinate. Have one person finish and merge first, then the other person pulls the latest code.
+      </div>
+    </div>
+
+    <!-- TAB 4: Cheat Sheet -->
+    <div class="content">
+      <h2 style="color: #333; margin-bottom: 1.5rem;">Git Commands You'll Need</h2>
+
+      <h3 style="color: #333; margin: 2rem 0 1rem;">Checking Status & Branches</h3>
+      <div class="code-block">
+# See what branch you're on and what files changed
+git status
+
+# List all your local branches
+git branch
+
+# List all branches (local + remote on GitHub)
+git branch -a
+      </div>
+
+      <h3 style="color: #333; margin: 2rem 0 1rem;">Switching & Creating Branches</h3>
+      <div class="code-block">
+# Switch to an existing branch
+git checkout main
+git checkout add-score-system
+
+# Create a new branch and switch to it
+git checkout -b add-new-feature
+
+# Delete a branch (after it's merged)
+git branch -d add-new-feature
+      </div>
+
+      <h3 style="color: #333; margin: 2rem 0 1rem;">Making & Saving Changes</h3>
+      <div class="code-block">
+# See all changes you made
+git diff
+
+# Add files to be committed
+git add .                    # Add all files
+git add filename.js          # Add one file
+
+# Save your changes as a commit
+git commit -m "Clear message about what changed"
+
+# See your commit history
+git log
+      </div>
+
+      <h3 style="color: #333; margin: 2rem 0 1rem;">Syncing with GitHub</h3>
+      <div class="code-block">
+# Push your branch to GitHub
+git push origin add-score-system
+
+# Fetch the latest code from GitHub
+git fetch origin
+
+# Pull (fetch + merge) the latest main
+git pull origin main
+
+# See remote branches
+git remote -v
+      </div>
+
+      <h3 style="color: #333; margin: 2rem 0 1rem;">Undoing Mistakes</h3>
+      <div class="code-block">
+# Undo changes in a file (before committing)
+git checkout -- filename.js
+
+# Undo your last commit (keep the changes)
+git reset --soft HEAD~1
+
+# Undo your last commit (discard the changes)
+git reset --hard HEAD~1
+      </div>
+
+      <div class="common-mistake">
+        <strong>⚠ Before using git reset --hard:</strong> This deletes your changes permanently. Only use it if you're absolutely sure.
+      </div>
+    </div>
+
+    <!-- TAB 5: Simulator -->
+    <div class="content">
+      <h2 style="color: #333; margin-bottom: 1.5rem;">Branch Simulator</h2>
+      <p style="color: #666; margin-bottom: 1.5rem;">Click through a realistic workflow to see how branches work. This shows commits, branches, and merges as they happen.</p>
+
+      <div class="simulator">
+        <h3>Current State</h3>
+        <div class="branches-visual" id="visualization">
+main  →  [v1.0]
+        </div>
+
+        <div class="button-group">
+          <button class="btn-primary" onclick="simulate(1)">Step 1: Person A creates feature branch</button>
+          <button class="btn-secondary" onclick="simulate(0)">Reset</button>
+        </div>
+      </div>
+
+      <div id="step-info" style="background: #f9f9f9; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; display: none;">
+        <h4 style="color: #333; margin-bottom: 0.75rem;" id="step-title">Step Title</h4>
+        <p style="color: #666; line-height: 1.6;" id="step-desc">Step description</p>
+        <div class="code-block" id="step-code" style="display: none;">
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      💡 Remember: Branches keep you both working independently. Merge when ready. Always pull before you push.
+    </div>
+  </div>
+
+  <script>
+    const steps = [
+      {
+        title: "Starting Point",
+        desc: "You both have the same main branch with version 1.0.",
+        code: "main → [v1.0]",
+        visual: "main → [v1.0]"
+      },
+      {
+        title: "Person A creates feature branch",
+        desc: "Person A branches off main to add a new feature. Main stays untouched.",
+        code: "git checkout -b add-score-system",
+        visual: "main → [v1.0]\n  └─ add-score-system → [v1.0]"
+      },
+      {
+        title: "Person A makes commits",
+        desc: "Person A commits work to their branch. Main is still safe.",
+        code: "git add .\ngit commit -m 'Add score system'",
+        visual: "main → [v1.0]\n  └─ add-score-system → [v1.0] → [Score system v1]"
+      },
+      {
+        title: "Person B creates their branch",
+        desc: "Meanwhile, Person B pulls main and creates their own feature branch.",
+        code: "git checkout main\ngit pull origin main\ngit checkout -b add-sound-effects",
+        visual: "main → [v1.0]\n  ├─ add-score-system → [v1.0] → [Score system v1]\n  └─ add-sound-effects → [v1.0]"
+      },
+      {
+        title: "Person B makes commits",
+        desc: "Person B commits their own work on their own branch.",
+        code: "git add .\ngit commit -m 'Add sound effects'",
+        visual: "main → [v1.0]\n  ├─ add-score-system → [v1.0] → [Score system v1]\n  └─ add-sound-effects → [v1.0] → [Sounds v1]"
+      },
+      {
+        title: "Person A pushes & creates PR",
+        desc: "Person A pushes their branch to GitHub and creates a pull request.",
+        code: "git push origin add-score-system",
+        visual: "main → [v1.0]\n  ├─ add-score-system → [v1.0] → [Score system v1] ← PR ready\n  └─ add-sound-effects → [v1.0] → [Sounds v1]"
+      },
+      {
+        title: "Person B reviews & approves",
+        desc: "Person B reviews Person A's code on the PR. If it looks good, they approve it.",
+        code: "PR reviewed ✓",
+        visual: "main → [v1.0]\n  ├─ add-score-system → [v1.0] → [Score system v1] ← APPROVED\n  └─ add-sound-effects → [v1.0] → [Sounds v1]"
+      },
+      {
+        title: "Person A merges into main",
+        desc: "Person A clicks 'Merge' on GitHub. The score system is now part of main!",
+        code: "Merge pull request on GitHub",
+        visual: "main → [v1.0] → [v1.1: Score system]\n  └─ add-sound-effects → [v1.0] → [Sounds v1]"
+      },
+      {
+        title: "Person B pulls latest main",
+        desc: "Person B pulls the updated main before pushing their changes.",
+        code: "git checkout main\ngit pull origin main",
+        visual: "main → [v1.0] → [v1.1: Score system]\n  └─ add-sound-effects → [v1.0] → [Sounds v1]"
+      },
+      {
+        title: "Person B pushes & creates PR",
+        desc: "Person B pushes their branch and creates a PR for the sound effects.",
+        code: "git push origin add-sound-effects",
+        visual: "main → [v1.0] → [v1.1: Score system]\n  └─ add-sound-effects → [v1.0] → [Sounds v1] ← PR ready"
+      },
+      {
+        title: "Person A reviews & merges",
+        desc: "Person A reviews Person B's code, approves it, and merges into main.",
+        code: "Merge pull request on GitHub",
+        visual: "main → [v1.0] → [v1.1: Score] → [v1.2: Score + Sounds] ✓\n\nBoth features are now in main!"
+      }
+    ];
+
+    let currentStep = 0;
+
+    function simulate(step) {
+      currentStep = step;
+      const stepData = steps[step];
+      
+      document.getElementById('visualization').textContent = stepData.visual;
+      document.getElementById('step-title').textContent = stepData.title;
+      document.getElementById('step-desc').textContent = stepData.desc;
+      
+      const codeEl = document.getElementById('step-code');
+      if (stepData.code) {
+        codeEl.textContent = stepData.code;
+        codeEl.style.display = 'block';
+      } else {
+        codeEl.style.display = 'none';
+      }
+      
+      document.getElementById('step-info').style.display = 'block';
+      
+      // Show next button if not at end
+      const nextBtn = document.querySelector('[onclick="simulate(1)"]');
+      if (step < steps.length - 1) {
+        if (!nextBtn.nextElementSibling || !nextBtn.nextElementSibling.classList.contains('btn-next')) {
+          const btn = document.createElement('button');
+          btn.className = 'btn-primary btn-next';
+          btn.textContent = `Next (${step + 1}/${steps.length - 1})`;
+          btn.onclick = () => simulate(step + 1);
+          nextBtn.parentElement.appendChild(btn);
+        }
+      }
+    }
+
+    function switchTab(index) {
+      // Hide all content
+      document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      
+      // Show selected content
+      document.querySelectorAll('.content')[index].classList.add('active');
+      document.querySelectorAll('.tab')[index].classList.add('active');
+      
+      // Reset simulator if tab 4 is selected
+      if (index === 4) {
+        currentStep = 0;
+      }
+    }
+  </script>
+</body>
+</html>
