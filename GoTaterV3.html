@@ -320,14 +320,21 @@ class Player {
     update(dt) {
         let move = new Vec2(0,0);
         if (Game.autopilot) {
-            // Cycle through 4 patrol waypoints every 15 seconds
+            // Seek nearest pickup; fall back to patrol waypoint if none nearby
             const waypoints = [new Vec2(800, 800), new Vec2(-800, 800), new Vec2(-800, -800), new Vec2(800, -800)];
             Game.autopilotWaypointTimer += dt;
             if (Game.autopilotWaypointTimer >= 15) {
                 Game.autopilotWaypointTimer = 0;
                 Game.autopilotWaypoint = (Game.autopilotWaypoint + 1) % 4;
             }
-            move = waypoints[Game.autopilotWaypoint].sub(this.pos).normalize();
+            let target = null, minD = Infinity;
+            let atFullHp = this.hp >= this.getMaxHp();
+            Game.pickups.forEach(p => {
+                if (atFullHp && p.type === PICKUP_TYPES.HEAL) return;
+                let d = this.pos.dist(p.pos); if (d < minD) { minD = d; target = p; }
+            });
+            move = target ? target.pos.sub(this.pos).normalize()
+                          : waypoints[Game.autopilotWaypoint].sub(this.pos).normalize();
             // Repel from nearby enemies
             Game.enemies.forEach(e => {
                 let d = this.pos.dist(e.pos);
