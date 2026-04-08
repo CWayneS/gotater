@@ -332,6 +332,12 @@ class Player {
                     move = move.add(repel.mult((220 - d) / 220 * 3.5));
                 }
             });
+            // Repel from boundary walls
+            const wallZone = 300, limit = 1500;
+            if (this.pos.x > limit - wallZone) move = move.add(new Vec2(-(this.pos.x - (limit - wallZone)) / wallZone * 4, 0));
+            if (this.pos.x < -(limit - wallZone)) move = move.add(new Vec2(-(-limit + wallZone - this.pos.x) / wallZone * 4, 0));
+            if (this.pos.y > limit - wallZone) move = move.add(new Vec2(0, -(this.pos.y - (limit - wallZone)) / wallZone * 4));
+            if (this.pos.y < -(limit - wallZone)) move = move.add(new Vec2(0, -(-limit + wallZone - this.pos.y) / wallZone * 4));
             move = move.normalize();
         } else {
             if (Game.keys['w'] || Game.keys['ArrowUp']) move.y -= 1;
@@ -517,7 +523,9 @@ class Projectile {
 
 class Pickup {
     constructor(pos, type) {
-        this.pos = pos; this.type = type; this.radius = 12 + Game.pickupRadiusBonus;
+        const b = 1480;
+        this.pos = new Vec2(Math.max(-b, Math.min(b, pos.x)), Math.max(-b, Math.min(b, pos.y)));
+        this.type = type; this.radius = 12 + Game.pickupRadiusBonus;
         this.life = 120.0; // Despawn after 2 minutes
     }
     update(dt) {
