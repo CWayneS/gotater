@@ -1,123 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoTater</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>TaterOS</title>
+  <meta name="description" content="GoTater — some simple apps. Have fun.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥔</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="os/os.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/Draggable.min.js"></script>
+  <script type="module" src="os/main.js"></script>
 </head>
 <body>
+  <canvas id="wallpaper" aria-hidden="true"></canvas>
 
-    <header>
-        <h1>GoTater</h1>
-        <p>Some simple Apps. Have Fun</p>
-    </header>
+  <main id="desktop" aria-label="Desktop"></main>
+  <div id="windows"></div>
 
-    <h2>Games</h2>
-    <div class="game-grid">
-        <a href="GoTaterV3.html" class="game-card">
-            <h3>Go Tater</h3>
-            <p>Make it to the endless round</p>
-        </a>
+  <nav id="taskbar" aria-label="Taskbar">
+    <button id="start-btn" class="bevel" aria-haspopup="menu" aria-expanded="false"><span>🥔</span><b>Start</b></button>
+    <div id="tasks"></div>
+    <div id="tray" class="bevel-in"><span id="tray-run" title="Run… ( / )">🔎</span><time id="clock"></time></div>
+  </nav>
+  <div id="start-menu" class="bevel" role="menu" hidden></div>
 
-        <a href="Swindler.html" class="game-card">
-            <h3>Swindler</h3>
-            <p>Dungeon Crawl Solitare</p>
-        </a>
-
-        <a href="MeteorDefender.html" class="game-card">
-            <h3>Meteor Defender</h3>
-            <p>Protect your city from falling rocks</p>
-        </a>
-
-         <a href="glyphcrawl.html" class="game-card">
-            <h3>Glyphcrawl</h3>
-            <p>Emojis with swords clearing dungeons</p>
-        </a>
-
-        <a href="OutDriving.html" class="game-card">
-            <h3>Out Driving</h3>
-            <p>High-speed driving action. Sort of</p>
-        </a>
-
-    </div>
-
-    <h2>Learn</h2>
-    <div class="game-grid">
-         <a href="BasicMathVocab.html" class="game-card school">
-            <h3>Basic Math Vocab</h3>
-            <p>Chill drag and drop vocabulary</p>
-        </a>
-
-        <a href="LuauLab.html" class="game-card school">
-            <h3>Luau Lab</h3>
-            <p>Interactive Luau programming course</p>
-        </a>
-
-         <a href="BlockToLuau.html" class="game-card school">
-            <h3>Block to Luau</h3>
-            <p>Drag-and-drop Coding</p>
-        </a>
-
-         <a href="git-playground.html" class="game-card tool">
-            <h3>Git Playground</h3>
-            <p>See git happen</p>
-        </a>
-
-        <a href="github-branching-guide.html" class="game-card school">
-            <h3>GitHub Branching Guide</h3>
-            <p>Learn Git branching workflows</p>
-        </a>
-
-          </div>
-
-    <h2>Tools</h2>
-    <div class="game-grid">
-        <a href="RecipeStudio3.html" class="game-card tool">
-            <h3>Recipe Studio</h3>
-            <p>Make your recipes look nice</p>
-        </a>
-
-         <a href="gritpaint.html" class="game-card tool">
-            <h3>Grit Paint</h3>
-            <p>Make Pixel Art Gifs</p>
-        </a>
-
-        <a href="woodworking-calculators.html" class="game-card tool">
-            <h3>The Workshop</h3>
-            <p>Woodworking Calculators</p>
-        </a>
-
-        <a href="voidwave-visualizer.html" class="game-card tool">
-            <h3>Voidwave</h3>
-            <p>Music Player with visualizations</p>
-        </a>
-
-        <a href="cropstudio.html" class="game-card tool">
-            <h3>Crop Studio</h3>
-            <p>Image Crop Tool</p>
-        </a>
-
-         <a href="gitguide.html" class="game-card tool">
-            <h3>Git Guide</h3>
-            <p>Step-by-step Git because I forget</p>
-        </a>
-
-        <a href="menucraft.html" class="game-card tool">
-            <h3>MenuCraft</h3>
-            <p>Build beautiful restaurant menus</p>
-        </a>
-
-        <a href="iwasframed(13).html" class="game-card tool">
-            <h3>I Was Framed</h3>
-            <p>Basic wireframes tool</p>
-        </a>
-
-    </div>
-
-    <footer>
-        <p>&copy; 2026 GoTater Games | Built with passion and potatoes. | <a href="about.html">about</a> </p>
-    </footer>
-
+  <div id="boot" hidden></div>
+  <div id="screensaver" hidden></div>
+  <noscript><p style="padding:2em;color:#fff">TaterOS needs JavaScript. Apps live at /apps/&lt;name&gt;/.</p></noscript>
 </body>
 </html>
