@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Sokoban Studio</title>
+<style>
+  :root{
+    --bg:#11141b;
+    --panel:#191e29;
+    --panel-2:#1f2533;
+    --line:#2b3344;
+    --line-soft:#222a38;
+    --ink:#e7ecf4;
+    --ink-dim:#8c97ac;
+    --ink-faint:#5b6678;
+    --amber:#e08a3c;
+    --amber-soft:#f0a85c;
+    --accent:#4f8fd6;
+    --good:#56c060;
+    --danger:#d6604f;
+    --grid:#202736;
+    --grid-strong:#28324480;
+    --radius:9px;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,"Cascadia Code",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--sans);
+    overflow:hidden;-webkit-user-select:none;user-select:none;
+    font-size:14px;line-height:1.4;
+  }
+  button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:none}
+  /* ---------- shell ---------- */
+  #app{display:grid;grid-template-rows:auto 1fr;height:100%}
+  header{
+    display:flex;align-items:center;gap:14px;padding:0 14px;height:54px;
+    background:linear-gradient(180deg,#1c2230,#161b26);
+    border-bottom:1px solid var(--line);z-index:10;
+  }
+  .brand{display:flex;align-items:baseline;gap:9px;white-space:nowrap}
+  .brand .mark{
+    width:22px;height:22px;border-radius:4px;background:var(--amber);
+    box-shadow:inset 0 0 0 2px #0006, inset 3px 3px 0 #ffffff22;
+    position:relative;align-self:center;
+  }
+  .brand .mark::after{content:"";position:absolute;inset:5px;border:1.5px solid #0007;border-radius:1px}
+  .brand h1{font-size:16px;font-weight:650;letter-spacing:.2px}
+  .brand .sub{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:.5px;text-transform:uppercase}
+  .spacer{flex:1}
+  .modeswitch{display:flex;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .modeswitch button{padding:7px 16px;font-size:13px;font-weight:600;color:var(--ink-dim);letter-spacing:.2px}
+  .modeswitch button.on{background:var(--amber);color:#1a1206}
+  .modeswitch button.on.play{background:var(--good);color:#08210e}
+  .tbtn{
+    display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:7px;
+    background:var(--panel-2);border:1px solid var(--line);font-size:13px;color:var(--ink);font-weight:500;
+    transition:background .12s,border-color .12s;
+  }
+  .tbtn:hover{background:#28324a;border-color:#39455c}
+  .tbtn:active{transform:translateY(1px)}
+  .tbtn.ghost{background:transparent}
+  .tbtn svg{width:15px;height:15px;display:block}
+  body{}
+  /* ---------- columns ---------- */
+  main{display:grid;grid-template-columns:248px 1fr 286px;min-height:0}
+  aside{display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+  aside.left{border-right:1px solid var(--line)}
+  aside.right{border-left:1px solid var(--line)}
+  .panel-head{
+    padding:13px 15px 10px;font-family:var(--mono);font-size:10.5px;letter-spacing:1.4px;
+    text-transform:uppercase;color:var(--ink-faint);display:flex;justify-content:space-between;align-items:center;
+  }
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;padding:0 10px;gap:4px;border-bottom:1px solid var(--line-soft)}
+  .tabs button{
+    flex:1;padding:9px 4px 11px;font-size:12.5px;font-weight:600;color:var(--ink-dim);
+    border-bottom:2px solid transparent;letter-spacing:.2px;
+  }
+  .tabs button.on{color:var(--ink);border-bottom-color:var(--amber)}
+  .tabs button:hover{color:var(--ink)}
+  .palette{overflow-y:auto;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px;align-content:start;flex:1}
+  .asset{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:10px 8px 9px;display:flex;flex-direction:column;align-items:center;gap:7px;
+    cursor:grab;transition:border-color .12s,background .12s,transform .08s;position:relative;
+  }
+  .asset:hover{border-color:#3c4860;background:#242c3d}
+  .asset:active{cursor:grabbing}
+  .asset.sel{border-color:var(--amber);background:#2a2418;box-shadow:0 0 0 1px var(--amber) inset}
+  .asset canvas{width:44px;height:44px;image-rendering:auto;pointer-events:none}
+  .asset .nm{font-size:11.5px;color:var(--ink-dim);font-weight:600;text-align:center;line-height:1.1}
+  .asset.sel .nm{color:var(--ink)}
+  .hint{padding:10px 14px 14px;font-size:11.5px;color:var(--ink-faint);border-top:1px solid var(--line-soft);line-height:1.5}
+  .hint b{color:var(--ink-dim);font-weight:600}
+  /* ---------- canvas stage ---------- */
+  .stage{position:relative;min-width:0;background:
+    radial-gradient(120% 120% at 30% 0%,#161b26 0%,#0e1118 100%);}
+  #board{display:block;width:100%;height:100%;touch-action:none}
+  .overlay-tools{
+    position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+    display:flex;gap:6px;background:#0d1119cc;backdrop-filter:blur(6px);
+    border:1px solid var(--line);border-radius:11px;padding:6px;box-shadow:0 8px 28px #0007;
+  }
+  .overlay-tools button{
+    width:38px;height:38px;border-radius:8px;display:grid;place-items:center;color:var(--ink-dim);
+    border:1px solid transparent;
+  }
+  .overlay-tools button svg{width:18px;height:18px}
+  .overlay-tools button:hover{background:#212a3c;color:var(--ink)}
+  .overlay-tools button.on{background:var(--amber);color:#1a1206;border-color:#0004}
+  .overlay-tools .div{width:1px;background:var(--line);margin:4px 2px}
+  .zoomtag{
+    position:absolute;left:14px;bottom:16px;font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+    background:#0d1119aa;border:1px solid var(--line);border-radius:7px;padding:5px 9px;
+  }
+  .coordtag{
+    position:absolute;right:14px;top:14px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);
+    background:#0d1119aa;border:1px solid var(--line);border-radius:7px;padding:5px 9px;min-width:78px;text-align:center;
+  }
+  .playbar{
+    position:absolute;left:14px;top:14px;display:none;gap:10px;align-items:center;
+    background:#0d1119cc;border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-family:var(--mono);font-size:12px;
+  }
+  .playbar.show{display:flex}
+  .playbar .k{color:var(--ink-faint)}
+  .playbar .v{color:var(--ink)}
+  .winbanner{
+    position:absolute;left:50%;top:64px;transform:translate(-50%,-12px);opacity:0;pointer-events:none;
+    background:linear-gradient(180deg,#1c7a36,#13602a);border:1px solid #2ea24a;color:#eafff0;
+    padding:11px 22px;border-radius:11px;font-weight:700;letter-spacing:.3px;box-shadow:0 10px 30px #0a3a18aa;
+    transition:opacity .35s,transform .35s;font-size:15px;
+  }
+  .winbanner.show{opacity:1;transform:translate(-50%,0)}
+  /* ---------- inspector ---------- */
+  .inspector{overflow-y:auto;flex:1;padding:6px 0 24px}
+  .insp-title{display:flex;align-items:center;gap:11px;padding:12px 16px 14px}
+  .insp-title canvas{width:38px;height:38px}
+  .insp-title .t1{font-size:15px;font-weight:650}
+  .insp-title .t2{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:.6px;text-transform:uppercase}
+  .field{padding:11px 16px;border-top:1px solid var(--line-soft)}
+  .field > label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:9px;font-family:var(--mono)}
+  .swatches{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  .swatch{width:24px;height:24px;border-radius:6px;border:2px solid #0004;cursor:pointer;box-shadow:0 1px 3px #0005}
+  .swatch.on{outline:2px solid var(--ink);outline-offset:1px}
+  input[type=color]{
+    width:38px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--panel-2);cursor:pointer;
+  }
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel-2)}
+  .seg button{flex:1;padding:8px 4px;font-size:12px;font-weight:600;color:var(--ink-dim)}
+  .seg button.on{background:var(--accent);color:#06121f}
+  .seg.amber button.on{background:var(--amber);color:#1a1206}
+  .dirpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:128px}
+  .dirpad button{
+    aspect-ratio:1;background:var(--panel-2);border:1px solid var(--line);border-radius:7px;
+    display:grid;place-items:center;color:var(--ink-dim);font-size:16px;
+  }
+  .dirpad button.on{background:var(--accent);color:#06121f;border-color:#06121f}
+  .dirpad .blank{visibility:hidden}
+  .chk{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .chk input{width:0;height:0;opacity:0;position:absolute}
+  .chk .box{width:20px;height:20px;border-radius:5px;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center}
+  .chk input:checked + .box{background:var(--amber);border-color:var(--amber)}
+  .chk input:checked + .box::after{content:"";width:6px;height:11px;border:2px solid #1a1206;border-top:0;border-left:0;transform:rotate(40deg) translateY(-1px)}
+  .chk .lbl{font-size:13px;color:var(--ink)}
+  .empty-insp{padding:34px 22px;text-align:center;color:var(--ink-faint);font-size:13px;line-height:1.6}
+  .empty-insp .big{font-size:30px;opacity:.4;margin-bottom:8px}
+  .note{font-size:11.5px;color:var(--ink-faint);margin-top:7px;line-height:1.5}
+  /* ---------- toast ---------- */
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translate(-50%,18px);opacity:0;
+    background:#0c1019ee;border:1px solid var(--line);color:var(--ink);padding:10px 18px;border-radius:9px;
+    font-size:13px;transition:opacity .25s,transform .25s;pointer-events:none;z-index:50;box-shadow:0 8px 26px #0008;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  input[type=file]{display:none}
+  /* scrollbars */
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2b3344;border-radius:6px;border:2px solid var(--panel)}
+  ::-webkit-scrollbar-track{background:transparent}
+  /* responsive */
+  @media (max-width:880px){
+    main{grid-template-columns:1fr}
+    aside{position:absolute;top:54px;bottom:0;width:248px;z-index:8;transition:transform .2s}
+    aside.left{left:0;transform:translateX(-100%)}
+    aside.right{right:0;width:286px;transform:translateX(100%)}
+    aside.open{transform:translateX(0);box-shadow:0 0 40px #000a}
+    .mobile-toggle{display:inline-flex !important}
+  }
+  .mobile-toggle{display:none}
+  :focus-visible{outline:2px solid var(--amber-soft);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="tbtn ghost mobile-toggle" id="mLeft" title="Assets" aria-label="Toggle assets">☰</button>
+    <div class="brand">
+      <span class="mark"></span>
+      <h1>Sokoban Studio</h1>
+      <span class="sub">level&nbsp;forge</span>
+    </div>
+    <div class="modeswitch" role="tablist" aria-label="Mode">
+      <button id="modeEdit" class="on" role="tab">Edit</button>
+      <button id="modePlay" role="tab">Play</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="tbtn" id="btnNew" title="Start a blank grid">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>New
+    </button>
+    <button class="tbtn" id="btnLoad" title="Open a saved level (.json)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Open
+    </button>
+    <button class="tbtn" id="btnSave" title="Download this level as .json">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save
+    </button>
+    <button class="tbtn ghost mobile-toggle" id="mRight" title="Settings" aria-label="Toggle settings">⚙</button>
+    <input type="file" id="fileIn" accept="application/json,.json">
+  </header>
+
+  <main>
+    <!-- LEFT: assets -->
+    <aside class="left" id="leftPanel">
+      <div class="panel-head"><span>Assets</span><span id="assetCount" style="color:var(--ink-faint)"></span></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="palette" id="palette"></div>
+      <div class="hint">
+        <b>Drag</b> a part onto the grid, or click it then paint. <b>Right-click</b> erases.
+        Set its color &amp; options on the right before placing.
+      </div>
+    </aside>
+
+    <!-- CENTER: stage -->
+    <section class="stage" id="stage">
+      <canvas id="board"></canvas>
+      <div class="coordtag" id="coordTag">—</div>
+      <div class="zoomtag" id="zoomTag">100%</div>
+
+      <div class="playbar" id="playbar">
+        <span><span class="k">moves</span> <span class="v" id="pMoves">0</span></span>
+        <span><span class="k">pushes</span> <span class="v" id="pPushes">0</span></span>
+        <span><span class="k">crates</span> <span class="v" id="pCrates">0/0</span></span>
+        <span id="pKeysWrap" style="display:none"><span class="k">keys</span> <span class="v" id="pKeys"></span></span>
+      </div>
+      <div class="winbanner" id="winBanner">Solved! Every crate is home.</div>
+
+      <div class="overlay-tools" id="editTools">
+        <button data-tool="paint" class="on" title="Paint / place (with chosen asset)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18z"/><path d="M2 2l7.586 7.586"/></svg>
+        </button>
+        <button data-tool="select" title="Select a placed item to edit it">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.5 18 2.2-7.3L20 11.5z"/></svg>
+        </button>
+        <button data-tool="erase" title="Erase">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14l7-7 7 7-4 4H7z"/><path d="M22 20H7"/></svg>
+        </button>
+        <div class="div"></div>
+        <button data-act="zoomout" title="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>
+        </button>
+        <button data-act="center" title="Center on origin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        </button>
+        <button data-act="zoomin" title="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+
+      <div class="overlay-tools" id="playTools" style="display:none">
+        <button data-act="reset" title="Restart level (R)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <button data-act="undo" title="Undo move (U / Z)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- RIGHT: inspector -->
+    <aside class="right" id="rightPanel">
+      <div class="panel-head"><span>Settings</span><span id="inspTag" style="color:var(--ink-faint)"></span></div>
+      <div class="inspector" id="inspector"></div>
+    </aside>
+  </main>
+</div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Sokoban Studio — single-file editor + player.  Zero dependencies.
+   Level model: sparse Map keyed "x,y" -> { t: terrain|null, e: entity|null }
+   ===================================================================== */
+
+/* ---------- component definitions ---------- */
+const DEFS = {
+  floor:    {layer:"terrain", name:"Floor",    desc:"Walkable ground",            color:"#d8cfbe", opts:[]},
+  wall:     {layer:"terrain", name:"Wall",     desc:"Solid, blocks everything",   color:"#3f4654", opts:[]},
+  goal:     {layer:"terrain", name:"Goal",     desc:"Where crates must end up",   color:"#e0a93c", opts:["match"]},
+  ice:      {layer:"terrain", name:"Ice",      desc:"Things slide until blocked",  color:"#a9d8ef", opts:[]},
+  pit:      {layer:"terrain", name:"Pit",      desc:"A crate fills it; then walkable", color:"#161a22", opts:[]},
+  cracked:  {layer:"terrain", name:"Cracked",  desc:"Cross once, then it collapses", color:"#8a7d63", opts:[],
+             note:"Safe to cross once. Collapses into a pit after the player steps off it."},
+  conveyor: {layer:"terrain", name:"Conveyor", desc:"Nudges objects each turn",   color:"#6b7280", opts:["dir"]},
+  oneway:   {layer:"terrain", name:"One-way",  desc:"Pass only along the arrow",  color:"#52b3a3", opts:["dir"]},
+  door:     {layer:"terrain", name:"Door",     desc:"Locked until you bring a matching key", color:"#e0c44f", opts:[],
+             note:"Color is the lock. Walk in while holding a key of the same color to open it for good."},
+  key:      {layer:"item",    name:"Key",      desc:"Unlocks a matching door",    color:"#e0c44f", opts:[],
+             note:"Color is the lock it opens. Walk over it to pick it up."},
+  plate:    {layer:"terrain", name:"Plate",    desc:"Weigh it down to open same-color gates", color:"#6fa8dc", opts:[],
+             note:"Color is its group. A gate opens while every plate of that color is weighed down (by you or a crate)."},
+  gate:     {layer:"terrain", name:"Gate",     desc:"Opens while its plates are pressed", color:"#6fa8dc", opts:[],
+             note:"Color is its group. Closed (solid) until all same-color plates are pressed. With no matching plate it stays shut."},
+  portal:   {layer:"terrain", name:"Portal",   desc:"Teleports to its same-color twin", color:"#b48ad0", opts:[],
+             note:"Color pairs two portals. Land on one and you pop out of its twin (if the exit is clear)."},
+  player:   {layer:"entity",  name:"Player",   desc:"The pusher (one only)",      color:"#5cc566", opts:[]},
+  box:      {layer:"entity",  name:"Crate",    desc:"Push onto a goal",           color:"#d07a32", opts:["slide"]},
+};
+const TABS = [
+  {id:"terrain", name:"Terrain", items:["floor","wall","goal"]},
+  {id:"hazards", name:"Hazards", items:["ice","pit","cracked","conveyor","oneway"]},
+  {id:"logic",   name:"Logic",   items:["door","key","plate","gate","portal"]},
+  {id:"objects", name:"Objects", items:["player","box"]},
+];
+const SWATCHES = ["#d07a32","#5cc566","#4f8fd6","#d6604f","#b48ad0","#e0c44f","#d8cfbe","#3f4654"];
+const WALKABLE = new Set(["floor","goal","ice","conveyor","plate","portal","cracked"]);
+
+/* ---------- state ---------- */
+let level = new Map();                  // edit-time level
+let play  = null;                       // live play copy
+let undoStack = [];
+let inv = {};                           // play-mode key inventory: color -> count
+let mode = "edit";                      // "edit" | "play"
+let tool = "paint";                     // paint | select | erase
+let activeTab = "terrain";
+let brush = "wall";                     // current asset id
+const brushProps = {};                  // id -> {color, ...opt values}
+for (const id in DEFS){
+  const d = DEFS[id];
+  const p = {color:d.color};
+  if (d.opts.includes("dir"))   p.dir   = "E";
+  if (d.opts.includes("slide")) p.slide = "free";
+  if (d.opts.includes("match")) p.match = false;
+  brushProps[id] = p;
+}
+let selection = {kind:"brush", id:"wall"}; // brush | cell
+let stats = {moves:0, pushes:0};
+
+const cam = {x:90, y:90, scale:1};
+const BASE = 56;                        // base cell px at scale 1
+let hover = null;                       // {x,y}
+
+/* ---------- helpers ---------- */
+const K = (x,y)=>x+","+y;
+const parseK = k=>{const i=k.indexOf(",");return [parseInt(k.slice(0,i),10),parseInt(k.slice(i+1),10)];};
+const DIRV = {N:[0,-1],S:[0,1],E:[1,0],W:[-1,0]};
+const dirName = (dx,dy)=> dx===1?"E":dx===-1?"W":dy===1?"S":"N";
+const $ = s=>document.querySelector(s);
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+
+function activeMap(){ return mode==="play" ? play : level; }
+function cell(map,x,y){ return map.get(K(x,y)) || null; }
+function terrainAt(map,x,y){ const c=map.get(K(x,y)); return c?c.t:null; }
+function entityAt(map,x,y){ const c=map.get(K(x,y)); return c?c.e:null; }
+
+function clone(map){
+  const m = new Map();
+  for (const [k,c] of map){
+    m.set(k, {
+      t: c.t ? {...c.t} : null,
+      e: c.e ? {...c.e} : null,
+      i: c.i ? {...c.i} : null,
+    });
+  }
+  return m;
+}
+function ensureCell(map,x,y){
+  const k=K(x,y); let c=map.get(k);
+  if(!c){ c={t:null,e:null,i:null}; map.set(k,c); }
+  return c;
+}
+function pruneCell(map,x,y){
+  const k=K(x,y), c=map.get(k);
+  if(c && !c.t && !c.e && !c.i) map.delete(k);
+}
+
+/* =====================================================================
+   PLACEMENT (edit mode)
+   ===================================================================== */
+function place(id,x,y){
+  const d=DEFS[id], src=brushProps[id];
+  const props={k:id, color:src.color};
+  if("dir"   in src) props.dir=src.dir;
+  if("slide" in src) props.slide=src.slide;
+  if("match" in src) props.match=src.match;
+  const c=ensureCell(level,x,y);
+  if(d.layer==="entity"){
+    if(id==="player"){ // single player — clear any existing
+      for(const [k,cc] of level){ if(cc.e && cc.e.k==="player"){ cc.e=null; pruneCell(level,...parseK(k)); } }
+      ensureCell(level,x,y); // re-ensure (prune may have removed)
+    }
+    const cc=ensureCell(level,x,y);
+    if(!cc.t) cc.t={k:"floor", color:DEFS.floor.color}; // give entities ground
+    cc.e=props;
+  }else if(d.layer==="item"){
+    if(!c.t) c.t={k:"floor", color:DEFS.floor.color};   // give pickups ground
+    c.i=props;
+  }else{
+    c.t=props;
+    if(id==="wall" && c.e) c.e=null;   // walls clear whatever sat there
+    if(id==="wall" && c.i) c.i=null;
+  }
+}
+function eraseAt(x,y){
+  const c=cell(level,x,y); if(!c) return;
+  if(c.e){ c.e=null; }       // entity first
+  else if(c.i){ c.i=null; }  // then pickup
+  else if(c.t){ c.t=null; }  // then terrain
+  pruneCell(level,x,y);
+}
+
+/* =====================================================================
+   PLAY — movement resolution
+   ===================================================================== */
+function startPlay(){
+  play = clone(level);
+  undoStack = [];
+  inv = {};
+  stats = {moves:0, pushes:0};
+  hideWin();
+}
+function findPlayer(){
+  for(const [k,c] of play){ if(c.e && c.e.k==="player"){ const [x,y]=parseK(k); return {x,y}; } }
+  return null;
+}
+function gateOpen(map,color){
+  let any=false, allPressed=true;
+  for(const [,c] of map){
+    if(c.t && c.t.k==="plate" && c.t.color===color){ any=true; if(!c.e) allPressed=false; }
+  }
+  return any && allPressed;
+}
+function findPortalPartner(x,y,color){
+  for(const [k,c] of play){
+    if(c.t && c.t.k==="portal" && c.t.color===color){
+      const [px,py]=parseK(k); if(px!==x || py!==y) return [px,py];
+    }
+  }
+  return null;
+}
+function canEnterTerrain(x,y,dx,dy){
+  const t=terrainAt(play,x,y);
+  if(!t) return false;
+  switch(t.k){
+    case "wall":   return false;
+    case "pit":    return !!t.filled;
+    case "door":   return !!t.open;
+    case "gate":   return gateOpen(play,t.color);
+    case "oneway": return t.dir===dirName(dx,dy);
+    default:       return WALKABLE.has(t.k);
+  }
+}
+function moveEntity(x,y,nx,ny){
+  const from=cell(play,x,y); const to=ensureCell(play,nx,ny);
+  const moved=from.e;
+  to.e=moved; from.e=null;
+  if(moved && moved.k==="player"){
+    if(to.i && to.i.k==="key"){ inv[to.i.color]=(inv[to.i.color]||0)+1; to.i=null; } // pick up key
+    if(from.t && from.t.k==="cracked"){ from.t={k:"pit", color:"#161a22", filled:false}; } // floor gives way
+  }
+  pruneCell(play,x,y);
+}
+function removeEntity(x,y){ const c=cell(play,x,y); if(c){ c.e=null; pruneCell(play,x,y);} }
+
+function slideEntity(x,y,dx,dy){
+  let guard=0;
+  while(guard++<999){
+    const t=terrainAt(play,x,y);
+    if(!t || t.k!=="ice") break;
+    const ent=entityAt(play,x,y); if(!ent) break;
+    const nx=x+dx, ny=y+dy;
+    if(entityAt(play,nx,ny)) break;
+    const nt=terrainAt(play,nx,ny);
+    if(nt && nt.k==="pit" && !nt.filled){
+      if(ent.k==="box"){ removeEntity(x,y); nt.filled=true; return; }
+      break; // player stops at pit lip
+    }
+    if(!canEnterTerrain(nx,ny,dx,dy)) break;
+    moveEntity(x,y,nx,ny); x=nx; y=ny;
+  }
+}
+function slideAllowed(box,dx,dy){
+  const s=box.slide||"free";
+  if(s==="h") return dy===0;
+  if(s==="v") return dx===0;
+  return true;
+}
+function conveyorPass(){
+  const moves=[];
+  for(const [k,c] of play){
+    if(c.e && c.t && c.t.k==="conveyor"){
+      const [cx,cy]=parseK(k);
+      const [dx,dy]=DIRV[c.t.dir||"E"];
+      const nx=cx+dx, ny=cy+dy;
+      if(entityAt(play,nx,ny)) continue;
+      const nt=terrainAt(play,nx,ny);
+      if(nt && nt.k==="pit" && !nt.filled){
+        if(c.e.k==="box") moves.push([cx,cy,nx,ny,true]);
+      }else if(canEnterTerrain(nx,ny,dx,dy)){
+        moves.push([cx,cy,nx,ny,false]);
+      }
+    }
+  }
+  for(const [ox,oy,nx,ny,pit] of moves){
+    if(entityAt(play,nx,ny)) continue;
+    if(pit){ const t=terrainAt(play,nx,ny); if(t&&!t.filled){ removeEntity(ox,oy); t.filled=true; } }
+    else moveEntity(ox,oy,nx,ny);
+  }
+}
+function teleportPass(){
+  const movers=[];
+  for(const [k,c] of play){
+    if(c.e && c.t && c.t.k==="portal"){
+      const [x,y]=parseK(k);
+      const partner=findPortalPartner(x,y,c.t.color);
+      if(partner && !entityAt(play,partner[0],partner[1])) movers.push([x,y,partner[0],partner[1]]);
+    }
+  }
+  for(const [ox,oy,nx,ny] of movers){
+    if(entityAt(play,nx,ny)) continue;   // partner became occupied this pass
+    moveEntity(ox,oy,nx,ny);
+  }
+}
+function settle(){ conveyorPass(); teleportPass(); }
+// returns true if anything changed
+function applyMove(dx,dy){
+  const p=findPlayer(); if(!p) return false;
+  const fx=p.x+dx, fy=p.y+dy;
+  const front=entityAt(play,fx,fy);
+  if(front && front.k==="box"){
+    if(!slideAllowed(front,dx,dy)) return false;
+    const bx=fx+dx, by=fy+dy;
+    if(entityAt(play,bx,by)) return false;
+    const bt=terrainAt(play,bx,by);
+    if(bt && bt.k==="pit" && !bt.filled){
+      removeEntity(fx,fy); bt.filled=true;        // crate plugs the pit
+      moveEntity(p.x,p.y,fx,fy);
+      slideEntity(fx,fy,dx,dy);
+      settle(); stats.pushes++; return true;
+    }
+    if(!canEnterTerrain(bx,by,dx,dy)) return false;
+    moveEntity(fx,fy,bx,by);                       // push crate
+    slideEntity(bx,by,dx,dy);
+    moveEntity(p.x,p.y,fx,fy);                      // follow
+    slideEntity(fx,fy,dx,dy);
+    settle(); stats.pushes++; return true;
+  }else{
+    if(front) return false;                        // some non-box entity
+    const dt=terrainAt(play,fx,fy);
+    if(dt && dt.k==="door" && !dt.open){            // try to unlock with a held key
+      if((inv[dt.color]||0)>0){ inv[dt.color]--; dt.open=true; }
+      else return false;
+    }
+    if(!canEnterTerrain(fx,fy,dx,dy)) return false;
+    moveEntity(p.x,p.y,fx,fy);
+    slideEntity(fx,fy,dx,dy);
+    settle(); return true;
+  }
+}
+function tryMove(dx,dy){
+  if(mode!=="play") return;
+  const before=snapshot();
+  const moved=applyMove(dx,dy);
+  if(moved){
+    undoStack.push(before);
+    if(undoStack.length>500) undoStack.shift();
+    stats.moves++;
+    draw(); updatePlayHUD();
+    if(checkWin()) showWin();
+  }
+}
+function snapshot(){ return {map:clone(play), inv:{...inv}, moves:stats.moves, pushes:stats.pushes}; }
+function undoMove(){
+  if(!undoStack.length) return;
+  const s=undoStack.pop();
+  play=s.map; inv=s.inv; stats.moves=s.moves; stats.pushes=s.pushes;
+  hideWin(); draw(); updatePlayHUD();
+}
+function checkWin(){
+  let goals=0, boxes=0, covered=0, boxesHome=0;
+  for(const [k,c] of play){
+    if(c.t && c.t.k==="goal"){
+      goals++;
+      const e=c.e;
+      if(e && e.k==="box" && (!c.t.match || e.color===c.t.color)) covered++;
+    }
+    if(c.e && c.e.k==="box"){
+      boxes++;
+      if(c.t && c.t.k==="goal") boxesHome++;
+    }
+  }
+  return goals>0 && boxes>0 && covered===goals && boxesHome===boxes;
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+const board = $("#board"), bctx = board.getContext("2d");
+let DPR = Math.max(1, window.devicePixelRatio||1);
+function resizeBoard(){
+  const r=$("#stage").getBoundingClientRect();
+  DPR=Math.max(1,window.devicePixelRatio||1);
+  board.width=Math.round(r.width*DPR); board.height=Math.round(r.height*DPR);
+  board.style.width=r.width+"px"; board.style.height=r.height+"px";
+  draw();
+}
+function screenToCell(px,py){
+  const cp=BASE*cam.scale;
+  return [Math.floor((px-cam.x)/cp), Math.floor((py-cam.y)/cp)];
+}
+function shade(hex,amt){ // amt -1..1
+  let h=hex.replace("#","");
+  if(h.length===3) h=h.split("").map(c=>c+c).join("");
+  let r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  const f=v=> amt<0 ? Math.round(v*(1+amt)) : Math.round(v+(255-v)*amt);
+  r=Math.max(0,Math.min(255,f(r)));g=Math.max(0,Math.min(255,f(g)));b=Math.max(0,Math.min(255,f(b)));
+  return "rgb("+r+","+g+","+b+")";
+}
+function rr(ctx,x,y,w,h,r){
+  r=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+
+function draw(){
+  const w=board.width, h=board.height, ctx=bctx;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const W=w/DPR, H=h/DPR;
+  ctx.clearRect(0,0,W,H);
+  const cp=BASE*cam.scale;
+
+  // graph-paper grid
+  const x0=Math.floor((-cam.x)/cp)-1, x1=Math.ceil((W-cam.x)/cp)+1;
+  const y0=Math.floor((-cam.y)/cp)-1, y1=Math.ceil((H-cam.y)/cp)+1;
+  ctx.lineWidth=1;
+  ctx.strokeStyle=cssVar("--grid");
+  ctx.beginPath();
+  for(let gx=x0; gx<=x1; gx++){ const sx=cam.x+gx*cp; ctx.moveTo(sx,0); ctx.lineTo(sx,H); }
+  for(let gy=y0; gy<=y1; gy++){ const sy=cam.y+gy*cp; ctx.moveTo(0,sy); ctx.lineTo(W,sy); }
+  ctx.stroke();
+  // origin emphasis
+  ctx.strokeStyle="#39455c";
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(cam.x,0); ctx.lineTo(cam.x,H);
+  ctx.moveTo(0,cam.y); ctx.lineTo(W,cam.y);
+  ctx.stroke();
+
+  const map=activeMap();
+  // terrain pass
+  for(const [k,c] of map){
+    if(!c.t) continue;
+    const [x,y]=parseK(k); const sx=cam.x+x*cp, sy=cam.y+y*cp;
+    if(sx>W||sy>H||sx+cp<0||sy+cp<0) continue;
+    drawTerrain(ctx,c.t,sx,sy,cp,x,y);
+  }
+  // item pass (pickups, under entities)
+  for(const [k,c] of map){
+    if(!c.i) continue;
+    const [x,y]=parseK(k); const sx=cam.x+x*cp, sy=cam.y+y*cp;
+    if(sx>W||sy>H||sx+cp<0||sy+cp<0) continue;
+    drawItem(ctx,c.i,sx,sy,cp);
+  }
+  // entity pass
+  for(const [k,c] of map){
+    if(!c.e) continue;
+    const [x,y]=parseK(k); const sx=cam.x+x*cp, sy=cam.y+y*cp;
+    if(sx>W||sy>H||sx+cp<0||sy+cp<0) continue;
+    const onGoal = c.t && c.t.k==="goal";
+    drawEntity(ctx,c.e,sx,sy,cp,onGoal);
+  }
+
+  // hover / selection (edit only)
+  if(mode==="edit"){
+    if(hover){
+      const sx=cam.x+hover.x*cp, sy=cam.y+hover.y*cp;
+      ctx.strokeStyle= tool==="erase" ? cssVar("--danger") : cssVar("--amber-soft");
+      ctx.lineWidth=2; ctx.globalAlpha=.85;
+      rr(ctx,sx+1.5,sy+1.5,cp-3,cp-3,6); ctx.stroke(); ctx.globalAlpha=1;
+    }
+    if(selection.kind==="cell"){
+      const sx=cam.x+selection.x*cp, sy=cam.y+selection.y*cp;
+      ctx.strokeStyle=cssVar("--accent"); ctx.lineWidth=2.5;
+      rr(ctx,sx+2,sy+2,cp-4,cp-4,7); ctx.stroke();
+    }
+  }
+}
+
+function drawTerrain(ctx,t,x,y,s,cellX,cellY){
+  const p=2; // tiny gap
+  if(t.k==="wall"){
+    rr(ctx,x+p,y+p,s-2*p,s-2*p,Math.max(3,s*0.12)); ctx.fillStyle=t.color; ctx.fill();
+    ctx.fillStyle=shade(t.color,.13);
+    rr(ctx,x+p,y+p,s-2*p,(s-2*p)*0.5,Math.max(3,s*0.12)); ctx.fill();
+    ctx.strokeStyle=shade(t.color,-.35); ctx.lineWidth=Math.max(1,s*0.03);
+    rr(ctx,x+p,y+p,s-2*p,s-2*p,Math.max(3,s*0.12)); ctx.stroke();
+    return;
+  }
+  // floor-like base
+  rr(ctx,x+p,y+p,s-2*p,s-2*p,4);
+  if(t.k==="floor"){ ctx.fillStyle=t.color; ctx.fill();
+    ctx.strokeStyle=shade(t.color,-.18); ctx.lineWidth=1; ctx.stroke(); return; }
+  if(t.k==="goal"){
+    ctx.fillStyle=shade(t.color,-.55); ctx.fill();
+    const cx=x+s/2, cy=y+s/2;
+    ctx.strokeStyle=t.color; ctx.lineWidth=Math.max(2,s*0.05);
+    ctx.beginPath(); ctx.arc(cx,cy,s*0.27,0,7); ctx.stroke();
+    ctx.fillStyle=t.color;
+    ctx.beginPath(); ctx.arc(cx,cy,s*0.11,0,7); ctx.fill();
+    if(t.match){ // diamond color marker
+      ctx.fillStyle=shade(t.color,.25);
+      ctx.beginPath(); ctx.moveTo(cx,y+s*0.16); ctx.lineTo(x+s*0.84,cy);
+      ctx.lineTo(cx,y+s*0.84); ctx.lineTo(x+s*0.16,cy); ctx.closePath();
+      ctx.globalAlpha=.35; ctx.fill(); ctx.globalAlpha=1;
+    }
+    return;
+  }
+  if(t.k==="ice"){
+    ctx.fillStyle=t.color; ctx.fill();
+    ctx.strokeStyle="#ffffff"; ctx.globalAlpha=.55; ctx.lineWidth=Math.max(1,s*0.035);
+    ctx.beginPath();
+    ctx.moveTo(x+s*0.2,y+s*0.62); ctx.lineTo(x+s*0.6,y+s*0.22);
+    ctx.moveTo(x+s*0.42,y+s*0.78); ctx.lineTo(x+s*0.78,y+s*0.42);
+    ctx.stroke(); ctx.globalAlpha=1;
+    ctx.strokeStyle=shade(t.color,-.2); ctx.lineWidth=1; rr(ctx,x+p,y+p,s-2*p,s-2*p,4); ctx.stroke();
+    return;
+  }
+  if(t.k==="pit"){
+    ctx.fillStyle = t.filled ? shade(t.color,.55) : t.color; ctx.fill();
+    if(!t.filled){
+      ctx.fillStyle="#000"; ctx.globalAlpha=.45;
+      ctx.beginPath(); ctx.arc(x+s/2,y+s/2,s*0.32,0,7); ctx.fill(); ctx.globalAlpha=1;
+      ctx.strokeStyle="#0008"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x+s/2,y+s/2,s*0.32,0,7); ctx.stroke();
+    }else{
+      ctx.strokeStyle=shade(t.color,-.1); ctx.lineWidth=1; rr(ctx,x+p,y+p,s-2*p,s-2*p,4); ctx.stroke();
+      ctx.strokeStyle="#0006"; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.arc(x+s/2,y+s/2,s*0.3,0,7); ctx.stroke(); ctx.setLineDash([]);
+    }
+    return;
+  }
+  if(t.k==="conveyor"){
+    ctx.fillStyle=t.color; ctx.fill();
+    const [dx,dy]=DIRV[t.dir||"E"]; chevrons(ctx,x,y,s,dx,dy,"#0007","#fff5");
+    ctx.strokeStyle=shade(t.color,-.25); ctx.lineWidth=1; rr(ctx,x+p,y+p,s-2*p,s-2*p,4); ctx.stroke();
+    return;
+  }
+  if(t.k==="oneway"){
+    ctx.fillStyle=shade(t.color,-.4); ctx.fill();
+    const [dx,dy]=DIRV[t.dir||"E"]; arrow(ctx,x+s/2,y+s/2,s*0.3,dx,dy,t.color,Math.max(3,s*0.08));
+    ctx.strokeStyle=t.color; ctx.globalAlpha=.5; ctx.lineWidth=1.5; rr(ctx,x+p,y+p,s-2*p,s-2*p,4); ctx.stroke(); ctx.globalAlpha=1;
+    return;
+  }
+  if(t.k==="cracked"){
+    ctx.fillStyle=t.color; ctx.fill();
+    ctx.strokeStyle=shade(t.color,-.45); ctx.lineWidth=Math.max(1,s*0.03); ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(x+s*0.2,y+s*0.18); ctx.lineTo(x+s*0.46,y+s*0.5); ctx.lineTo(x+s*0.3,y+s*0.82);
+    ctx.moveTo(x+s*0.46,y+s*0.5); ctx.lineTo(x+s*0.82,y+s*0.4);
+    ctx.moveTo(x+s*0.46,y+s*0.5); ctx.lineTo(x+s*0.64,y+s*0.8);
+    ctx.stroke();
+    ctx.strokeStyle=shade(t.color,-.2); ctx.lineWidth=1; rr(ctx,x+p,y+p,s-2*p,s-2*p,4); ctx.stroke();
+    return;
+  }
+  if(t.k==="door"){
+    if(t.open){
+      ctx.fillStyle=DEFS.floor.color; ctx.fill();
+      ctx.strokeStyle=t.color; ctx.globalAlpha=.7; ctx.lineWidth=Math.max(2,s*0.07); ctx.lineCap="round";
+      ctx.beginPath();
+      ctx.moveTo(x+s*0.18,y+s*0.16); ctx.lineTo(x+s*0.18,y+s*0.84);
+      ctx.moveTo(x+s*0.82,y+s*0.16); ctx.lineTo(x+s*0.82,y+s*0.84);
+      ctx.stroke(); ctx.globalAlpha=1;
+    }else{
+      ctx.fillStyle=t.color; ctx.fill();
+      ctx.fillStyle=shade(t.color,.16); rr(ctx,x+p,y+p,s-2*p,(s-2*p)*0.5,4); ctx.fill();
+      ctx.strokeStyle=shade(t.color,-.45); ctx.lineWidth=Math.max(1,s*0.04); rr(ctx,x+p,y+p,s-2*p,s-2*p,4); ctx.stroke();
+      ctx.fillStyle=shade(t.color,-.5);
+      ctx.beginPath(); ctx.arc(x+s/2,y+s*0.44,s*0.1,0,7); ctx.fill();
+      ctx.fillRect(x+s/2-s*0.045,y+s*0.44,s*0.09,s*0.22);
+    }
+    return;
+  }
+  if(t.k==="plate"){
+    const pressed = mode==="play" && cellX!==undefined && !!entityAt(play,cellX,cellY);
+    ctx.fillStyle=shade(t.color,-.5); ctx.fill();
+    const ins=s*(pressed?0.27:0.21);
+    rr(ctx,x+ins,y+ins,s-2*ins,s-2*ins,Math.max(3,s*0.08));
+    ctx.fillStyle = pressed ? shade(t.color,.1) : shade(t.color,-.12); ctx.fill();
+    ctx.strokeStyle=shade(t.color,-.55); ctx.lineWidth=Math.max(1,s*0.03);
+    rr(ctx,x+ins,y+ins,s-2*ins,s-2*ins,Math.max(3,s*0.08)); ctx.stroke();
+    if(pressed){ ctx.strokeStyle=shade(t.color,.5); ctx.globalAlpha=.9; ctx.lineWidth=Math.max(1.5,s*0.04);
+      rr(ctx,x+ins,y+ins,s-2*ins,s-2*ins,Math.max(3,s*0.08)); ctx.stroke(); ctx.globalAlpha=1; }
+    return;
+  }
+  if(t.k==="gate"){
+    const open = mode==="play" && gateOpen(play,t.color);
+    if(open){
+      ctx.fillStyle=DEFS.floor.color; ctx.fill();
+      ctx.fillStyle=t.color;
+      ctx.fillRect(x+s*0.12,y+s*0.1,s*0.76,s*0.09);
+      ctx.fillRect(x+s*0.12,y+s*0.81,s*0.76,s*0.09);
+    }else{
+      ctx.fillStyle=shade(t.color,-.4); ctx.fill();
+      ctx.fillStyle=t.color;
+      for(let i=0;i<4;i++){ const bx=x+s*0.17+i*s*0.18; ctx.fillRect(bx,y+s*0.12,s*0.085,s*0.76); }
+      ctx.strokeStyle=shade(t.color,-.6); ctx.lineWidth=1; rr(ctx,x+p,y+p,s-2*p,s-2*p,4); ctx.stroke();
+    }
+    return;
+  }
+  if(t.k==="portal"){
+    ctx.fillStyle=shade(t.color,-.62); ctx.fill();
+    const cx=x+s/2, cy=y+s/2;
+    for(let i=3;i>=1;i--){
+      ctx.beginPath(); ctx.arc(cx,cy,s*0.1*i,0,7);
+      ctx.strokeStyle=shade(t.color, i%2 ? 0.2 : -0.1); ctx.globalAlpha=.85;
+      ctx.lineWidth=Math.max(2,s*0.05); ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    ctx.fillStyle=shade(t.color,.5); ctx.beginPath(); ctx.arc(cx,cy,s*0.07,0,7); ctx.fill();
+    return;
+  }
+}
+function drawItem(ctx,it,x,y,s){
+  if(it.k==="key"){
+    const cx=x+s*0.46, cy=y+s*0.5;
+    ctx.lineCap="round";
+    ctx.fillStyle=it.color; ctx.strokeStyle=shade(it.color,-.5); ctx.lineWidth=Math.max(1.5,s*0.045);
+    ctx.beginPath(); ctx.arc(cx-s*0.1,cy-s*0.06,s*0.12,0,7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=shade(it.color,-.55);
+    ctx.beginPath(); ctx.arc(cx-s*0.1,cy-s*0.06,s*0.05,0,7); ctx.fill();
+    ctx.strokeStyle=it.color; ctx.lineWidth=Math.max(2.5,s*0.07);
+    ctx.beginPath(); ctx.moveTo(cx-s*0.01,cy+s*0.02); ctx.lineTo(cx+s*0.26,cy+s*0.2); ctx.stroke();
+    ctx.lineWidth=Math.max(2,s*0.055);
+    ctx.beginPath();
+    ctx.moveTo(cx+s*0.26,cy+s*0.2); ctx.lineTo(cx+s*0.33,cy+s*0.1);
+    ctx.moveTo(cx+s*0.18,cy+s*0.14); ctx.lineTo(cx+s*0.24,cy+s*0.05);
+    ctx.stroke();
+  }
+}
+function chevrons(ctx,x,y,s,dx,dy,c1,c2){
+  ctx.save(); ctx.translate(x+s/2,y+s/2);
+  const ang=Math.atan2(dy,dx); ctx.rotate(ang);
+  ctx.strokeStyle=c1; ctx.lineWidth=Math.max(2,s*0.07); ctx.lineCap="round";
+  for(let i=-1;i<=1;i++){
+    const ox=i*s*0.26;
+    ctx.beginPath();
+    ctx.moveTo(ox-s*0.1,-s*0.16); ctx.lineTo(ox+s*0.06,0); ctx.lineTo(ox-s*0.1,s*0.16);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function arrow(ctx,cx,cy,len,dx,dy,color,lw){
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(Math.atan2(dy,dx));
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=lw; ctx.lineCap="round"; ctx.lineJoin="round";
+  ctx.beginPath(); ctx.moveTo(-len,0); ctx.lineTo(len*0.4,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(len*0.4,-len*0.5); ctx.lineTo(len,0); ctx.lineTo(len*0.4,len*0.5);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawEntity(ctx,e,x,y,s,onGoal){
+  if(e.k==="box"){
+    const m=s*0.13;
+    if(onGoal){ ctx.shadowColor=shade(e.color,.4); ctx.shadowBlur=s*0.25; }
+    rr(ctx,x+m,y+m,s-2*m,s-2*m,Math.max(3,s*0.1)); ctx.fillStyle=e.color; ctx.fill();
+    ctx.shadowBlur=0;
+    // bevel
+    ctx.fillStyle=shade(e.color,.18);
+    rr(ctx,x+m,y+m,s-2*m,(s-2*m)*0.45,Math.max(3,s*0.1)); ctx.fill();
+    ctx.strokeStyle=shade(e.color,-.4); ctx.lineWidth=Math.max(1.5,s*0.04);
+    rr(ctx,x+m,y+m,s-2*m,s-2*m,Math.max(3,s*0.1)); ctx.stroke();
+    // straps
+    ctx.beginPath(); ctx.moveTo(x+m,y+m); ctx.lineTo(x+s-m,y+s-m);
+    ctx.moveTo(x+s-m,y+m); ctx.lineTo(x+m,y+s-m); ctx.stroke();
+    // slide constraint arrows
+    if(e.slide==="h"||e.slide==="v"){
+      ctx.strokeStyle=shade(e.color,.55); ctx.fillStyle=shade(e.color,.55);
+      ctx.lineWidth=Math.max(1.5,s*0.04);
+      const cx=x+s/2, cy=y+s/2, L=s*0.16;
+      if(e.slide==="h"){ arrowTiny(ctx,cx,cy,L,1,0); arrowTiny(ctx,cx,cy,L,-1,0); }
+      else { arrowTiny(ctx,cx,cy,L,0,1); arrowTiny(ctx,cx,cy,L,0,-1); }
+    }
+    if(onGoal){ ctx.strokeStyle="#fff"; ctx.globalAlpha=.9; ctx.lineWidth=Math.max(2,s*0.06); ctx.lineCap="round";
+      const cx=x+s/2,cy=y+s/2; ctx.beginPath(); ctx.moveTo(cx-s*0.14,cy); ctx.lineTo(cx-s*0.03,cy+s*0.12); ctx.lineTo(cx+s*0.16,cy-s*0.13); ctx.stroke(); ctx.globalAlpha=1; }
+    return;
+  }
+  if(e.k==="player"){
+    const cx=x+s/2, cy=y+s/2, r=s*0.3;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fillStyle=e.color; ctx.fill();
+    ctx.fillStyle=shade(e.color,.22);
+    ctx.beginPath(); ctx.arc(cx,cy-r*0.25,r*0.78,Math.PI,0); ctx.fill();
+    ctx.strokeStyle=shade(e.color,-.45); ctx.lineWidth=Math.max(1.5,s*0.04);
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.stroke();
+    // eyes
+    ctx.fillStyle="#10140f";
+    ctx.beginPath(); ctx.arc(cx-r*0.32,cy-r*0.05,r*0.13,0,7); ctx.arc(cx+r*0.32,cy-r*0.05,r*0.13,0,7); ctx.fill();
+    return;
+  }
+}
+function arrowTiny(ctx,cx,cy,len,dx,dy){
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(Math.atan2(dy,dx));
+  ctx.beginPath(); ctx.moveTo(len*0.35,-len*0.5); ctx.lineTo(len,0); ctx.lineTo(len*0.35,len*0.5); ctx.stroke();
+  ctx.restore();
+}
+
+/* ---------- tiny asset preview canvases ---------- */
+function drawPreview(canvas,id){
+  const ctx=canvas.getContext("2d"); const S=44; const dpr=Math.max(1,window.devicePixelRatio||1);
+  canvas.width=S*dpr; canvas.height=S*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,S,S);
+  const d=DEFS[id], pr=brushProps[id];
+  const t={k:id,color:pr.color,dir:pr.dir,match:pr.match};
+  const e={k:id,color:pr.color,slide:pr.slide};
+  if(d.layer==="terrain"){ drawTerrain(ctx,t,0,0,S); }
+  else if(d.layer==="item"){
+    drawTerrain(ctx,{k:"floor",color:DEFS.floor.color},0,0,S);
+    drawItem(ctx,{k:id,color:pr.color},0,0,S);
+  }
+  else {
+    // ground + entity
+    drawTerrain(ctx,{k:"floor",color:DEFS.floor.color},0,0,S);
+    drawEntity(ctx,e,0,0,S,false);
+  }
+}
+
+/* =====================================================================
+   UI BUILD
+   ===================================================================== */
+function buildTabs(){
+  const el=$("#tabs"); el.innerHTML="";
+  TABS.forEach(t=>{
+    const b=document.createElement("button");
+    b.textContent=t.name; b.className=t.id===activeTab?"on":"";
+    b.onclick=()=>{activeTab=t.id; buildTabs(); buildPalette();};
+    el.appendChild(b);
+  });
+}
+function buildPalette(){
+  const el=$("#palette"); el.innerHTML="";
+  const tab=TABS.find(t=>t.id===activeTab);
+  tab.items.forEach(id=>{
+    const d=DEFS[id];
+    const a=document.createElement("div");
+    a.className="asset"+(selection.kind==="brush"&&brush===id?" sel":"");
+    a.draggable=true;
+    a.title=d.desc;
+    const cv=document.createElement("canvas"); a.appendChild(cv);
+    const nm=document.createElement("div"); nm.className="nm"; nm.textContent=d.name; a.appendChild(nm);
+    a.onclick=()=>selectBrush(id);
+    a.ondragstart=ev=>{ selectBrush(id); ev.dataTransfer.setData("text/plain",id); ev.dataTransfer.effectAllowed="copy"; };
+    el.appendChild(a);
+    drawPreview(cv,id);
+  });
+  $("#assetCount").textContent = tab.items.length+" parts";
+}
+function refreshPreviews(){
+  document.querySelectorAll(".asset").forEach((a,i)=>{
+    const tab=TABS.find(t=>t.id===activeTab); const id=tab.items[i];
+    const cv=a.querySelector("canvas"); if(cv&&id) drawPreview(cv,id);
+  });
+}
+function selectBrush(id){
+  brush=id; tool="paint"; selection={kind:"brush",id};
+  syncToolButtons(); buildPalette(); buildInspector(); draw();
+}
+
+function syncToolButtons(){
+  document.querySelectorAll("#editTools [data-tool]").forEach(b=>{
+    b.classList.toggle("on", b.dataset.tool===tool);
+  });
+}
+
+/* ---------- inspector ---------- */
+function inspectorTarget(){
+  // returns {props, defId, isCell}
+  if(selection.kind==="cell"){
+    const c=cell(level,selection.x,selection.y); if(!c) return null;
+    const obj = selection.layer==="entity" ? c.e : selection.layer==="item" ? c.i : c.t;
+    if(!obj) return null;
+    return {props:obj, defId:obj.k, isCell:true};
+  }
+  return {props:brushProps[brush], defId:brush, isCell:false};
+}
+function buildInspector(){
+  const el=$("#inspector"); el.innerHTML="";
+  const tgt=inspectorTarget();
+  if(!tgt){
+    el.innerHTML='<div class="empty-insp"><div class="big">⚙</div>Pick an asset on the left, or choose the <b>Select</b> tool and click a placed part to edit it here.</div>';
+    $("#inspTag").textContent="";
+    return;
+  }
+  const d=DEFS[tgt.defId]; const props=tgt.props;
+  $("#inspTag").textContent = tgt.isCell ? selection.x+","+selection.y : "defaults";
+
+  // title
+  const head=document.createElement("div"); head.className="insp-title";
+  const cv=document.createElement("canvas"); head.appendChild(cv);
+  const txt=document.createElement("div");
+  txt.innerHTML='<div class="t1">'+d.name+'</div><div class="t2">'+(tgt.isCell?"placed · "+selection.layer:"asset defaults")+'</div>';
+  head.appendChild(txt); el.appendChild(head);
+  // preview render
+  (function(){ const ctx=cv.getContext("2d"); const S=38, dpr=DPR; cv.width=S*dpr;cv.height=S*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+    if(d.layer==="terrain") drawTerrain(ctx,{k:tgt.defId,color:props.color,dir:props.dir,match:props.match},0,0,S);
+    else if(d.layer==="item"){ drawTerrain(ctx,{k:"floor",color:DEFS.floor.color},0,0,S); drawItem(ctx,{k:tgt.defId,color:props.color},0,0,S); }
+    else { drawTerrain(ctx,{k:"floor",color:DEFS.floor.color},0,0,S); drawEntity(ctx,{k:tgt.defId,color:props.color,slide:props.slide},0,0,S,false);} })();
+
+  // how-it-works note
+  if(d.note){
+    const nf=document.createElement("div"); nf.className="field";
+    nf.innerHTML='<div class="note" style="margin-top:0">'+d.note+'</div>';
+    el.appendChild(nf);
+  }
+
+  // color field
+  const f1=document.createElement("div"); f1.className="field";
+  f1.innerHTML='<label>Color</label>';
+  const sw=document.createElement("div"); sw.className="swatches";
+  SWATCHES.forEach(col=>{
+    const s=document.createElement("button"); s.className="swatch"+(props.color.toLowerCase()===col.toLowerCase()?" on":"");
+    s.style.background=col; s.title=col;
+    s.onclick=()=>setProp("color",col);
+    sw.appendChild(s);
+  });
+  const picker=document.createElement("input"); picker.type="color"; picker.value=props.color;
+  picker.oninput=e=>setProp("color",e.target.value);
+  sw.appendChild(picker);
+  f1.appendChild(sw); el.appendChild(f1);
+
+  // option: slide (box)
+  if(d.opts.includes("slide")){
+    const f=document.createElement("div"); f.className="field";
+    f.innerHTML='<label>Movement</label>';
+    const seg=document.createElement("div"); seg.className="seg amber";
+    [["free","Any"],["h","↔ Left/Right"],["v","↕ Up/Down"]].forEach(([v,lab])=>{
+      const b=document.createElement("button"); b.textContent=lab;
+      b.className=(props.slide||"free")===v?"on":"";
+      b.onclick=()=>setProp("slide",v); seg.appendChild(b);
+    });
+    f.appendChild(seg);
+    const n=document.createElement("div"); n.className="note"; n.textContent="Constrained crates can only be pushed along the chosen axis.";
+    f.appendChild(n); el.appendChild(f);
+  }
+  // option: dir (conveyor / oneway)
+  if(d.opts.includes("dir")){
+    const f=document.createElement("div"); f.className="field";
+    f.innerHTML='<label>Direction</label>';
+    const pad=document.createElement("div"); pad.className="dirpad";
+    const layout=[["","N",""],["W","","E"],["","S",""]];
+    const glyph={N:"↑",S:"↓",E:"→",W:"←"};
+    layout.flat().forEach(d2=>{
+      const b=document.createElement("button");
+      if(!d2){ b.className="blank"; b.disabled=true; }
+      else{ b.textContent=glyph[d2]; b.className=(props.dir||"E")===d2?"on":""; b.onclick=()=>setProp("dir",d2); }
+      pad.appendChild(b);
+    });
+    f.appendChild(pad);
+    const n=document.createElement("div"); n.className="note";
+    n.textContent = tgt.defId==="conveyor" ? "Objects on the belt are nudged this way each turn." : "Movement is only allowed in this direction.";
+    f.appendChild(n); el.appendChild(f);
+  }
+  // option: match (goal)
+  if(d.opts.includes("match")){
+    const f=document.createElement("div"); f.className="field";
+    f.innerHTML='<label>Matching</label>';
+    const lab=document.createElement("label"); lab.className="chk";
+    const inp=document.createElement("input"); inp.type="checkbox"; inp.checked=!!props.match;
+    inp.onchange=()=>setProp("match",inp.checked);
+    const box=document.createElement("span"); box.className="box";
+    const txt2=document.createElement("span"); txt2.className="lbl"; txt2.textContent="Require a color-matched crate";
+    lab.appendChild(inp); lab.appendChild(box); lab.appendChild(txt2);
+    f.appendChild(lab);
+    const n=document.createElement("div"); n.className="note"; n.textContent="Only a crate of this exact color will satisfy the goal.";
+    f.appendChild(n); el.appendChild(f);
+  }
+
+  // delete (placed cells)
+  if(tgt.isCell){
+    const f=document.createElement("div"); f.className="field";
+    const del=document.createElement("button"); del.className="tbtn";
+    del.style.width="100%"; del.style.justifyContent="center"; del.style.borderColor="#5a2c28"; del.style.color="#f0a89e";
+    del.textContent="Remove this "+d.name.toLowerCase();
+    del.onclick=()=>{
+      const c=cell(level,selection.x,selection.y);
+      if(c){
+        if(selection.layer==="entity") c.e=null;
+        else if(selection.layer==="item") c.i=null;
+        else c.t=null;
+        pruneCell(level,selection.x,selection.y);
+      }
+      selection={kind:"brush",id:brush}; buildInspector(); buildPalette(); draw();
+    };
+    f.appendChild(del); el.appendChild(f);
+  }
+}
+function setProp(key,val){
+  const tgt=inspectorTarget(); if(!tgt) return;
+  tgt.props[key]=val;
+  buildInspector();
+  if(!tgt.isCell) refreshPreviews();
+  draw();
+}
+
+/* =====================================================================
+   POINTER / KEYBOARD ON CANVAS
+   ===================================================================== */
+let painting=false, panning=false, lastPan=null, spaceDown=false, lastPaintCell=null;
+
+board.addEventListener("contextmenu",e=>e.preventDefault());
+board.addEventListener("pointerdown",e=>{
+  board.setPointerCapture(e.pointerId);
+  const px=e.offsetX, py=e.offsetY;
+  if(e.button===1 || spaceDown){ panning=true; lastPan=[e.clientX,e.clientY]; return; }
+  if(mode==="play") return;
+  const [cx,cy]=screenToCell(px,py);
+  if(e.button===2){ eraseAt(cx,cy); selection={kind:"brush",id:brush}; buildInspector(); draw(); return; }
+  if(tool==="paint"){ painting=true; lastPaintCell=cx+","+cy; place(brush,cx,cy); draw(); }
+  else if(tool==="erase"){ painting=true; lastPaintCell=cx+","+cy; eraseAt(cx,cy); draw(); }
+  else if(tool==="select"){ selectCell(cx,cy); }
+});
+board.addEventListener("pointermove",e=>{
+  const px=e.offsetX, py=e.offsetY;
+  if(panning && lastPan){
+    cam.x += e.clientX-lastPan[0]; cam.y += e.clientY-lastPan[1];
+    lastPan=[e.clientX,e.clientY]; draw(); return;
+  }
+  const [cx,cy]=screenToCell(px,py);
+  const nh = (cx+","+cy);
+  if(!hover || hover.x!==cx || hover.y!==cy){ hover={x:cx,y:cy}; if(mode==="edit") draw(); }
+  $("#coordTag").textContent = cx+", "+cy;
+  if(painting && mode==="edit" && nh!==lastPaintCell){
+    lastPaintCell=nh;
+    if(tool==="paint") place(brush,cx,cy); else if(tool==="erase") eraseAt(cx,cy);
+    draw();
+  }
+});
+function endPointer(e){ painting=false; panning=false; lastPan=null; lastPaintCell=null; }
+board.addEventListener("pointerup",endPointer);
+board.addEventListener("pointercancel",endPointer);
+board.addEventListener("pointerleave",()=>{ if(hover){hover=null; if(mode==="edit") draw();} $("#coordTag").textContent="—"; });
+
+board.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const px=e.offsetX, py=e.offsetY;
+  const before=screenToCell(px,py);
+  const factor = e.deltaY<0 ? 1.12 : 1/1.12;
+  const ns=Math.max(0.4,Math.min(2.6,cam.scale*factor));
+  // zoom toward cursor
+  const cpOld=BASE*cam.scale, cpNew=BASE*ns;
+  const wx=(px-cam.x)/cpOld, wy=(py-cam.y)/cpOld;
+  cam.scale=ns;
+  cam.x=px-wx*cpNew; cam.y=py-wy*cpNew;
+  updateZoomTag(); draw();
+},{passive:false});
+
+function selectCell(x,y){
+  const c=cell(level,x,y);
+  if(!c || (!c.t && !c.e && !c.i)){ selection={kind:"brush",id:brush}; buildInspector(); draw(); return; }
+  const layer = c.e ? "entity" : c.i ? "item" : "terrain";
+  selection={kind:"cell",x,y,layer};
+  buildPalette(); buildInspector(); draw();
+}
+
+/* keyboard */
+window.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT") return;
+  if(e.code==="Space"){ spaceDown=true; e.preventDefault(); return; }
+  if(mode==="play"){
+    let dx=0,dy=0;
+    if(e.key==="ArrowUp"||e.key==="w"||e.key==="W") dy=-1;
+    else if(e.key==="ArrowDown"||e.key==="s"||e.key==="S") dy=1;
+    else if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A") dx=-1;
+    else if(e.key==="ArrowRight"||e.key==="d"||e.key==="D") dx=1;
+    else if(e.key==="u"||e.key==="U"||e.key==="z"||e.key==="Z"){ undoMove(); e.preventDefault(); return; }
+    else if(e.key==="r"||e.key==="R"){ startPlay(); draw(); updatePlayHUD(); e.preventDefault(); return; }
+    else return;
+    e.preventDefault(); tryMove(dx,dy);
+  }else{
+    if(e.key==="v"||e.key==="V") setTool("select");
+    else if(e.key==="e"||e.key==="E") setTool("erase");
+    else if(e.key==="b"||e.key==="B") setTool("paint");
+    else if(e.key==="Delete"||e.key==="Backspace"){
+      if(selection.kind==="cell"){ eraseAt(selection.x,selection.y); selection={kind:"brush",id:brush}; buildInspector(); draw(); }
+    }
+  }
+});
+window.addEventListener("keyup",e=>{ if(e.code==="Space") spaceDown=false; });
+
+/* =====================================================================
+   MODE + TOOLBAR
+   ===================================================================== */
+function setTool(t){ tool=t; if(t!=="select" && selection.kind==="cell") selection={kind:"brush",id:brush}; syncToolButtons(); buildInspector(); buildPalette(); draw(); }
+function setMode(m){
+  mode=m;
+  $("#modeEdit").classList.toggle("on",m==="edit");
+  $("#modePlay").classList.toggle("on",m==="play");
+  $("#modePlay").classList.toggle("play",m==="play");
+  $("#editTools").style.display = m==="edit"?"flex":"none";
+  $("#playTools").style.display = m==="play"?"flex":"none";
+  $("#playbar").classList.toggle("show",m==="play");
+  $("#leftPanel").style.opacity = m==="play"?".45":"1";
+  $("#leftPanel").style.pointerEvents = m==="play"?"none":"auto";
+  $("#rightPanel").style.opacity = m==="play"?".45":"1";
+  $("#rightPanel").style.pointerEvents = m==="play"?"none":"auto";
+  if(m==="play"){
+    if(!findPlayerInLevel()){ toast("Add a Player to the grid before playing."); setMode("edit"); return; }
+    startPlay(); updatePlayHUD();
+    board.focus();
+  }else{ hover=null; hideWin(); }
+  draw();
+}
+function findPlayerInLevel(){ for(const [,c] of level){ if(c.e&&c.e.k==="player") return true; } return false; }
+
+document.querySelectorAll("#editTools [data-tool]").forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+$("#editTools").addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  if(b.dataset.act==="zoomin") zoomBy(1.15);
+  if(b.dataset.act==="zoomout") zoomBy(1/1.15);
+  if(b.dataset.act==="center") centerOrigin();
+});
+$("#playTools").addEventListener("click",e=>{
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  if(b.dataset.act==="undo") undoMove();
+  if(b.dataset.act==="reset"){ startPlay(); draw(); updatePlayHUD(); }
+});
+function zoomBy(f){
+  const r=board.getBoundingClientRect(); const px=r.width/2, py=r.height/2;
+  const ns=Math.max(0.4,Math.min(2.6,cam.scale*f));
+  const cpOld=BASE*cam.scale, cpNew=BASE*ns;
+  const wx=(px-cam.x)/cpOld, wy=(py-cam.y)/cpOld;
+  cam.scale=ns; cam.x=px-wx*cpNew; cam.y=py-wy*cpNew; updateZoomTag(); draw();
+}
+function centerOrigin(){
+  const r=board.getBoundingClientRect();
+  // center on level bounds if any, else origin
+  let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity,has=false;
+  for(const [k] of level){ const [x,y]=parseK(k); has=true; minx=Math.min(minx,x);miny=Math.min(miny,y);maxx=Math.max(maxx,x);maxy=Math.max(maxy,y); }
+  const cp=BASE*cam.scale;
+  if(has){ const cx=(minx+maxx+1)/2, cy=(miny+maxy+1)/2; cam.x=r.width/2-cx*cp; cam.y=r.height/2-cy*cp; }
+  else { cam.x=r.width/2-cp; cam.y=r.height/2-cp; }
+  draw();
+}
+function updateZoomTag(){ $("#zoomTag").textContent=Math.round(cam.scale*100)+"%"; }
+
+$("#modeEdit").onclick=()=>setMode("edit");
+$("#modePlay").onclick=()=>setMode("play");
+
+function updatePlayHUD(){
+  $("#pMoves").textContent=stats.moves;
+  $("#pPushes").textContent=stats.pushes;
+  let g=0,c=0;
+  for(const [,cc] of play){ if(cc.t&&cc.t.k==="goal"){ g++; if(cc.e&&cc.e.k==="box"&&(!cc.t.match||cc.e.color===cc.t.color)) c++; } }
+  $("#pCrates").textContent=c+"/"+g;
+  const wrap=$("#pKeysWrap"), out=$("#pKeys");
+  const cols=Object.keys(inv).filter(col=>inv[col]>0);
+  if(cols.length){
+    wrap.style.display="";
+    out.innerHTML=cols.map(col=>'<span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+col+';border:1px solid #0006;vertical-align:-1px"></span>'+(inv[col]>1?"×"+inv[col]:"")).join(" ");
+  }else{ wrap.style.display="none"; }
+}
+function showWin(){ $("#winBanner").classList.add("show"); }
+function hideWin(){ $("#winBanner").classList.remove("show"); }
+
+/* =====================================================================
+   SAVE / LOAD / NEW
+   ===================================================================== */
+function serialize(){
+  const cells=[];
+  for(const [k,c] of level){ const [x,y]=parseK(k); cells.push({x,y,t:c.t,e:c.e,i:c.i}); }
+  return {format:"sokoban-studio", version:1, cam:{x:cam.x,y:cam.y,scale:cam.scale}, cells};
+}
+function download(){
+  const data=serialize();
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="sokoban-level.json"; document.body.appendChild(a); a.click();
+  a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast("Saved sokoban-level.json");
+}
+function loadData(data){
+  if(!data || !Array.isArray(data.cells)) throw new Error("bad");
+  const m=new Map();
+  for(const cc of data.cells){
+    if(typeof cc.x!=="number"||typeof cc.y!=="number") continue;
+    m.set(K(cc.x,cc.y), {t:cc.t||null, e:cc.e||null, i:cc.i||null});
+  }
+  level=m;
+  if(data.cam){ cam.x=data.cam.x; cam.y=data.cam.y; cam.scale=data.cam.scale||1; }
+  selection={kind:"brush",id:brush};
+  updateZoomTag(); buildInspector(); buildPalette(); draw();
+}
+$("#btnSave").onclick=download;
+$("#btnLoad").onclick=()=>$("#fileIn").click();
+$("#fileIn").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ loadData(JSON.parse(rd.result)); toast("Loaded "+f.name); }catch(err){ toast("Couldn't read that file."); } };
+  rd.readAsText(f); e.target.value="";
+};
+$("#btnNew").onclick=()=>{
+  if(level.size && !confirm("Clear the grid and start a new level?")) return;
+  level=new Map(); selection={kind:"brush",id:brush};
+  cam.x=90;cam.y=90;cam.scale=1; updateZoomTag();
+  buildInspector(); buildPalette(); draw(); toast("New blank grid");
+};
+
+/* mobile panel toggles */
+$("#mLeft").onclick=()=>{ $("#leftPanel").classList.toggle("open"); $("#rightPanel").classList.remove("open"); };
+$("#mRight").onclick=()=>{ $("#rightPanel").classList.toggle("open"); $("#leftPanel").classList.remove("open"); };
+
+/* toast */
+let toastT=null;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2200); }
+
+/* =====================================================================
+   SAMPLE LEVEL + BOOT
+   ===================================================================== */
+function buildSample(){
+  level=new Map();
+  // a small 7x6 room with walls, two goals, two crates, ice patch and a directional crate
+  const W=7,H=6;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const edge=(x===0||y===0||x===W-1||y===H-1);
+    const c=ensureCell(level,x,y);
+    c.t = edge ? {k:"wall",color:DEFS.wall.color} : {k:"floor",color:DEFS.floor.color};
+  }
+  const setT=(x,y,o)=>{ensureCell(level,x,y).t=o;};
+  const setE=(x,y,o)=>{ensureCell(level,x,y).e=o;};
+  setT(2,1,{k:"goal",color:"#e0a93c"});
+  setT(5,4,{k:"goal",color:"#4f8fd6",match:true});
+  setT(4,2,{k:"ice",color:DEFS.ice.color});
+  setT(4,3,{k:"ice",color:DEFS.ice.color});
+  setE(1,4,{k:"player",color:DEFS.player.color});
+  setE(3,2,{k:"box",color:"#d07a32",slide:"free"});
+  setE(3,4,{k:"box",color:"#4f8fd6",slide:"free"});
+}
+
+function boot(){
+  buildTabs(); buildPalette(); buildInspector(); updateZoomTag();
+  buildSample();
+  syncToolButtons();
+  window.addEventListener("resize",()=>{ resizeBoard(); });
+  resizeBoard();
+  centerOrigin();
+  draw();
+}
+boot();
+</script>
+</body>
+</html>

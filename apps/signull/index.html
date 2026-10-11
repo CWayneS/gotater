@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Signull — Tech Monitor</title>
+<style>
+  :root{
+    --paper:#faf9f5; --panel:#f3f1ea; --card:#fffefb;
+    --ink:#20201d; --ink-soft:#413f3a; --muted:#78756c;
+    --line:#e6e2d6; --line-soft:#efece2;
+    --clay:#c96442; --clay-soft:#d97757; --clay-wash:#f7ece6;
+    --live:#5f8c5a;
+    --hn:#c96442; --gh:#5b6a4e; --dev:#4a6a86; --rdt:#9c5136;
+    --t-ai:#7a6cc4; --t-sec:#c05b5b; --t-vc:#b58a3c; --t-dev:#4a7a68; --t-web:#4a6a86; --t-sci:#8a5a7a; --t-tech:#8a857a;
+    --shadow:0 1px 2px rgba(60,50,35,.05),0 6px 22px rgba(60,50,35,.05);
+    --serif:ui-serif,Georgia,Cambria,"Times New Roman",serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  html[data-theme="ink"]{
+    --paper:#1c1b18; --panel:#242220; --card:#262421;
+    --ink:#efece3; --ink-soft:#cdc9bd; --muted:#8f8b7f;
+    --line:#37342e; --line-soft:#2e2b26;
+    --clay:#e08c6e; --clay-soft:#e8a488; --clay-wash:#332622; --live:#8fb98a;
+    --hn:#e08c6e; --gh:#9fbf86; --dev:#7ea6c8; --rdt:#d38a5e;
+    --t-ai:#a99ee0; --t-sec:#dd8585; --t-vc:#d8b268; --t-dev:#79b79c; --t-web:#7ea6c8; --t-sci:#c088ac; --t-tech:#b6b0a3;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 26px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; padding-bottom:40px}
+  a{color:inherit}
+  ::selection{background:var(--clay-wash)}
+
+  /* Masthead */
+  header{position:sticky; top:0; z-index:30; background:color-mix(in srgb,var(--paper) 90%,transparent); backdrop-filter:saturate(1.2) blur(10px); border-bottom:1px solid var(--line)}
+  .bar{max-width:1240px; margin:0 auto; padding:13px 20px 11px; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:11px}
+  .mark{width:26px; height:26px; flex:0 0 auto; color:var(--clay)}
+  .wordmark{font-family:var(--serif); font-weight:600; font-size:21px; letter-spacing:-.01em; line-height:1}
+  .wordmark .sub{display:block; font-family:var(--sans); font-weight:500; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-top:3px}
+  .livepill{display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; letter-spacing:.1em; color:var(--live); border:1px solid color-mix(in srgb,var(--live) 40%,var(--line)); border-radius:100px; padding:3px 9px 3px 7px}
+  .livepill .dot{width:7px; height:7px; border-radius:50%; background:var(--live); animation:beat 2.4s ease-out infinite}
+  @keyframes beat{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--live) 55%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  .grow{flex:1 1 auto}
+
+  .search{position:relative; flex:1 1 240px; max-width:400px; min-width:170px}
+  .search input{width:100%; padding:9px 12px 9px 34px; font:inherit; font-size:14px; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:10px; outline:none}
+  .search input:focus{border-color:var(--clay-soft); box-shadow:0 0 0 3px var(--clay-wash)}
+  .search svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--muted)}
+  .search kbd{position:absolute; right:9px; top:50%; transform:translateY(-50%); font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--panel); border:1px solid var(--line); border-radius:5px; padding:1px 6px}
+
+  .iconbtn{display:inline-flex; align-items:center; justify-content:center; gap:7px; height:36px; padding:0 12px; font:inherit; font-size:13px; font-weight:500; color:var(--ink-soft); background:var(--card); border:1px solid var(--line); border-radius:10px; cursor:pointer; transition:border-color .15s,color .15s}
+  .iconbtn:hover{border-color:var(--clay-soft); color:var(--ink)}
+  .iconbtn.on{border-color:var(--clay-soft); color:var(--clay); background:var(--clay-wash)}
+  .iconbtn svg{width:15px; height:15px}
+  .iconbtn.spin svg{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Ticker */
+  .ticker{max-width:1240px; margin:0 auto; padding:0 20px; overflow:hidden; border-bottom:1px solid var(--line-soft)}
+  .ticker .track{display:inline-flex; white-space:nowrap; padding:7px 0; animation:scroll 80s linear infinite}
+  .ticker:hover .track{animation-play-state:paused}
+  .ticker a{text-decoration:none; color:var(--ink-soft); font-size:12.5px; padding:0 18px; border-right:1px solid var(--line); display:inline-flex; align-items:center; gap:7px}
+  .ticker a:hover{color:var(--clay)}
+  .ticker .tk-src{font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.03em; color:var(--tc)}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* Controls */
+  .controls{max-width:1240px; margin:0 auto; padding:11px 20px 12px; display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap}
+  .lenses{display:flex; gap:6px; flex-wrap:wrap; align-items:center}
+  .lens-label{font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-right:2px}
+  .lens{display:inline-flex; align-items:center; gap:7px; padding:6px 11px; font-size:12.5px; font-weight:500; color:var(--ink-soft); background:var(--card); border:1px solid var(--line); border-radius:100px; cursor:pointer; transition:all .14s}
+  .lens .dot{width:8px; height:8px; border-radius:50%; background:var(--lc,var(--muted))}
+  .lens .n{font-family:var(--mono); font-size:11px; color:var(--muted)}
+  .lens:hover{border-color:var(--clay-soft)}
+  .lens[aria-pressed="true"]{background:var(--panel); border-color:color-mix(in srgb,var(--lc,var(--clay)) 55%,var(--line)); color:var(--ink)}
+  .lens.zero{opacity:.4}
+
+  .rightctl{display:flex; align-items:center; gap:8px; margin-left:auto; flex-wrap:wrap}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 8px; font-size:12px; font-weight:500; color:var(--ink-soft); background:var(--card); border:1px solid var(--line); border-radius:100px; cursor:pointer; user-select:none; transition:all .14s}
+  .chip .dot{width:8px; height:8px; border-radius:50%; background:var(--src)}
+  .chip[aria-pressed="false"]{opacity:.4; filter:grayscale(.5)}
+  .chip:hover{border-color:var(--clay-soft)}
+  .chip .n{font-family:var(--mono); font-size:10.5px; color:var(--muted)}
+  .seg{display:inline-flex; background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:2px}
+  .seg button{font:inherit; font-size:12.5px; font-weight:500; color:var(--muted); background:none; border:none; padding:5px 11px; border-radius:7px; cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--card); color:var(--ink); box-shadow:var(--shadow)}
+
+  /* Pulse */
+  .pulse{max-width:1240px; margin:0 auto; padding:0 20px 12px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; font-size:12px; color:var(--muted)}
+  .stat{display:flex; flex-direction:column; gap:1px; line-height:1.2}
+  .stat b{font-family:var(--mono); font-size:15px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums}
+  .stat .lbl{font-size:10px; letter-spacing:.1em; text-transform:uppercase}
+  .stat .accent{color:var(--clay)}
+  .actbar{flex:1 1 220px; min-width:160px; height:9px; border-radius:100px; overflow:hidden; display:flex; background:var(--panel); border:1px solid var(--line)}
+  .actbar span{height:100%}
+  .srcstat{font-family:var(--mono); font-size:11px}
+  .srcstat b{font-weight:600}
+  .ok{color:var(--live)} .fail{color:var(--clay)}
+
+  /* Feed */
+  main{max-width:1240px; margin:0 auto; padding:18px 20px}
+  .grid{columns:3 320px; column-gap:16px}
+  @media(max-width:900px){.grid{columns:2 300px}}
+  @media(max-width:640px){.grid{columns:1}}
+  .card{break-inside:avoid; margin:0 0 16px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:15px 16px 13px; box-shadow:var(--shadow); position:relative; overflow:hidden; transition:border-color .15s,opacity .2s}
+  .card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--src); opacity:.85}
+  .card:hover{border-color:color-mix(in srgb,var(--src) 45%,var(--line))}
+  .card.read{opacity:.52}
+  .card.read h2 a{color:var(--muted)}
+  .card .top{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+  .badge{font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--src)}
+  .lenstag{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--muted)}
+  .lenstag .dot{width:7px; height:7px; border-radius:50%; background:var(--lc)}
+  .new{font-size:9px; font-weight:800; letter-spacing:.08em; color:#fff; background:var(--clay); border-radius:5px; padding:1px 5px; animation:beat 2.4s ease-out infinite}
+  .save{margin-left:auto; background:none; border:none; cursor:pointer; color:var(--muted); padding:2px; line-height:0; border-radius:6px}
+  .save svg{width:16px; height:16px}
+  .save:hover{color:var(--clay)}
+  .save.saved{color:var(--t-vc)}
+  .card h2{font-family:var(--serif); font-weight:600; font-size:16.5px; line-height:1.32; margin:0 0 9px; letter-spacing:-.005em}
+  .card h2 a{text-decoration:none}
+  .card h2 a:hover{color:var(--clay)}
+  .desc{font-size:13px; color:var(--ink-soft); margin:0 0 10px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+  .meta{display:flex; align-items:center; gap:10px 12px; flex-wrap:wrap; font-size:12px; color:var(--muted); border-top:1px solid var(--line-soft); padding-top:9px}
+  .meta .score{display:inline-flex; align-items:center; gap:4px; font-weight:600; color:var(--ink-soft)}
+  .meta .score svg{width:12px; height:12px; color:var(--src)}
+  .meta a.cmts{text-decoration:none; color:var(--muted)}
+  .meta a.cmts:hover{color:var(--clay)}
+  .meta .dim{margin-left:auto; font-variant-numeric:tabular-nums}
+  .tags{display:flex; gap:5px; flex-wrap:wrap; margin-top:9px}
+  .tag{font-size:10.5px; color:var(--muted); background:var(--panel); border:1px solid var(--line-soft); border-radius:6px; padding:1px 6px}
+
+  .skel{height:120px; background:linear-gradient(100deg,var(--panel) 30%,var(--line-soft) 50%,var(--panel) 70%); background-size:200% 100%; animation:sh 1.3s infinite; border-radius:14px; margin-bottom:16px; break-inside:avoid}
+  @keyframes sh{to{background-position:-200% 0}}
+  .empty{text-align:center; color:var(--muted); padding:70px 20px; column-span:all}
+  .empty svg{width:34px; height:34px; opacity:.5; margin-bottom:12px}
+  footer{max-width:1240px; margin:8px auto 0; padding:18px 20px 0; border-top:1px solid var(--line); color:var(--muted); font-size:12px; display:flex; gap:14px; flex-wrap:wrap}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important} .ticker{overflow-x:auto}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>
+        <path d="M6.5 6.5a7.8 7.8 0 000 11M17.5 6.5a7.8 7.8 0 010 11M3.4 3.4a12 12 0 000 17.2M20.6 3.4a12 12 0 010 17.2"/>
+      </svg>
+      <div class="wordmark">Signull<span class="sub">Tech Monitor</span></div>
+    </div>
+    <span class="livepill"><span class="dot"></span>LIVE</span>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input id="q" type="search" placeholder="Filter headlines, tags, domains…" autocomplete="off" spellcheck="false">
+      <kbd>/</kbd>
+    </div>
+    <div class="grow"></div>
+    <button class="iconbtn" id="saved" title="Saved stories (s)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span>Saved</span></button>
+    <button class="iconbtn" id="theme" title="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.8A8.5 8.5 0 1111.2 3a6.6 6.6 0 009.8 9.8z"/></svg></button>
+    <button class="iconbtn" id="refresh" title="Refresh (r)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 10-2.6 6.4M21 12v5h-5"/></svg><span>Refresh</span></button>
+  </div>
+
+  <div class="ticker" id="ticker"><div class="track" id="tickertrack"></div></div>
+
+  <div class="controls">
+    <div class="lenses" id="lenses"><span class="lens-label">Lens</span></div>
+    <div class="rightctl">
+      <div class="chips" id="chips"></div>
+      <div class="seg" id="sort">
+        <button data-sort="new" aria-pressed="true">Newest</button>
+        <button data-sort="top" aria-pressed="false">Top</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pulse" id="pulse"></div>
+</header>
+
+<main>
+  <div class="grid" id="feed"></div>
+  <footer>
+    <span>Signull reads public tech feeds directly in your browser — no server, no tracking, one file.</span>
+    <span id="srcline">Hacker News · GitHub · DEV · Reddit</span>
+  </footer>
+</main>
+
+<script>
+"use strict";
+/* ================================================================
+   Signull 2.0 — single-file, zero-dependency tech intelligence desk.
+   Each source is fetched client-side and fails independently.
+   Stories are auto-classified into topic "lenses" for slicing.
+   ================================================================ */
+
+const SOURCES = {
+  HN:  { name:"Hacker News", color:"var(--hn)",  on:true },
+  GH:  { name:"GitHub",      color:"var(--gh)",  on:true },
+  DEV: { name:"DEV",         color:"var(--dev)", on:true },
+  RDT: { name:"Reddit",      color:"var(--rdt)", on:true },
+};
+
+const LENSES = [
+  { key:"ai",  name:"AI/ML",    color:"var(--t-ai)",  re:/\b(a\.?i\.?|ml|llms?|gpt|genai|neural|deep\s?learning|transformers?|openai|anthropic|claude|gemini|mistral|llama|diffusion|inference|fine-?tun\w*|rag|agentic?|chatbots?|machine learning)\b/i },
+  { key:"sec", name:"Security", color:"var(--t-sec)", re:/\b(security|vulnerabilit\w*|cve-?\d|exploits?|breach\w*|ransomware|malware|phishing|zero-?day|infosec|backdoor|botnet|ddos|hacked|hacking|encrypt\w*|passwords?)\b/i },
+  { key:"vc",  name:"Startups", color:"var(--t-vc)",  re:/\b(startups?|founders?|seed round|series [a-e]\b|raises?|funding|venture|vc\b|valuation|acqui\w+|ipo|y ?combinator|unicorn)\b/i },
+  { key:"sci", name:"Science",  color:"var(--t-sci)", re:/\b(quantum|physics|space|nasa|astronom\w*|biolog\w*|genom\w*|climate|particle|fusion|neuroscience|telescope|satellite)\b/i },
+  { key:"web", name:"Web",      color:"var(--t-web)", re:/\b(browsers?|chrome|firefox|css|html|react|vue|svelte|frontend|web ?app|pwa|http|website)\b/i },
+  { key:"dev", name:"Dev",      color:"var(--t-dev)", re:/\b(rust|python|javascript|typescript|golang|compilers?|kubernetes|docker|databases?|postgres|sql|frameworks?|open-?source|linux|kernel|wasm|webassembly|api)\b/i },
+];
+const LENS_TECH = { key:"tech", name:"Tech", color:"var(--t-tech)" };
+const LENS_BY_KEY = Object.fromEntries([...LENSES, LENS_TECH].map(l=>[l.key,l]));
+
+const state = {
+  items:[], query:"", sort:"new", lens:"all", view:"all",
+  status:{}, lastUpdated:null, prevIds:new Set(), newCount:0,
+  read:new Set(), saved:new Set(),
+};
+
+const $=(s,r=document)=>r.querySelector(s);
+const el=(t,p={})=>Object.assign(document.createElement(t),p);
+const esc=s=>(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const host=u=>{try{return new URL(u).hostname.replace(/^www\./,"");}catch{return"";}};
+const normUrl=u=>{try{const x=new URL(u);return(x.hostname.replace(/^www\./,"")+x.pathname).replace(/\/$/,"").toLowerCase();}catch{return(u||"").toLowerCase();}};
+function ago(t){const s=(Date.now()-t)/1000;if(s<60)return"just now";const m=s/60;if(m<60)return Math.floor(m)+"m ago";const h=m/60;if(h<24)return Math.floor(h)+"h ago";const d=h/24;if(d<30)return Math.floor(d)+"d ago";return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"});}
+const fmt=n=>n>=1000?(n/1000).toFixed(n>=10000?0:1)+"k":String(n);
+const withTimeout=(p,ms=9000)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),ms))]);
+async function getJSON(url,opts){const r=await withTimeout(fetch(url,opts));if(!r.ok)throw new Error(r.status);return r.json();}
+
+function classify(it){
+  const hay=(it.title+" "+(it.tags||[]).join(" ")+" "+(it.sub||"")).toLowerCase();
+  for(const l of LENSES){ if(l.re.test(hay)) return l.key; }
+  return "tech";
+}
+
+/* fetchers -> normalized items */
+async function fetchHN(){
+  const d=await getJSON("https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=40");
+  return (d.hits||[]).map(h=>({
+    src:"HN", title:h.title, url:h.url||`https://news.ycombinator.com/item?id=${h.objectID}`,
+    score:h.points||0, scoreIcon:"arrow", author:h.author, comments:h.num_comments||0,
+    commentsUrl:`https://news.ycombinator.com/item?id=${h.objectID}`,
+    time:(h.created_at_i||0)*1000, desc:"", tags:[], sub:host(h.url),
+  })).filter(x=>x.title);
+}
+async function fetchGH(){
+  const since=new Date(Date.now()-21*864e5).toISOString().slice(0,10);
+  const d=await getJSON(`https://api.github.com/search/repositories?q=created:>${since}+stars:>50&sort=stars&order=desc&per_page=25`,{headers:{Accept:"application/vnd.github+json"}});
+  return (d.items||[]).map(r=>({
+    src:"GH", title:r.full_name, url:r.html_url, score:r.stargazers_count||0, scoreIcon:"star",
+    author:r.owner&&r.owner.login, comments:r.open_issues_count||0, commentsUrl:r.html_url+"/issues",
+    time:new Date(r.created_at).getTime(), desc:r.description||"",
+    tags:[r.language].filter(Boolean), sub:"github.com",
+  }));
+}
+async function fetchDEV(){
+  const d=await getJSON("https://dev.to/api/articles?per_page=30&top=7");
+  return (d||[]).map(a=>({
+    src:"DEV", title:a.title, url:a.url, score:a.positive_reactions_count||0, scoreIcon:"heart",
+    author:(a.user&&(a.user.name||a.user.username))||"", comments:a.comments_count||0, commentsUrl:a.url,
+    time:new Date(a.published_at).getTime(), desc:a.description||"",
+    tags:(a.tag_list||[]).slice(0,3), sub:a.reading_time_minutes?a.reading_time_minutes+" min read":"dev.to",
+  }));
+}
+async function fetchRDT(){
+  const subs="technology+programming+MachineLearning+webdev";
+  const d=await getJSON(`https://www.reddit.com/r/${subs}/hot.json?limit=40&raw_json=1`);
+  return ((d.data&&d.data.children)||[]).filter(c=>c.data&&!c.data.stickied).map(c=>{
+    const p=c.data;
+    return {
+      src:"RDT", title:p.title, url:p.is_self?`https://reddit.com${p.permalink}`:p.url,
+      score:p.score||0, scoreIcon:"arrow", author:p.author, comments:p.num_comments||0,
+      commentsUrl:`https://reddit.com${p.permalink}`, time:(p.created_utc||0)*1000,
+      desc:"", tags:["r/"+p.subreddit], sub:p.is_self?"self.reddit":host(p.url),
+    };
+  });
+}
+const FETCHERS={ HN:fetchHN, GH:fetchGH, DEV:fetchDEV, RDT:fetchRDT };
+
+let loading=false;
+async function loadAll(){
+  if(loading)return; loading=true;
+  $("#refresh").classList.add("spin");
+  for(const k in SOURCES) state.status[k]="loading";
+  renderPulse();
+
+  const keys=Object.keys(FETCHERS);
+  const results=await Promise.allSettled(keys.map(k=>FETCHERS[k]()));
+  const merged=[];
+  results.forEach((res,i)=>{
+    const k=keys[i];
+    if(res.status==="fulfilled"){ state.status[k]="ok"; SOURCES[k]._n=res.value.length; merged.push(...res.value); }
+    else{ state.status[k]="fail"; SOURCES[k]._n=0; console.warn(k,"failed:",res.reason&&res.reason.message); }
+  });
+
+  const map=new Map();
+  for(const it of merged){
+    it.id=it.src+":"+normUrl(it.url);
+    const key=normUrl(it.url), prev=map.get(key);
+    if(!prev||it.score>prev.score) map.set(key,it);
+  }
+  const items=[...map.values()];
+  const maxBy={};
+  for(const it of items) maxBy[it.src]=Math.max(maxBy[it.src]||0,it.score);
+  const hadPrev=state.prevIds.size>0; let fresh=0;
+  for(const it of items){
+    it.lens=classify(it);
+    it.rank=it.score/(maxBy[it.src]||1);
+    it.isNew=hadPrev&&!state.prevIds.has(it.id);
+    if(it.isNew)fresh++;
+  }
+  state.newCount=fresh;
+  state.prevIds=new Set(items.map(it=>it.id));
+  state.items=items;
+  state.lastUpdated=Date.now();
+  loading=false;
+  $("#refresh").classList.remove("spin");
+  renderAll();
+}
+
+function visibleBase(){
+  return state.items.filter(it=>SOURCES[it.src].on && (state.view!=="saved"||state.saved.has(it.id)));
+}
+function currentItems(){
+  const q=state.query.trim().toLowerCase();
+  let items=visibleBase();
+  if(state.lens!=="all") items=items.filter(it=>it.lens===state.lens);
+  if(q) items=items.filter(it=>(it.title+" "+it.src+" "+(it.author||"")+" "+(it.tags||[]).join(" ")+" "+(it.sub||"")).toLowerCase().includes(q));
+  items.sort(state.sort==="top"?(a,b)=>b.rank-a.rank||b.time-a.time:(a,b)=>b.time-a.time);
+  return items;
+}
+
+const ICONS={
+  arrow:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l7 8h-4v8h-6v-8H5z"/></svg>',
+  star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.6 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.9-10-9.2C.3 8.5 2 5 5.4 5c2 0 3.3 1.2 4.6 2.8C11.3 6.2 12.6 5 14.6 5 18 5 19.7 8.5 22 11.8 19.5 16.1 12 21 12 21z"/></svg>',
+};
+const bookmark=f=>`<svg viewBox="0 0 24 24" fill="${f?'currentColor':'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>`;
+
+function renderChips(){
+  const box=$("#chips"); box.innerHTML="";
+  for(const [k,s] of Object.entries(SOURCES)){
+    const c=el("button",{className:"chip"}); c.style.setProperty("--src",s.color);
+    c.setAttribute("aria-pressed",String(s.on));
+    c.innerHTML=`<span class="dot"></span>${s.name}<span class="n" data-n="${k}"></span>`;
+    c.onclick=()=>{ s.on=!s.on; c.setAttribute("aria-pressed",String(s.on)); savePrefs(); renderAll(); };
+    box.appendChild(c);
+  }
+}
+function renderLenses(){
+  const base=visibleBase();
+  const counts={all:base.length};
+  for(const it of base) counts[it.lens]=(counts[it.lens]||0)+1;
+  const box=$("#lenses");
+  box.querySelectorAll(".lens").forEach(n=>n.remove());
+  const order=[{key:"all",name:"All",color:"var(--clay)"},...LENSES,LENS_TECH];
+  for(const l of order){
+    const c=counts[l.key]||0;
+    const b=el("button",{className:"lens"+(c===0&&l.key!=="all"?" zero":"")});
+    b.style.setProperty("--lc",l.color);
+    b.setAttribute("aria-pressed",String(state.lens===l.key));
+    b.innerHTML=`<span class="dot"></span>${l.name}<span class="n">${c}</span>`;
+    b.onclick=()=>{ state.lens=l.key; savePrefs(); renderAll(); };
+    box.appendChild(b);
+  }
+}
+function renderPulse(){
+  const base=visibleBase();
+  const counts={}; for(const it of base) counts[it.lens]=(counts[it.lens]||0)+1;
+  const total=base.length||1;
+  const segs=[...LENSES,LENS_TECH].filter(l=>counts[l.key]).map(l=>`<span title="${l.name}: ${counts[l.key]}" style="width:${(counts[l.key]/total*100).toFixed(1)}%;background:${l.color}"></span>`).join("");
+  let busy=null,max=0; for(const l of [...LENSES,LENS_TECH]) if((counts[l.key]||0)>max){max=counts[l.key];busy=l;}
+  const dom={}; for(const it of base){const h=it.sub&&it.sub.includes(".")?it.sub:host(it.url); if(h)dom[h]=(dom[h]||0)+1;}
+  let topDom="—",dmax=0; for(const h in dom) if(dom[h]>dmax){dmax=dom[h];topDom=h;}
+  const srcStat=Object.entries(SOURCES).map(([k])=>{const st=state.status[k];const cls=st==="ok"?"ok":st==="fail"?"fail":"";const g=st==="ok"?"✓":st==="fail"?"✗":"…";return `<span class="srcstat ${cls}"><b>${k}</b> ${g}</span>`;}).join("&nbsp; ");
+  $("#pulse").innerHTML=`
+    <div class="stat"><b>${base.length}</b><span class="lbl">Stories</span></div>
+    <div class="stat"><b class="accent">${state.newCount}</b><span class="lbl">New</span></div>
+    <div class="stat"><b>${busy?busy.name:"—"}</b><span class="lbl">Busiest</span></div>
+    <div class="stat"><b>${esc(topDom)}</b><span class="lbl">Top domain</span></div>
+    <div class="actbar">${segs}</div>
+    <div class="stat" style="text-align:right"><b style="font-size:12px">${state.lastUpdated?"updated "+ago(state.lastUpdated):"loading…"}</b><span class="lbl">${srcStat}</span></div>`;
+  document.querySelectorAll(".n[data-n]").forEach(n=>{const k=n.getAttribute("data-n");n.textContent=SOURCES[k]._n!=null?SOURCES[k]._n:"";});
+}
+function renderTicker(){
+  const items=[...state.items].sort((a,b)=>b.time-a.time).slice(0,18);
+  if(!items.length){ $("#ticker").style.display="none"; return; }
+  $("#ticker").style.display="";
+  const one=items.map(it=>{const s=SOURCES[it.src];return `<a href="${esc(it.url)}" target="_blank" rel="noopener" style="--tc:${s.color}"><span class="tk-src">${it.src}</span>${esc(it.title)}</a>`;}).join("");
+  $("#tickertrack").innerHTML=one+one;
+}
+function cardHTML(it){
+  const s=SOURCES[it.src], l=LENS_BY_KEY[it.lens];
+  const desc=it.desc?`<p class="desc">${esc(it.desc)}</p>`:"";
+  const tags=it.tags&&it.tags.length?`<div class="tags">${it.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:"";
+  const cmts=it.comments?`<a class="cmts" href="${esc(it.commentsUrl)}" target="_blank" rel="noopener">${fmt(it.comments)} comments</a>`:"";
+  const auth=it.author?`<span>${esc(it.author)}</span>`:"";
+  const isSaved=state.saved.has(it.id);
+  return `<article class="card ${state.read.has(it.id)?"read":""}" style="--src:${s.color}" data-id="${esc(it.id)}">
+    <div class="top">
+      <span class="badge">${s.name}</span>
+      <span class="lenstag" style="--lc:${l.color}"><span class="dot"></span>${l.name}</span>
+      ${it.isNew?'<span class="new">NEW</span>':''}
+      <button class="save ${isSaved?"saved":""}" title="Save" data-save="${esc(it.id)}">${bookmark(isSaved)}</button>
+    </div>
+    <h2><a href="${esc(it.url)}" target="_blank" rel="noopener" data-open="${esc(it.id)}">${esc(it.title)}</a></h2>
+    ${desc}${tags}
+    <div class="meta">
+      <span class="score">${ICONS[it.scoreIcon]||ICONS.arrow}${fmt(it.score)}</span>
+      ${cmts}${auth}<span class="dim">${ago(it.time)}</span>
+    </div>
+  </article>`;
+}
+function renderFeed(){
+  const feed=$("#feed"), items=currentItems();
+  if(loading&&!state.items.length){ feed.innerHTML=Array.from({length:9},()=>'<div class="skel"></div>').join(""); return; }
+  if(!items.length){
+    const msg=state.view==="saved"?"Nothing saved yet. Tap the ribbon on any story to keep it here.":state.query?"No stories match. Try clearing the filter.":"No stories in view. Check sources or refresh.";
+    feed.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><div>${msg}</div></div>`;
+    return;
+  }
+  feed.innerHTML=items.map(cardHTML).join("");
+}
+function renderAll(){ renderTicker(); renderLenses(); renderPulse(); renderFeed(); }
+
+function savePrefs(){
+  try{
+    localStorage.setItem("signal.prefs",JSON.stringify({
+      on:Object.fromEntries(Object.entries(SOURCES).map(([k,s])=>[k,s.on])),
+      sort:state.sort, lens:state.lens, theme:document.documentElement.dataset.theme,
+      saved:[...state.saved].slice(-500), read:[...state.read].slice(-500),
+    }));
+  }catch{}
+}
+function loadPrefs(){
+  try{
+    const p=JSON.parse(localStorage.getItem("signal.prefs")||"{}");
+    if(p.on)for(const k in p.on){if(SOURCES[k])SOURCES[k].on=!!p.on[k];}
+    if(p.sort)state.sort=p.sort;
+    if(p.lens)state.lens=p.lens;
+    if(p.theme)document.documentElement.dataset.theme=p.theme;
+    if(Array.isArray(p.saved))state.saved=new Set(p.saved);
+    if(Array.isArray(p.read))state.read=new Set(p.read);
+  }catch{}
+}
+
+function setView(v){
+  state.view=v;
+  $("#saved").classList.toggle("on",v==="saved");
+  renderAll();
+}
+$("#saved").onclick=()=>setView(state.view==="saved"?"all":"saved");
+$("#theme").onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==="paper"?"ink":"paper";savePrefs();};
+$("#refresh").onclick=loadAll;
+$("#q").addEventListener("input",e=>{state.query=e.target.value;renderFeed();});
+document.querySelectorAll("#sort button").forEach(b=>b.onclick=()=>{
+  state.sort=b.dataset.sort;
+  document.querySelectorAll("#sort button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  savePrefs(); renderFeed();
+});
+$("#feed").addEventListener("click",e=>{
+  const sv=e.target.closest("[data-save]");
+  if(sv){ const id=sv.getAttribute("data-save"); state.saved.has(id)?state.saved.delete(id):state.saved.add(id); savePrefs(); renderAll(); return; }
+  const op=e.target.closest("[data-open]");
+  if(op){ state.read.add(op.getAttribute("data-open")); savePrefs(); const c=op.closest(".card"); if(c)c.classList.add("read"); }
+});
+document.addEventListener("keydown",e=>{
+  const inSearch=document.activeElement===$("#q");
+  if(e.key==="/"&&!inSearch){e.preventDefault();$("#q").focus();}
+  else if(e.key==="Escape"&&inSearch){$("#q").value="";state.query="";renderFeed();$("#q").blur();}
+  else if(!inSearch&&!e.metaKey&&!e.ctrlKey){
+    const k=e.key.toLowerCase();
+    if(k==="r")loadAll();
+    else if(k==="s")setView(state.view==="saved"?"all":"saved");
+  }
+});
+
+loadPrefs();
+renderChips();
+document.querySelectorAll("#sort button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.sort===state.sort)));
+renderAll();
+loadAll();
+setInterval(()=>{if(!loading)renderPulse();},30000);
+setInterval(loadAll,5*60*1000);
+</script>
+</body>
+</html>
