@@ -39,7 +39,7 @@ function toggle(force) {
   btn.setAttribute('aria-expanded', show);
   menu.querySelectorAll('li.open').forEach(li => li.classList.remove('open'));
   if (show && window.gsap && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    gsap.fromTo(menu, { clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)', duration: 0.18, ease: 'steps(6)' });
+    gsap.fromTo(menu, { clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0% 0 0 0)', duration: 0.18, ease: 'steps(6)', clearProps: 'clipPath' });
   }
 }
 
