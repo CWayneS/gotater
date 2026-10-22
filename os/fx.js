@@ -159,37 +159,180 @@ addEventListener('resize', resize);
 
 // ---------- screensaver ----------
 const saver = document.getElementById('screensaver');
-let idleTimer = 0, saverRaf = 0;
+let idleTimer = 0, saverRaf = 0, saverAt = 0;
 const IDLE_MS = 90_000;
 
 function poke() {
-  if (!saver.hidden) stopSaver();
+  if (!saver.hidden) {
+    if (performance.now() - saverAt < 800) return; // let a Preview click settle before mouse jiggle ends it
+    stopSaver();
+  }
   clearTimeout(idleTimer);
   idleTimer = setTimeout(startSaver, IDLE_MS);
 }
 
-function startSaver() {
-  if (prefs.screensaver === false || isMobile() || reduced) return;
-  if (document.activeElement?.tagName === 'IFRAME' || document.fullscreenElement) { poke(); return; } // someone is playing
+// a full-screen canvas for the savers that draw
+function saverCanvas() {
+  const c = h('canvas', {});
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+  c.style.cssText = 'width:100%;height:100%;display:block';
+  saver.replaceChildren(c);
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return g;
+}
+
+// each saver sets itself up and returns a per-frame step(dt, t)
+const savers = {
+  potato() {
+    const d = h('div', { class: 'dvd' }, '🥔', h('small', {}, 'TaterOS'));
+    saver.replaceChildren(d);
+    const colors = ['#ffd36b', '#ff3d9a', '#6bffb8', '#6bc8ff', '#c86bff', '#ff8a3d'];
+    let x = rand(0, innerWidth - 120), y = rand(0, innerHeight - 120), vx = 140, vy = 110, ci = 0;
+    d.style.color = colors[0];
+    return dt => {
+      const bw = d.offsetWidth, bh = d.offsetHeight;
+      x += vx * dt; y += vy * dt;
+      let hit = false;
+      if (x <= 0 || x + bw >= innerWidth) { vx = -vx; x = Math.max(0, Math.min(x, innerWidth - bw)); hit = true; }
+      if (y <= 0 || y + bh >= innerHeight) { vy = -vy; y = Math.max(0, Math.min(y, innerHeight - bh)); hit = true; }
+      if (hit) { ci = (ci + 1) % colors.length; d.style.color = colors[ci]; d.style.filter = `hue-rotate(${ci * 60}deg)`; }
+      d.style.transform = `translate(${x}px, ${y}px)`;
+    };
+  },
+
+  pipes() {
+    const g = saverCanvas(), W = innerWidth, H = innerHeight;
+    const N = 14, CELL = 1 / N, CAM = 2.4, F = Math.min(W, H) * 1.5;
+    const DIRS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    const COLORS = ['#d23c3c', '#3cb44b', '#3c64d2', '#e6c832', '#c84bc8', '#3cc8c8', '#e6823c', '#c8c8c8'];
+    let used, pipes, filled, fade;
+    // grid cell -> screen, with a little perspective so near pipes look fatter
+    const proj = (x, y, z) => {
+      const s = F / (CAM + (z - N / 2) * CELL);
+      return [W / 2 + (x - N / 2) * CELL * s, H / 2 + (y - N / 2) * CELL * s, s * CELL * .28];
+    };
+    const free = (x, y, z) => x >= 0 && y >= 0 && z >= 0 && x < N && y < N && z < N && !used.has(`${x},${y},${z}`);
+    const take = (x, y, z) => used.add(`${x},${y},${z}`);
+    function shade(c, a) { // lighten (a > 0) or darken (a < 0) a hex color
+      const n = parseInt(c.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(a > 0 ? v + (255 - v) * a : v * (1 + a))));
+      return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+    }
+    function ball(p, color) {
+      const [sx, sy, r] = proj(...p);
+      if (Math.random() < .02) { // the occasional teapot, but it's a potato
+        g.font = `${r * 4}px ${EMOJI}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('🥔', sx, sy); return;
+      }
+      const grad = g.createRadialGradient(sx - r * .4, sy - r * .4, r * .1, sx, sy, r * 1.35);
+      grad.addColorStop(0, shade(color, .7)); grad.addColorStop(.5, color); grad.addColorStop(1, shade(color, -.6));
+      g.fillStyle = grad; g.beginPath(); g.arc(sx, sy, r * 1.35, 0, Math.PI * 2); g.fill();
+    }
+    function tube(a, b, color) {
+      const [x0, y0, r0] = proj(...a), [x1, y1, r1] = proj(...b);
+      const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, r = (r0 + r1) / 2;
+      const grad = g.createLinearGradient(x0 + nx * r, y0 + ny * r, x0 - nx * r, y0 - ny * r);
+      grad.addColorStop(0, shade(color, -.55)); grad.addColorStop(.3, shade(color, .55)); grad.addColorStop(.55, color); grad.addColorStop(1, shade(color, -.7));
+      g.fillStyle = grad;
+      g.beginPath();
+      g.moveTo(x0 + nx * r0, y0 + ny * r0); g.lineTo(x1 + nx * r1, y1 + ny * r1);
+      g.lineTo(x1 - nx * r1, y1 - ny * r1); g.lineTo(x0 - nx * r0, y0 - ny * r0);
+      g.fill();
+    }
+    function newPipe() {
+      for (let tries = 0; tries < 60; tries++) {
+        const p = [0, 0, 0].map(() => Math.floor(rand(0, N)));
+        if (!free(...p)) continue;
+        take(...p);
+        const color = COLORS[Math.floor(rand(0, COLORS.length))];
+        ball(p, color);
+        return { p, dir: DIRS[Math.floor(rand(0, 6))], color, prog: 0, dead: false };
+      }
+      return null;
+    }
+    function reset() {
+      g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+      used = new Set(); filled = 0; fade = 0;
+      pipes = [newPipe(), newPipe()].filter(Boolean);
+    }
+    reset();
+    return dt => {
+      if (fade) { // wipe the screen once it's full of plumbing
+        g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(0, 0, W, H);
+        if ((fade -= dt) <= 0) reset();
+        return;
+      }
+      for (const pipe of pipes) {
+        if (pipe.dead) continue;
+        if (pipe.prog === 0) { // pick where this segment goes
+          let d = pipe.dir;
+          const opts = DIRS.filter(o => free(pipe.p[0] + o[0], pipe.p[1] + o[1], pipe.p[2] + o[2]));
+          if (!opts.length) { pipe.dead = true; continue; }
+          const straight = opts.includes(d);
+          if (!straight || Math.random() < .22) {
+            d = opts[Math.floor(rand(0, opts.length))];
+            if (d !== pipe.dir) ball(pipe.p, pipe.color);
+          }
+          pipe.dir = d;
+          take(pipe.p[0] + d[0], pipe.p[1] + d[1], pipe.p[2] + d[2]);
+          filled++;
+        }
+        // grow the current segment a few steps per frame
+        const from = pipe.prog, to = Math.min(1, pipe.prog + dt * 5);
+        const at = k => pipe.p.map((v, i) => v + pipe.dir[i] * k);
+        tube(at(from), at(to), pipe.color);
+        pipe.prog = to;
+        if (to >= 1) { pipe.p = at(1); pipe.prog = 0; }
+      }
+      for (let i = 0; i < pipes.length; i++) if (pipes[i].dead) pipes[i] = filled < 260 ? newPipe() || pipes[i] : pipes[i];
+      if (filled >= 260 || pipes.every(p => p.dead)) fade = 2.5;
+    };
+  },
+
+  starfield() {
+    const g = saverCanvas(), W = innerWidth, H = innerHeight, F = Math.min(W, H) * .6;
+    const star = () => ({ x: rand(-1, 1) * W, y: rand(-1, 1) * H, z: rand(.1, 1) * 4, spud: Math.random() < .004 });
+    const stars = Array.from({ length: 420 }, star);
+    return dt => {
+      g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(0, 0, W, H);
+      for (const s of stars) {
+        s.z -= dt * 1.1;
+        const k = F / (s.z * 600), x = W / 2 + s.x * k, y = H / 2 + s.y * k;
+        if (s.z <= .05 || x < -40 || x > W + 40 || y < -40 || y > H + 40) { Object.assign(s, star(), { z: 4 }); continue; }
+        const b = Math.min(1, (4 - s.z) / 3);
+        if (s.spud) { // it's a potato. it's always been a potato
+          g.globalAlpha = b; g.font = `${Math.max(8, 30 / s.z)}px ${EMOJI}`;
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('🥔', x, y); g.globalAlpha = 1;
+          continue;
+        }
+        const r = Math.max(.6, 2.2 / s.z);
+        g.fillStyle = `rgba(255,255,255,${b})`;
+        g.fillRect(x - r / 2, y - r / 2, r, r);
+      }
+    };
+  },
+};
+
+function startSaver(force) {
+  if (!force) {
+    if (prefs.screensaver === false || isMobile() || reduced) return;
+    if (document.activeElement?.tagName === 'IFRAME' || document.fullscreenElement) { poke(); return; } // someone is playing
+  }
+  cancelAnimationFrame(saverRaf);
   saver.hidden = false;
-  const d = h('div', { class: 'dvd' }, '🥔', h('small', {}, 'TaterOS'));
-  saver.replaceChildren(d);
-  const colors = ['#ffd36b', '#ff3d9a', '#6bffb8', '#6bc8ff', '#c86bff', '#ff8a3d'];
-  let x = rand(0, innerWidth - 120), y = rand(0, innerHeight - 120), vx = 140, vy = 110, last = 0, ci = 0;
-  d.style.color = colors[0];
+  saverAt = performance.now();
+  let id = prefs.saver in savers ? prefs.saver : 'potato';
+  if (prefs.saver === 'random') { const ids = Object.keys(savers); id = ids[Math.floor(rand(0, ids.length))]; }
+  const frame = savers[id]();
+  let last = 0;
   const step = t => {
     saverRaf = requestAnimationFrame(step);
     const dt = last ? Math.min(0.05, (t - last) / 1000) : 0; last = t;
-    const bw = d.offsetWidth, bh = d.offsetHeight;
-    x += vx * dt; y += vy * dt;
-    let hit = false;
-    if (x <= 0 || x + bw >= innerWidth) { vx = -vx; x = Math.max(0, Math.min(x, innerWidth - bw)); hit = true; }
-    if (y <= 0 || y + bh >= innerHeight) { vy = -vy; y = Math.max(0, Math.min(y, innerHeight - bh)); hit = true; }
-    if (hit) { ci = (ci + 1) % colors.length; d.style.color = colors[ci]; d.style.filter = `hue-rotate(${ci * 60}deg)`; }
-    d.style.transform = `translate(${x}px, ${y}px)`;
+    frame(dt, t);
   };
   saverRaf = requestAnimationFrame(step);
 }
+export const previewSaver = () => startSaver(true);
 
 function stopSaver() {
   cancelAnimationFrame(saverRaf);

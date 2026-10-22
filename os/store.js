@@ -8,7 +8,7 @@ const write = (store, key, value) => {
   try { window[store].setItem(key, JSON.stringify(value)); } catch {}
 };
 
-export const prefs = Object.assign({ wallpaper: 'spuds', theme: 'classic', folderView: 'icons', screensaver: true }, read('localStorage', KEY, {}));
+export const prefs = Object.assign({ wallpaper: 'spuds', theme: 'classic', folderView: 'icons', screensaver: true, saver: 'potato' }, read('localStorage', KEY, {}));
 export const setPref = (k, v) => { prefs[k] = v; write('localStorage', KEY, prefs); };
 
 export const load = (key, fallback) => read('localStorage', 'taterOS.' + key, fallback);

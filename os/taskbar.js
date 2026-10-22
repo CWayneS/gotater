@@ -1,6 +1,6 @@
 // Start menu, clock, hotkeys.
 import { apps, categories, newest, openApp, openFolder, openAbout, openRun, openDisplay, h } from './shell.js';
-import { shutdown } from './fx.js';
+import { shutdown, previewSaver } from './fx.js';
 import { resetIcons } from './desktop.js';
 
 const btn = document.getElementById('start-btn');
@@ -67,7 +67,7 @@ function buildMenu(applyPrefs) {
   ul.append(sub('✨', 'New!', newest(), 'new'));
   ul.append(h('hr'));
   ul.append(item('📝', 'about.txt', () => openAbout()));
-  ul.append(item('🖥️', 'Display Properties', () => openDisplay(applyPrefs)));
+  ul.append(item('🖥️', 'Display Properties', () => openDisplay(applyPrefs, previewSaver)));
   ul.append(item('🧹', 'Tidy Desktop Icons', resetIcons));
   ul.append(item('🔎', 'Run…', openRun));
   ul.append(h('hr'));

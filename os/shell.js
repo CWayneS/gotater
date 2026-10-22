@@ -167,7 +167,14 @@ export const WALLPAPERS = [
   { id: 'dirt', title: 'Root Cellar', preview: '#3a2414' },
 ];
 
-export function openDisplay(applyPrefs) {
+export const SCREENSAVERS = [
+  { id: 'potato', title: 'Bouncing Potato' },
+  { id: 'pipes', title: '3D Pipes' },
+  { id: 'starfield', title: 'Starfield' },
+  { id: 'random', title: '(Random)' },
+];
+
+export function openDisplay(applyPrefs, previewSaver) {
   const wp = h('div', { class: 'swatches' });
   const theme = h('div', { class: 'swatches' });
   const build = () => {
@@ -186,9 +193,13 @@ export function openDisplay(applyPrefs) {
   const ss = h('input', { type: 'checkbox' });
   ss.checked = prefs.screensaver !== false;
   ss.addEventListener('change', () => setPref('screensaver', ss.checked));
+  const pick = h('select', { onchange: () => setPref('saver', pick.value) },
+    ...SCREENSAVERS.map(s => h('option', { value: s.id }, s.title)));
+  pick.value = prefs.saver;
+  const saverRow = h('div', { class: 'saver-row' }, pick, h('button', { class: 'bevel', onclick: previewSaver }, 'Preview'));
   const body = h('div', { class: 'props' },
     h('fieldset', {}, h('legend', {}, 'Wallpaper'), wp),
     h('fieldset', {}, h('legend', {}, 'Appearance'), theme),
-    h('fieldset', {}, h('legend', {}, 'Screen Saver'), h('label', {}, ss, 'Bouncing potato after 90 seconds idle')));
-  return wm.open({ id: 'display', title: 'Display Properties', icon: '🖥️', body, w: 470, h: 460, center: true });
+    h('fieldset', {}, h('legend', {}, 'Screen Saver'), saverRow, h('label', {}, ss, 'Start after 90 seconds idle')));
+  return wm.open({ id: 'display', title: 'Display Properties', icon: '🖥️', body, w: 470, h: 520, center: true });
 }

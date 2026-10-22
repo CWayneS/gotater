@@ -217,6 +217,10 @@ button.bevel:focus-visible { outline: 1px dotted var(--ink); outline-offset: -5p
 .props .swatches button span { position: absolute; left: 0; right: 0; bottom: -18px; font-size: 12px; }
 .props .swatches { padding-bottom: 18px; }
 .props label { display: flex; align-items: center; gap: 8px; }
+.props .saver-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.props .saver-row select { flex: 1; font: inherit; height: 28px; padding: 0 4px; border: 0; background: #fffdf8; color: #1d1a16;
+  box-shadow: inset -1px -1px var(--face-hi), inset 1px 1px var(--face-lo), inset -2px -2px var(--face), inset 2px 2px var(--face-dk); }
+.props .saver-row button { padding: 0 14px; }
 
 /* ---------- taskbar ---------- */
 #taskbar {
