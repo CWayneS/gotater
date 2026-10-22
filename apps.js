@@ -24,6 +24,7 @@ export default [
   { id: 'glyphcrawl', title: 'Glyphcrawl', blurb: 'Emojis with swords clearing dungeons', category: 'games', icon: '🗡️', color: '#2f5f4a', w: 900, h: 700, added: '2025-01-01' },
   { id: 'out-driving', title: 'Out Driving', blurb: 'High-speed driving action. Sort of', category: 'games', icon: '🏎️', color: '#a83a2a', max: true, added: '2025-01-01' },
   { id: 'sokoban-studio', title: 'Sokoban Studio', blurb: 'Push boxes, build levels', category: 'games', icon: '📦', color: '#8a6a2f', w: 1000, h: 700, added: '2026-10-11' },
+  { id: 'typo-kart', title: 'Typo Kart', blurb: 'Type by driving a tiny car onto each key', category: 'games', icon: '🚗', color: '#a8402a', w: 1000, h: 680, added: '2026-10-21' },
 
   // learn
   { id: 'math-vocab', title: 'Basic Math Vocab', blurb: 'Chill drag and drop vocabulary', category: 'learn', icon: '➗', color: '#3b7a8a', w: 900, h: 680, added: '2025-01-01' },

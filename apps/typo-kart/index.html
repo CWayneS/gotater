@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Typo Kart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1f2b2a;--desk:#2f7d78;--ink:#fff8ea;--muted:#b9c9c4;--hot:#f2c05e;--good:#5fd38a;--bad:#ff6a5a;
+  --pixel:'Pixelify Sans','VT323',ui-monospace,monospace;
+  --mono:'VT323',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:radial-gradient(ellipse at 50% 30%,#3a5a56,var(--bg) 70%);color:var(--ink);
+  font:14px/1.3 var(--pixel);user-select:none;-webkit-user-select:none;touch-action:none;
+  display:flex;flex-direction:column}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+
+#top{flex:none;padding:12px 16px 6px;display:flex;flex-direction:column;gap:8px;align-items:center}
+#stats{display:flex;gap:18px;font:20px var(--mono);color:var(--muted)}
+#stats b{color:var(--ink);font-weight:400}
+#prompt{max-width:900px;width:100%;text-align:center;font:30px/1.15 var(--mono);letter-spacing:.04em;
+  background:rgba(0,0,0,.28);border-radius:10px;padding:8px 14px;min-height:52px;word-break:break-word}
+#prompt .done{color:var(--good);opacity:.7}
+#prompt .cur{color:#1d1a16;background:var(--hot);border-radius:3px;animation:blink 1s steps(2) infinite}
+#prompt .todo{color:var(--muted)}
+@keyframes blink{50%{background:#fff3c4}}
+#hint{font-size:13px;color:var(--muted);min-height:17px}
+
+#play{flex:1;min-height:0;position:relative}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+#mute{position:fixed;top:10px;right:12px;background:rgba(0,0,0,.3);border:0;border-radius:8px;
+  width:36px;height:32px;font-size:16px;z-index:5}
+
+/* touch controls */
+#pad{flex:none;display:none;justify-content:space-between;align-items:center;padding:6px 14px calc(12px + env(safe-area-inset-bottom));gap:10px}
+@media (pointer:coarse){#pad{display:flex}}
+#pad .grp{display:flex;gap:8px}
+#pad button{width:60px;height:56px;border-radius:14px;border:0;font-size:22px;
+  background:rgba(255,255,255,.12);box-shadow:inset 0 -3px rgba(0,0,0,.35)}
+#pad button.on{background:rgba(242,192,94,.45);transform:translateY(2px);box-shadow:none}
+#pad #hopBtn{width:96px;font:600 18px var(--pixel);background:rgba(242,192,94,.3)}
+
+/* screens */
+.screen{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:16px;
+  background:rgba(15,22,21,.82)}
+.card{max-width:460px;width:100%;text-align:center;background:#24312f;border:2px solid #4c6a64;border-radius:16px;
+  padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.card h1{font:600 40px var(--pixel);color:var(--hot);letter-spacing:.03em}
+.card h2{font:600 28px var(--pixel);color:var(--hot)}
+.card p{color:var(--muted);font-size:15px}
+.card .keys{font:19px/1.35 var(--mono);color:var(--ink);text-align:left;background:rgba(0,0,0,.25);border-radius:10px;padding:10px 14px}
+.card kbd{font:inherit;background:#e8dfcc;color:#1d1a16;border-radius:4px;padding:0 5px}
+.big{font:600 20px var(--pixel);padding:12px;border:0;border-radius:12px;background:var(--hot);color:#1d1a16;
+  box-shadow:inset 0 -4px rgba(0,0,0,.25)}
+.big:active{transform:translateY(2px);box-shadow:none}
+.results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.results div{background:rgba(0,0,0,.25);border-radius:10px;padding:8px 4px;font:16px var(--mono);color:var(--muted)}
+.results b{display:block;font:36px var(--mono);color:var(--ink);font-weight:400}
+#rank{font-size:18px;color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <div id="stats"><span>WPM <b id="wpm">0</b></span><span>ACC <b id="acc">100%</b></span><span>TIME <b id="time">0:00</b></span></div>
+  <div id="prompt"></div>
+  <div id="hint"></div>
+</div>
+<div id="play"><canvas id="cv"></canvas></div>
+<div id="pad">
+  <div class="grp"><button data-k="left">◀</button><button data-k="right">▶</button></div>
+  <button id="hopBtn" data-k="hop">HOP</button>
+  <div class="grp"><button data-k="down">▼</button><button data-k="up">▲</button></div>
+</div>
+<button id="mute" title="Sound">🔊</button>
+
+<section class="screen" id="title">
+  <div class="card">
+    <h1>🚗 Typo Kart</h1>
+    <p>The world's least efficient keyboard. Drive your tiny car to each key, then hop on it to type.</p>
+    <div class="keys">
+      <kbd>↑</kbd> <kbd>↓</kbd> gas / reverse<br>
+      <kbd>←</kbd> <kbd>→</kbd> steer<br>
+      <kbd>Space</kbd> hop (land on a key to press it)<br>
+      To type a space, hop onto the space bar.
+    </div>
+    <button class="big" id="startBtn">Start your engine</button>
+  </div>
+</section>
+
+<section class="screen" id="end" hidden>
+  <div class="card">
+    <h2 id="endTitle">Finished!</h2>
+    <div class="results">
+      <div><b id="rWpm">0</b>WPM</div>
+      <div><b id="rAcc">0%</b>accuracy</div>
+      <div><b id="rTime">0:00</b>time</div>
+    </div>
+    <div id="rank"></div>
+    <p id="rNote"></p>
+    <button class="big" id="againBtn">Drive another sentence</button>
+  </div>
+</section>
+
+<script>
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+
+const PROMPTS = [
+  'the quick brown car jumps over the lazy keys',
+  'i am typing at a speed of several letters',
+  'my car is small but my dreams are spacebar sized',
+  'honk if you love proper punctuation.',
+  'this is the fastest way to type, said nobody.',
+  'please do not drive on the backspace key',
+  'a potato in a car is still a potato',
+  'every letter is a road trip',
+  'i parked on the j key and now i live here',
+  'ten out of ten mechanics prefer qwerty',
+  'zoom zoom, said the tiny car, hopping wildly',
+  'typing is just driving with extra steps',
+];
+
+/* ---------- keyboard layout, in key units ---------- */
+const ROWS = [
+  [['`'], ['1'], ['2'], ['3'], ['4'], ['5'], ['6'], ['7'], ['8'], ['9'], ['0'], ['-'], ['='], ['back', 2, 'Backspace']],
+  [['tab', 1.5, 'Tab'], ['q'], ['w'], ['e'], ['r'], ['t'], ['y'], ['u'], ['i'], ['o'], ['p'], ['['], [']'], ['\\', 1.5]],
+  [['caps', 1.75, 'Caps'], ['a'], ['s'], ['d'], ['f'], ['g'], ['h'], ['j'], ['k'], ['l'], [';'], ["'"], ['enter', 2.25, 'Enter']],
+  [['shift', 2.25, 'Shift'], ['z'], ['x'], ['c'], ['v'], ['b'], ['n'], ['m'], [','], ['.'], ['/'], ['rshift', 2.75, 'Shift']],
+  [['ctrl', 1.5, 'Ctrl'], ['win', 1.25, '🥔'], ['alt', 1.25, 'Alt'], [' ', 6.25, ''], ['ralt', 1.25, 'Alt'], ['fn', 1.25, 'Fn'], ['rctrl', 2.25, 'Ctrl']],
+];
+const KB_W = 15, KB_H = 5, GAP = .1;
+const keys = [];
+ROWS.forEach((row, y) => {
+  let x = 0;
+  for (const [ch, w = 1, label] of row) {
+    keys.push({ ch, x, y, w, h: 1, label: label ?? ch.toUpperCase(), types: label === undefined || ch === ' ', press: 0, flash: 0, flashColor: '' });
+    x += w;
+  }
+});
+const keyFor = ch => keys.find(k => k.ch === ch);
+const QUIPS = {
+  back: 'Backspace? There is no going back.',
+  enter: 'Enter is not on the menu today.',
+  shift: 'Shifty. Not needed though.', rshift: 'Still shifty.',
+  caps: 'CAPS LOCK IS NOT A PERSONALITY.',
+  tab: 'Tab key: also not a parking spot.',
+  win: 'You pressed the potato. Nothing happens. Respect.',
+  ctrl: 'You are not in control.', rctrl: 'Still not in control.',
+  alt: 'Alternatively, no.', ralt: 'Alternatively, also no.',
+  fn: 'Fn stands for "fun", probably.',
+};
+
+/* ---------- state ---------- */
+const car = { x: 7.5, y: 4.5, a: -Math.PI / 2, v: 0, hop: -1, color: '#e04a3a' };
+const HOP_T = .55, ACC = 9, MAX_V = 5.5, DRAG = 1.6, TURN = 3.4;
+const input = { up: 0, down: 0, left: 0, right: 0 };
+let text = '', pos = 0, typed = 0, wrong = 0, t0 = 0, tEnd = 0, playing = false;
+let marks = [], puffs = [], floats = [], hint = '', hintT = 0, shake = 0;
+
+/* ---------- sound ---------- */
+let ac = null, muted = false;
+function beep(f0, f1, dur, type = 'square', vol = .06) {
+  if (muted) return;
+  try {
+    ac ??= new AudioContext();
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur);
+  } catch {}
+}
+const sfx = {
+  hop: () => beep(220, 660, .18, 'sine', .08),
+  good: () => beep(880, 1320, .09),
+  bad: () => beep(160, 90, .22, 'sawtooth', .07),
+  honk: () => { beep(390, 380, .14, 'square', .05); setTimeout(() => beep(330, 320, .18, 'square', .05), 150); },
+  win: () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, f, .16), i * 110)),
+};
+
+/* ---------- game flow ---------- */
+function start() {
+  text = PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
+  pos = typed = wrong = 0;
+  Object.assign(car, { x: 7.5, y: 4.5, a: -Math.PI / 2, v: 0, hop: -1 });
+  marks = []; puffs = []; floats = [];
+  t0 = performance.now(); playing = true;
+  $('#title').hidden = $('#end').hidden = true;
+  say('Drive to the glowing key, then hop!');
+  renderPrompt();
+  sfx.honk();
+}
+
+function finish() {
+  playing = false; tEnd = performance.now();
+  const { wpm, acc, secs } = stats();
+  $('#rWpm').textContent = wpm.toFixed(1);
+  $('#rAcc').textContent = acc + '%';
+  $('#rTime').textContent = fmt(secs);
+  const ranks = [
+    [2, '🐌 Rank: Parked', 'Did you get out and walk?'],
+    [4, '🐢 Rank: Sunday Driver', 'Slow and steady wins absolutely nothing.'],
+    [6, '🚜 Rank: Tractor Typist', 'Respectable farm-equipment speed.'],
+    [9, '🚕 Rank: Cab Driver', 'You know these streets.'],
+    [13, '🏎️ Rank: Keyboard Racer', 'The keys fear you.'],
+    [Infinity, '🚀 Rank: Legally Concerning', 'Please slow down, there are letters crossing.'],
+  ];
+  const [, title, note] = ranks.find(r => wpm < r[0]);
+  $('#rank').textContent = title;
+  $('#rNote').textContent = note + (acc < 80 ? ' Also, maybe hop with more intention.' : '');
+  $('#endTitle').textContent = ['Finished!', 'You made it!', 'Sentence delivered!'][Math.floor(Math.random() * 3)];
+  sfx.win();
+  setTimeout(() => { $('#end').hidden = false; $('#againBtn').focus(); }, 600);
+}
+
+function stats() {
+  const secs = ((playing ? performance.now() : tEnd) - t0) / 1000;
+  const wpm = secs > 1 ? (typed / 5) / (secs / 60) : 0;
+  const acc = typed + wrong ? Math.round(typed / (typed + wrong) * 100) : 100;
+  return { wpm, acc, secs };
+}
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+function renderPrompt() {
+  const esc = c => c === ' ' ? '&nbsp;' : c.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+  const cur = text[pos];
+  $('#prompt').innerHTML =
+    `<span class="done">${[...text.slice(0, pos)].map(esc).join('')}</span>` +
+    (cur !== undefined ? `<span class="cur">${cur === ' ' ? '␣' : esc(cur)}</span>` : '') +
+    `<span class="todo">${[...text.slice(pos + 1)].map(esc).join('')}</span>`;
+}
+function say(s) { hint = s; hintT = 3; $('#hint').textContent = s; }
+
+function land() {
+  const k = keys.find(k => car.x >= k.x + GAP / 2 && car.x <= k.x + k.w - GAP / 2 && car.y >= k.y + GAP / 2 && car.y <= k.y + 1 - GAP / 2);
+  if (!k) { float('the cracks!', '#b9c9c4'); say('You landed between keys. Bold choice.'); return; }
+  k.press = 1;
+  if (!k.types) { flash(k, '#8fa7ff'); float('?', '#8fa7ff'); say(QUIPS[k.ch] ?? 'That key does nothing.'); sfx.honk(); return; }
+  if (k.ch === text[pos]) {
+    pos++; typed++;
+    flash(k, '#5fd38a'); float(['nice', 'yes', 'beep', 'vroom', '✓'][Math.floor(Math.random() * 5)], '#5fd38a');
+    sfx.good(); renderPrompt();
+    if (pos >= text.length) finish();
+  } else {
+    wrong++; shake = .25;
+    flash(k, '#ff6a5a'); float('typo!', '#ff6a5a');
+    say(`That was ${k.ch === ' ' ? 'the space bar' : `"${k.ch}"`}. You need ${text[pos] === ' ' ? 'the space bar' : `"${text[pos]}"`}.`);
+    sfx.bad();
+  }
+}
+const flash = (k, c) => { k.flash = 1; k.flashColor = c; };
+const float = (s, c) => floats.push({ x: car.x, y: car.y - .3, s, c, t: 1 });
+
+function hop() {
+  if (!playing || car.hop >= 0) return;
+  car.hop = 0; sfx.hop();
+}
+
+/* ---------- update ---------- */
+function update(dt) {
+  if (playing) {
+    const air = car.hop >= 0;
+    const thr = air ? 0 : input.up - input.down;
+    car.v += thr * ACC * dt;
+    car.v -= car.v * DRAG * dt * (thr ? .35 : 1);
+    car.v = Math.max(-MAX_V / 2, Math.min(MAX_V, car.v));
+    const steer = input.right - input.left;
+    car.a += steer * TURN * dt * Math.max(-1, Math.min(1, car.v / 2)) * (air ? .5 : 1);
+    car.x += Math.cos(car.a) * car.v * dt;
+    car.y += Math.sin(car.a) * car.v * dt;
+    // bonk off the edge of the keyboard
+    const m = .15;
+    if (car.x < -m || car.x > KB_W + m) { car.x = Math.max(-m, Math.min(KB_W + m, car.x)); car.v *= -.4; bonk(); }
+    if (car.y < -m || car.y > KB_H + m) { car.y = Math.max(-m, Math.min(KB_H + m, car.y)); car.v *= -.4; bonk(); }
+
+    if (air) {
+      car.hop += dt / HOP_T;
+      if (car.hop >= 1) { car.hop = -1; land(); }
+    } else {
+      if (Math.abs(steer) && Math.abs(car.v) > 3) marks.push({ x: car.x, y: car.y, a: car.a, t: 1 });
+      if (thr && Math.random() < .5) puffs.push({ x: car.x - Math.cos(car.a) * .3, y: car.y - Math.sin(car.a) * .3, t: 1, r: .06 + Math.random() * .05 });
+    }
+    const { wpm, acc, secs } = stats();
+    $('#wpm').textContent = wpm.toFixed(1);
+    $('#acc').textContent = acc + '%';
+    $('#time').textContent = fmt(secs);
+  }
+  for (const k of keys) { k.press = Math.max(0, k.press - dt * 4); k.flash = Math.max(0, k.flash - dt * 1.6); }
+  marks = marks.filter(p => (p.t -= dt * .35) > 0).slice(-400);
+  puffs = puffs.filter(p => (p.t -= dt * 1.8) > 0);
+  floats = floats.filter(f => (f.y -= dt * .8, f.t -= dt * 1.1) > 0);
+  shake = Math.max(0, shake - dt);
+  if (hintT > 0 && (hintT -= dt) <= 0) $('#hint').textContent = '';
+}
+let lastBonk = 0;
+function bonk() { const t = performance.now(); if (t - lastBonk > 300) { lastBonk = t; beep(120, 80, .1, 'triangle', .08); } }
+
+/* ---------- draw ---------- */
+let U = 40, OX = 0, OY = 0;
+function resize() {
+  const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  U = Math.min((r.width - 24) / (KB_W + .6), (r.height - 24) / (KB_H + .6));
+  OX = (r.width - KB_W * U) / 2; OY = (r.height - KB_H * U) / 2;
+}
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+
+function draw(t) {
+  const r = cv.getBoundingClientRect();
+  ctx.clearRect(0, 0, r.width, r.height);
+  ctx.save();
+  if (shake) ctx.translate((Math.random() - .5) * 8 * shake, (Math.random() - .5) * 8 * shake);
+  ctx.translate(OX, OY);
+
+  // keyboard case
+  rr(-.3 * U, -.3 * U, (KB_W + .6) * U, (KB_H + .6) * U, U * .35);
+  ctx.fillStyle = '#3b3630'; ctx.fill();
+  rr(-.22 * U, -.22 * U, (KB_W + .44) * U, (KB_H + .44) * U, U * .3);
+  ctx.fillStyle = '#26221d'; ctx.fill();
+
+  const target = playing ? keyFor(text[pos]) : null;
+  for (const k of keys) {
+    const x = (k.x + GAP / 2) * U, y = (k.y + GAP / 2) * U, w = (k.w - GAP) * U, h = (1 - GAP) * U;
+    const sink = k.press * U * .06;
+    rr(x, y + U * .06, w, h, U * .12); ctx.fillStyle = '#8f8572'; ctx.fill();
+    rr(x, y + sink, w, h - U * .06, U * .12);
+    ctx.fillStyle = k.types ? '#ece3cf' : '#cfc4ad'; ctx.fill();
+    if (k === target) {
+      const pulse = .45 + .35 * Math.sin(t / 180);
+      ctx.fillStyle = `rgba(242,192,94,${pulse})`; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#f2a83a'; ctx.stroke();
+    }
+    if (k.flash) { ctx.globalAlpha = k.flash; ctx.fillStyle = k.flashColor; ctx.fill(); ctx.globalAlpha = 1; }
+    ctx.fillStyle = '#3b352c';
+    const small = k.label.length > 1 && k.label !== '🥔';
+    ctx.font = `${small ? 600 : 400} ${U * (small ? .22 : .38)}px 'Pixelify Sans', monospace`;
+    ctx.textAlign = small ? 'left' : 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(k.label, small ? x + U * .14 : x + w / 2, y + sink + h * (small ? .7 : .45));
+  }
+
+  // tire marks and exhaust
+  for (const p of marks) {
+    ctx.save(); ctx.translate(p.x * U, p.y * U); ctx.rotate(p.a);
+    ctx.fillStyle = `rgba(40,30,20,${p.t * .25})`;
+    ctx.fillRect(-U * .05, -U * .2, U * .1, U * .06); ctx.fillRect(-U * .05, U * .14, U * .1, U * .06);
+    ctx.restore();
+  }
+  for (const p of puffs) {
+    ctx.beginPath(); ctx.arc(p.x * U, p.y * U, (p.r + (1 - p.t) * .12) * U, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(220,220,210,${p.t * .4})`; ctx.fill();
+  }
+
+  // pointer from car to target when it's far away
+  if (target) {
+    const tx = target.x + target.w / 2, ty = target.y + .5, dx = tx - car.x, dy = ty - car.y, d = Math.hypot(dx, dy);
+    if (d > 1.4) {
+      const a = Math.atan2(dy, dx);
+      ctx.save(); ctx.translate((car.x + Math.cos(a) * .75) * U, (car.y + Math.sin(a) * .75) * U); ctx.rotate(a);
+      ctx.beginPath(); ctx.moveTo(U * .16, 0); ctx.lineTo(-U * .08, -U * .1); ctx.lineTo(-U * .08, U * .1); ctx.closePath();
+      ctx.fillStyle = 'rgba(242,168,58,.85)'; ctx.fill(); ctx.restore();
+    }
+  }
+
+  drawCar();
+
+  for (const f of floats) {
+    ctx.globalAlpha = Math.min(1, f.t * 2);
+    ctx.font = `600 ${U * .34}px 'Pixelify Sans', monospace`; ctx.textAlign = 'center';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(f.s, f.x * U, f.y * U);
+    ctx.fillStyle = f.c; ctx.fillText(f.s, f.x * U, f.y * U);
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+function drawCar() {
+  const z = car.hop >= 0 ? Math.sin(car.hop * Math.PI) : 0;
+  const L = .56 * U, W = .34 * U, s = 1 + z * .55;
+  // shadow stays on the ground and shrinks as we rise
+  ctx.save(); ctx.translate(car.x * U + z * U * .18, car.y * U + z * U * .3); ctx.rotate(car.a);
+  rr(-L / 2, -W / 2, L, W, W * .35); ctx.fillStyle = `rgba(0,0,0,${.35 - z * .15})`; ctx.fill();
+  ctx.restore();
+
+  ctx.save(); ctx.translate(car.x * U, car.y * U - z * U * .25); ctx.rotate(car.a); ctx.scale(s, s);
+  ctx.fillStyle = '#1b1a1a';
+  for (const [wx, wy] of [[-.32, -.56], [.2, -.56], [-.32, .4], [.2, .4]]) ctx.fillRect(wx * L, wy * W, L * .2, W * .16);
+  rr(-L / 2, -W / 2, L, W, W * .35); ctx.fillStyle = car.color; ctx.fill();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = '#7a1e14'; ctx.stroke();
+  rr(L * .02, -W * .34, L * .2, W * .68, 3); ctx.fillStyle = '#9fd8ef'; ctx.fill(); // windshield
+  rr(-L * .3, -W * .3, L * .14, W * .6, 3); ctx.fillStyle = '#7fb8cf'; ctx.fill();  // rear window
+  ctx.fillStyle = '#fff3b0'; ctx.fillRect(L * .44, -W * .38, L * .06, W * .18); ctx.fillRect(L * .44, W * .2, L * .06, W * .18);
+  ctx.restore();
+}
+
+/* ---------- loop ---------- */
+let last = performance.now();
+function loop(t) {
+  const dt = Math.min(.05, (t - last) / 1000); last = t;
+  update(dt); draw(t);
+  requestAnimationFrame(loop);
+}
+
+/* ---------- input ---------- */
+const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
+addEventListener('keydown', e => {
+  if (!$('#title').hidden || !$('#end').hidden) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); start(); }
+    return;
+  }
+  const k = KEYMAP[e.code];
+  if (k) { input[k] = 1; e.preventDefault(); }
+  else if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) hop(); }
+  else if (e.key.length === 1 && playing && Math.random() < .3) say('Your real keyboard is decorative here. Drive!');
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) input[k] = 0; });
+addEventListener('blur', () => { for (const k in input) input[k] = 0; });
+
+document.querySelectorAll('#pad button').forEach(b => {
+  const k = b.dataset.k;
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); b.setPointerCapture(e.pointerId); b.classList.add('on');
+    if (k === 'hop') hop(); else input[k] = 1;
+  });
+  const up = () => { b.classList.remove('on'); if (k !== 'hop') input[k] = 0; };
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+});
+
+$('#startBtn').onclick = start;
+$('#againBtn').onclick = start;
+$('#mute').onclick = () => { muted = !muted; $('#mute').textContent = muted ? '🔇' : '🔊'; $('#mute').blur(); };
+
+new ResizeObserver(resize).observe($('#play'));
+resize();
+requestAnimationFrame(loop);
+$('#startBtn').focus();
+</script>
+</body>
+</html>
