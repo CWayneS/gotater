@@ -46,6 +46,7 @@ export default [
   // toys
   { id: 'lagoon', title: 'Lagoon', blurb: 'A quiet lagoon to poke at', category: 'toys', icon: '🌊', color: '#2a7a8a', w: 900, h: 680, added: '2026-10-11' },
   { id: 'stillwater', title: 'Stillwater', blurb: 'A pond garden through the seasons', category: 'toys', icon: '🪷', color: '#3a6a5a', w: 900, h: 680, added: '2026-10-11' },
+  { id: 'defrag', title: 'Disk Defragmenter', blurb: 'Watch the little blocks get tidy', category: 'toys', icon: '💽', color: '#2a4a8a', w: 820, h: 600, added: '2026-10-21' },
 ];
 
 export const categories = {
