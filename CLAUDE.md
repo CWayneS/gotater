@@ -8,7 +8,8 @@ the whimsy: potato puns, Win95/98 nostalgia, fake system dialogs, jokes in empty
 states ("This folder is empty. Like a potato skin."). Keep the useful apps
 actually useful, and keep the fun apps fun.
 
-Live on Cloudflare Pages from `main`; source at github.com/CWayneS/gotater.
+Live at https://gotater.pages.dev (Cloudflare Pages, deploys from `main`); source
+at github.com/CWayneS/gotater.
 
 ## Layout
 
