@@ -203,3 +203,76 @@ export function openDisplay(applyPrefs, previewSaver) {
     h('fieldset', {}, h('legend', {}, 'Screen Saver'), saverRow, h('label', {}, ss, 'Start after 90 seconds idle')));
   return wm.open({ id: 'display', title: 'Display Properties', icon: '🖥️', body, w: 470, h: 520, center: true });
 }
+
+// ---------- Potato Clock (click the tray time) ----------
+const POTATO_ART = `
+<svg viewBox="0 0 360 200" aria-hidden="true">
+  <rect x="0" y="160" width="360" height="40" fill="#8a6440"/><rect x="0" y="160" width="360" height="3" fill="#a87c52"/>
+  <path d="M0 176h120M150 186h140M40 194h90M250 172h110" stroke="#76542f" stroke-width="1.5"/>
+  <ellipse cx="90" cy="164" rx="60" ry="8" fill="rgba(0,0,0,.18)"/><ellipse cx="270" cy="164" rx="60" ry="8" fill="rgba(0,0,0,.18)"/>
+  <path d="M34 140c-4-26 26-42 58-40s60 14 56 40-30 28-58 26-52-4-56-26z" fill="#b98a4e" stroke="#6e4a22" stroke-width="2"/>
+  <path d="M214 136c2-24 30-38 62-34s52 18 50 40-32 26-60 24-54-6-52-30z" fill="#c09252" stroke="#6e4a22" stroke-width="2"/>
+  <path d="M50 124c10-12 30-16 46-14" stroke="#dcb47a" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M232 120c12-10 30-14 44-12" stroke="#e2bc82" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <g fill="#7a5428"><circle cx="58" cy="146" r="2.2"/><circle cx="96" cy="152" r="1.8"/><circle cx="128" cy="134" r="2"/>
+    <circle cx="244" cy="144" r="2"/><circle cx="292" cy="150" r="2.2"/><circle cx="270" cy="128" r="1.6"/></g>
+  <rect x="66" y="94" width="8" height="30" fill="#c8753a" stroke="#7a3e16"/>
+  <rect x="246" y="94" width="8" height="30" fill="#c8753a" stroke="#7a3e16"/>
+  <rect x="108" y="92" width="4" height="32" fill="#a4aab0" stroke="#5a6066"/><rect x="104" y="89" width="12" height="4" fill="#a4aab0" stroke="#5a6066"/>
+  <rect x="288" y="92" width="4" height="32" fill="#a4aab0" stroke="#5a6066"/><rect x="284" y="89" width="12" height="4" fill="#a4aab0" stroke="#5a6066"/>
+  <g fill="none" stroke-width="3" stroke-linecap="round">
+    <path d="M70 94C68 52 150 100 160 76" stroke="#c0281e"/>
+    <path d="M110 89C150 74 214 74 250 94" stroke="#3a8a3a"/>
+    <path d="M290 89C292 52 210 100 200 76" stroke="#26221e"/>
+  </g>
+  <g fill="#e8c860" stroke="#7a6420"><circle cx="70" cy="94" r="3"/><circle cx="110" cy="89" r="3"/><circle cx="250" cy="94" r="3"/><circle cx="290" cy="89" r="3"/></g>
+  <rect x="126" y="12" width="108" height="64" rx="6" fill="#3a3632" stroke="#16130f" stroke-width="2"/>
+  <rect x="136" y="20" width="88" height="40" rx="3" fill="#a8b890" stroke="#16130f"/>
+  <text class="lcd-time" x="180" y="49" text-anchor="middle">--:--</text>
+  <text class="lcd-ampm" x="219" y="31" text-anchor="end"></text>
+  <text class="lcd-sec" x="219" y="56" text-anchor="end"></text>
+  <circle cx="160" cy="76" r="4" fill="#c0281e" stroke="#16130f"/><circle cx="200" cy="76" r="4" fill="#26221e" stroke="#16130f"/>
+  <text x="150" y="70" class="lcd-tag">+</text><text x="206" y="70" class="lcd-tag">−</text>
+</svg>`;
+
+export function openClock(from) {
+  if (wm.get('clock')) return wm.open({ id: 'clock' });
+  const art = h('div', { class: 'potclock-art bevel-in', html: POTATO_ART });
+  const date = h('div', { class: 'potclock-date' });
+  const meter = h('div', { class: 'potclock-meter' });
+  const cal = h('div', { class: 'potclock-cal' });
+  const opened = Date.now();
+  const timeFmt = new Intl.DateTimeFormat([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  let calDay = '';
+
+  const tick = () => {
+    if (!wm.get('clock')) return clearInterval(timer);
+    const d = new Date(), parts = Object.fromEntries(timeFmt.formatToParts(d).map(p => [p.type, p.value]));
+    art.querySelector('.lcd-time').textContent = `${parts.hour}:${parts.minute}`;
+    art.querySelector('.lcd-sec').textContent = parts.second;
+    art.querySelector('.lcd-ampm').textContent = parts.dayPeriod || '';
+    date.textContent = d.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    // the potatoes slowly give it their all
+    const fresh = Math.max(0, 100 - (Date.now() - opened) / 60000 * .5);
+    const volts = (1.46 * fresh / 100 + Math.sin(d / 900) * .01 + Math.random() * .006).toFixed(2);
+    meter.textContent = `⚡ ${volts} V  ·  potato freshness ${Math.round(fresh)}%`;
+    const today = d.toDateString();
+    if (today !== calDay) { calDay = today; buildCal(d); }
+  };
+  const buildCal = d => {
+    const first = new Date(d.getFullYear(), d.getMonth(), 1), days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const cells = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(n => h('b', {}, n));
+    for (let i = 0; i < first.getDay(); i++) cells.push(h('span', {}));
+    for (let n = 1; n <= days; n++) cells.push(h('span', { class: n === d.getDate() ? 'on' : '' }, String(n)));
+    cal.replaceChildren(h('div', { class: 'potclock-month' }, d.toLocaleDateString([], { month: 'long', year: 'numeric' })), h('div', { class: 'potclock-grid' }, ...cells));
+  };
+
+  const body = h('div', { class: 'potclock' }, art, date, meter, h('fieldset', {}, h('legend', {}, 'Calendar'), cal));
+  const w = wm.open({
+    id: 'clock', title: 'Potato Clock', icon: '🥔', body, w: 400, h: 560, from, anchor: from,
+    status: 'Powered by 2 potatoes', statusRight: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+  });
+  const timer = setInterval(tick, 1000);
+  tick();
+  return w;
+}

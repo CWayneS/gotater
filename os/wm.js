@@ -13,6 +13,7 @@ export const all = () => [...wins.values()];
 export const active = () => all().find(w => w.el.classList.contains('active'));
 
 const desk = () => layer.getBoundingClientRect();
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const el = (tag, cls, html) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -21,11 +22,12 @@ const el = (tag, cls, html) => {
 };
 
 /**
- * open({ id, title, icon, w, h, max, from, kind, url, body, menu, status, resizable })
+ * open({ id, title, icon, w, h, max, from, anchor, kind, url, body, menu, status, resizable })
  *  - url: loads an iframe (app window)
  *  - body: an element to place in the window body
  *  - menu: [{ label, action }] items for the menubar ('|' = spacer)
  *  - from: a DOMRect to zoom open from
+ *  - anchor: a DOMRect to open just above, right-aligned to it
  */
 export function open(o) {
   const existing = wins.get(o.id);
@@ -121,6 +123,10 @@ function place(w, o) {
   let x, y;
   if (o.center) {
     x = (d.width - ww) / 2; y = (d.height - hh) / 2.4;
+  } else if (o.anchor) {
+    // sit just above a rect (e.g. the tray clock), right edges lined up
+    x = clamp(o.anchor.right - d.left - ww, 8, d.width - ww - 8);
+    y = clamp(o.anchor.top - d.top - hh - 4, 8, d.height - hh - 8);
   } else {
     const step = 28;
     x = 120 + (cascade % 8) * step;

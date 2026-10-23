@@ -1,6 +1,7 @@
 // Start menu, clock, hotkeys.
-import { apps, categories, newest, openApp, openFolder, openAbout, openRun, openDisplay, h } from './shell.js';
+import { apps, categories, newest, openApp, openFolder, openAbout, openRun, openDisplay, openClock, h } from './shell.js';
 import { shutdown, previewSaver } from './fx.js';
+import * as wm from './wm.js';
 import { resetIcons } from './desktop.js';
 
 const btn = document.getElementById('start-btn');
@@ -15,6 +16,7 @@ export function init(applyPrefs) {
   });
   window.addEventListener('blur', () => toggle(false));
   document.getElementById('tray-run').addEventListener('click', openRun);
+  clock.addEventListener('click', () => wm.get('clock') ? wm.close('clock') : openClock(clock.getBoundingClientRect()));
 
   document.addEventListener('keydown', e => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);

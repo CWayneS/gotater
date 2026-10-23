@@ -222,6 +222,22 @@ button.bevel:focus-visible { outline: 1px dotted var(--ink); outline-offset: -5p
   box-shadow: inset -1px -1px var(--face-hi), inset 1px 1px var(--face-lo), inset -2px -2px var(--face), inset 2px 2px var(--face-dk); }
 .props .saver-row button { padding: 0 14px; }
 
+/* potato clock */
+.potclock { padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow: auto; }
+.potclock-art { background: #e9e2d2; line-height: 0; flex: none; }
+.potclock-art svg { width: 100%; height: auto; display: block; }
+.potclock-art .lcd-time { font: 30px var(--mono); fill: #1d2a1a; }
+.potclock-art .lcd-ampm, .potclock-art .lcd-sec { font: 11px var(--mono); fill: #1d2a1a; }
+.potclock-art .lcd-tag { font: 12px var(--mono); fill: #e9e2d2; }
+.potclock-date { font: 600 16px var(--pixel); text-align: center; }
+.potclock-meter { font: 16px var(--mono); text-align: center; color: var(--muted); white-space: pre; }
+.potclock fieldset { border: 1px solid var(--face-lo); box-shadow: 1px 1px var(--face-hi); padding: 6px 10px 10px; margin: 0; }
+.potclock legend { padding: 0 4px; }
+.potclock-month { text-align: center; margin-bottom: 6px; }
+.potclock-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font: 16px var(--mono); }
+.potclock-grid b { font-weight: 400; color: var(--muted); }
+.potclock-grid span.on { background: var(--select); color: var(--select-ink); }
+
 /* ---------- taskbar ---------- */
 #taskbar {
   position: fixed; left: 0; right: 0; bottom: 0; height: var(--taskbar-h); z-index: 50;
@@ -240,6 +256,7 @@ button.bevel:focus-visible { outline: 1px dotted var(--ink); outline-offset: -5p
 #tasks button.pressed { font-weight: 600; background-image: repeating-conic-gradient(var(--face) 0 25%, var(--face-hi) 0 50%); background-size: 2px 2px; }
 #tray { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; font: 18px var(--mono); flex: none; }
 #tray-run { cursor: pointer; font-size: 14px; }
+#clock { cursor: pointer; }
 
 #start-menu {
   position: fixed; left: 2px; bottom: calc(var(--taskbar-h) - 2px); z-index: 60;
