@@ -22,7 +22,7 @@ export default [
   { id: 'swindler', title: 'Swindler', blurb: 'Dungeon crawl solitaire', category: 'games', icon: '🃏', color: '#7a3b5c', w: 900, h: 680, added: '2025-01-01' },
   { id: 'meteor-defender', title: 'Meteor Defender', blurb: 'Protect your city from falling rocks', category: 'games', icon: '☄️', color: '#3a4a8a', w: 900, h: 680, added: '2025-01-01' },
   { id: 'glyphcrawl', title: 'Glyphcrawl', blurb: 'Emojis with swords clearing dungeons', category: 'games', icon: '🗡️', color: '#2f5f4a', w: 900, h: 700, added: '2025-01-01' },
-  { id: 'out-driving', title: 'Out Driving', blurb: 'High-speed driving action. Sort of', category: 'games', icon: '🏎️', color: '#a83a2a', max: true, added: '2025-01-01' },
+  { id: 'out-driving', title: 'Out Driving', blurb: 'High-speed driving action. Sort of', category: 'games', icon: '🏎️', color: '#a83a2a', max: true, added: '2026-10-22' },
   { id: 'sokoban-studio', title: 'Sokoban Studio', blurb: 'Push boxes, build levels', category: 'games', icon: '📦', color: '#8a6a2f', w: 1000, h: 700, added: '2026-10-11' },
   { id: 'typo-kart', title: 'Typo Kart', blurb: 'Type by driving a tiny car onto each key', category: 'games', icon: '🚗', color: '#a8402a', w: 1000, h: 680, added: '2026-10-21' },
   { id: 'tatersweeper', title: 'Tatersweeper', blurb: 'Find the potatoes. Do not dig them up', category: 'games', icon: '🚩', color: '#5a7a3a', w: 560, h: 640, added: '2026-10-22' },
