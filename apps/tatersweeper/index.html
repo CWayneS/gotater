@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Tatersweeper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --face:#c3bdb2;--face-hi:#f3efe6;--face-lo:#7d766a;--face-dk:#2a2620;
+  --ink:#1d1a16;--muted:#5b554b;--select:#6b3d14;--select-ink:#fff8ea;
+  --c:26px;
+  --pixel:'Pixelify Sans','VT323',ui-monospace,monospace;
+  --mono:'VT323',ui-monospace,monospace;
+  --emoji:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--face);color:var(--ink);font:13px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:flex;flex-direction:column}
+button{font:inherit;color:inherit}
+[hidden]{display:none!important}
+
+.out{box-shadow:inset -1px -1px var(--face-dk),inset 1px 1px var(--face-hi),inset -2px -2px var(--face-lo),inset 2px 2px var(--face)}
+.in{box-shadow:inset -1px -1px var(--face-hi),inset 1px 1px var(--face-lo),inset -2px -2px var(--face),inset 2px 2px var(--face-dk)}
+
+/* menu bar */
+#menubar{flex:none;display:flex;gap:2px;padding:2px;position:relative;z-index:5}
+#menubar > div{position:relative}
+#menubar .top{background:none;border:0;padding:3px 8px;cursor:pointer}
+#menubar .top.open,#menubar .top:hover{background:var(--select);color:var(--select-ink)}
+.drop{position:absolute;left:0;top:100%;min-width:190px;background:var(--face);padding:3px;display:flex;flex-direction:column}
+.drop button{background:none;border:0;text-align:left;padding:4px 10px 4px 24px;cursor:pointer;display:flex;gap:16px;position:relative}
+.drop button:hover{background:var(--select);color:var(--select-ink)}
+.drop button.on::before{content:'✓';position:absolute;left:8px}
+.drop button small{margin-left:auto;opacity:.7}
+.drop hr{border:0;border-top:1px solid var(--face-lo);border-bottom:1px solid var(--face-hi);margin:3px 2px}
+
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px;overflow:auto}
+#game{padding:7px;display:flex;flex-direction:column;gap:7px;background:var(--face)}
+#head{display:flex;align-items:center;justify-content:space-between;padding:5px 7px;gap:10px}
+.led{background:#1a0400;padding:2px 3px;display:flex;gap:1px;box-shadow:inset 1px 1px var(--face-lo),inset -1px -1px var(--face-hi)}
+.led svg{width:15px;height:27px;display:block}
+#face{width:38px;height:38px;border:0;background:var(--face);font:24px/1 var(--emoji);cursor:pointer;display:grid;place-items:center}
+#face:active{box-shadow:inset 1px 1px var(--face-lo),inset -1px -1px var(--face-lo)}
+
+#board{display:grid;grid-template-columns:repeat(var(--cols),var(--c));padding:3px;touch-action:none;background:var(--face-lo)}
+.cell{width:var(--c);height:var(--c);display:grid;place-items:center;background:var(--face);
+  font:600 calc(var(--c) * .72)/1 var(--pixel);
+  box-shadow:inset -2px -2px var(--face-lo),inset 2px 2px var(--face-hi),inset -3px -3px var(--face)}
+.cell.down,.cell.open{box-shadow:inset 1px 1px var(--face-lo);background:#d4cfc6}
+.cell.flag::after{content:'🚩';font:calc(var(--c) * .55)/1 var(--emoji)}
+.cell.q::after{content:'?';color:var(--ink)}
+.cell.mine::after{content:'🥔';font:calc(var(--c) * .62)/1 var(--emoji)}
+.cell.boom{background:#e8382a}
+.cell.wrong::after{content:'🥔';font:calc(var(--c) * .62)/1 var(--emoji);opacity:.45}
+.cell.wrong{background:linear-gradient(45deg,transparent 45%,#c0201a 45% 55%,transparent 55%),linear-gradient(-45deg,transparent 45%,#c0201a 45% 55%,transparent 55%),#d4cfc6}
+.cell.baked::after{filter:sepia(1) saturate(2.4) brightness(.72) hue-rotate(-12deg);animation:bake .5s ease-out}
+.cell.steam{position:relative}
+.cell.steam::before{content:'♨️';position:absolute;top:-30%;font:calc(var(--c) * .5)/1 var(--emoji);animation:steam 1.6s ease-out forwards;pointer-events:none}
+@keyframes bake{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes steam{0%{opacity:0;transform:translateY(6px)}30%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
+.n1{color:#1c2fd0}.n2{color:#127a12}.n3{color:#d01c1c}.n4{color:#10106e}
+/* the font's 2 curls at the base and reads like an 8, so draw a pixel 2 with a flat bottom */
+.cell.n2{position:relative;font-size:0}
+.cell.n2::after{content:'';position:absolute;inset:0;margin:auto;width:calc(var(--c) * .4);height:calc(var(--c) * .56);background:#127a12;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 7' shape-rendering='crispEdges'%3E%3Cpath d='M1 0h3v1H1zM0 1h1v1H0zM4 1h1v2H4zM3 3h1v1H3zM2 4h1v1H2zM1 5h1v1H1zM0 6h5v1H0z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 7' shape-rendering='crispEdges'%3E%3Cpath d='M1 0h3v1H1zM0 1h1v1H0zM4 1h1v2H4zM3 3h1v1H3zM2 4h1v1H2zM1 5h1v1H1zM0 6h5v1H0z'/%3E%3C/svg%3E") center/contain no-repeat}
+.n5{color:#7a1010}.n6{color:#107a7a}.n7{color:#111}.n8{color:#666}
+
+#status{flex:none;padding:3px 8px;margin:0 2px 2px;font-size:12px;display:flex;gap:10px;min-height:22px;align-items:center}
+#status span:first-child{flex:1}
+#flagMode{display:none;border:0;background:var(--face);padding:2px 8px;font-size:12px;cursor:pointer}
+@media (pointer:coarse){#flagMode{display:block}}
+#flagMode.on{box-shadow:inset 1px 1px var(--face-dk),inset -1px -1px var(--face-hi);background:#d4cfc6}
+
+/* dialog */
+#dlg{position:fixed;inset:0;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.win{width:min(340px,100%);padding:3px;background:var(--face)}
+.win .tb{height:22px;display:flex;align-items:center;padding:0 6px;color:#fff8ea;font:600 13px var(--pixel);
+  background:linear-gradient(90deg,#6b3d14,#c8893b)}
+.win .body{padding:14px;display:flex;flex-direction:column;gap:10px}
+.win table{width:100%;border-collapse:collapse;font:18px var(--mono)}
+.win td{padding:2px 4px}.win td:last-child{text-align:right}
+.win .actions{display:flex;justify-content:flex-end;gap:6px}
+.btn{min-width:76px;height:26px;border:0;background:var(--face);cursor:pointer;padding:0 10px}
+.btn:active{box-shadow:inset -1px -1px var(--face-hi),inset 1px 1px var(--face-dk),inset -2px -2px var(--face),inset 2px 2px var(--face-lo)}
+.win label{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.win input[type=number]{width:70px;font:inherit;padding:2px 4px;border:0;background:#fffdf8}
+</style>
+</head>
+<body>
+
+<nav id="menubar">
+  <div>
+    <button class="top" data-menu="game">Game</button>
+    <div class="drop out" id="m-game" hidden>
+      <button data-act="new">New<small>F2</small></button>
+      <hr>
+      <button data-level="beginner">Beginner</button>
+      <button data-level="intermediate">Intermediate</button>
+      <button data-level="expert">Expert</button>
+      <button data-act="custom">Custom...</button>
+      <hr>
+      <button data-act="marks" id="marksItem">Marks (?)</button>
+      <hr>
+      <button data-act="best">Best Times...</button>
+    </div>
+  </div>
+  <div>
+    <button class="top" data-menu="help">Help</button>
+    <div class="drop out" id="m-help" hidden>
+      <button data-act="howto">How to Play</button>
+      <button data-act="about">About Tatersweeper</button>
+    </div>
+  </div>
+</nav>
+
+<div id="stage">
+  <div id="game" class="out">
+    <div id="head" class="in">
+      <div class="led" id="left"></div>
+      <button id="face" class="out" title="New game">🙂</button>
+      <div class="led" id="clock"></div>
+    </div>
+    <div id="board" class="in"></div>
+  </div>
+</div>
+
+<div id="status" class="in"><span id="msg">Find every potato. Don't dig one up.</span><button id="flagMode" class="out">🚩 Flag mode</button></div>
+<div id="dlg" hidden><div class="win out"><div class="tb" id="dlgTitle"></div><div class="body" id="dlgBody"></div></div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const LEVELS = {
+  beginner: { w: 9, h: 9, m: 10 },
+  intermediate: { w: 16, h: 16, m: 40 },
+  expert: { w: 30, h: 16, m: 99 },
+};
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('tatersweeper.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('tatersweeper.' + k, JSON.stringify(v)); } catch {} },
+};
+
+let level = store.get('level', 'beginner'), custom = store.get('custom', { w: 20, h: 12, m: 40 }), marks = store.get('marks', true);
+let W, H, M, cells, els, started, over, opened, flags, t0, timer, flagMode = false;
+
+/* ---------- 7-segment LEDs ---------- */
+const SEGS = { 0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc', 5: 'afgcd', 6: 'afgedc', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g' };
+const PATHS = {
+  a: 'M2 1h11l-2 2H4z', b: 'M13 2v11l-2-1V4z', c: 'M13 14v11l-2-2v-8z', d: 'M2 26h11l-2-2H4z',
+  e: 'M1 14v11l2-2v-8z', f: 'M1 2v11l2-1V4z', g: 'M2 13.5l2-1.5h7l2 1.5-2 1.5H4z',
+};
+function led(el, n) {
+  const s = n < 0 ? '-' + String(Math.min(99, -n)).padStart(2, '0') : String(Math.min(999, n)).padStart(3, '0');
+  el.innerHTML = [...s].map(ch => `<svg viewBox="0 0 14 27">${Object.entries(PATHS).map(([k, d]) =>
+    `<path d="${d}" fill="${SEGS[ch].includes(k) ? '#ff2a1a' : '#260602'}"/>`).join('')}</svg>`).join('');
+}
+
+/* ---------- game ---------- */
+function newGame() {
+  ({ w: W, h: H, m: M } = level === 'custom' ? custom : LEVELS[level]);
+  cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, mark: 0, n: 0 }));
+  started = over = false; opened = flags = 0;
+  clearInterval(timer); led($('#clock'), 0); led($('#left'), M);
+  $('#face').textContent = '🙂';
+  const board = $('#board');
+  board.style.setProperty('--cols', W);
+  els = cells.map((_, i) => { const d = document.createElement('div'); d.className = 'cell'; d.dataset.i = i; return d; });
+  board.replaceChildren(...els);
+  say("Find every potato. Don't dig one up.");
+  fit();
+  syncMenu();
+}
+
+const nbrs = i => {
+  const x = i % W, y = (i / W) | 0, out = [];
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    if (!dx && !dy) continue;
+    const nx = x + dx, ny = y + dy;
+    if (nx >= 0 && ny >= 0 && nx < W && ny < H) out.push(ny * W + nx);
+  }
+  return out;
+};
+
+// potatoes are planted after the first click so it's always safe (and usually opens a patch)
+function plant(safe) {
+  const keepOut = new Set([safe, ...nbrs(safe)]);
+  let pool = cells.map((_, i) => i).filter(i => !keepOut.has(i));
+  if (pool.length < M) pool = cells.map((_, i) => i).filter(i => i !== safe);
+  for (let k = 0; k < M; k++) {
+    const j = k + Math.floor(Math.random() * (pool.length - k));
+    [pool[k], pool[j]] = [pool[j], pool[k]];
+    cells[pool[k]].mine = true;
+  }
+  cells.forEach((c, i) => c.n = nbrs(i).filter(j => cells[j].mine).length);
+  started = true; t0 = Date.now();
+  timer = setInterval(() => led($('#clock'), Math.floor((Date.now() - t0) / 1000) + 1), 250);
+  led($('#clock'), 1);
+}
+
+function open(i) {
+  const c = cells[i];
+  if (c.open || c.mark === 1) return;
+  if (!started) plant(i);
+  if (c.mine) return lose(i);
+  const stack = [i];
+  while (stack.length) {
+    const k = stack.pop(), d = cells[k];
+    if (d.open || d.mark === 1) continue;
+    d.open = true; d.mark = 0; opened++;
+    els[k].className = 'cell open' + (d.n ? ' n' + d.n : '');
+    els[k].textContent = d.n || '';
+    if (!d.n) stack.push(...nbrs(k));
+  }
+  if (opened === W * H - M) win();
+}
+
+function chord(i) {
+  const c = cells[i];
+  if (!c.open || !c.n) return;
+  const around = nbrs(i);
+  if (around.filter(j => cells[j].mark === 1).length !== c.n) return;
+  for (const j of around) if (!over) open(j);
+}
+
+function mark(i) {
+  const c = cells[i];
+  if (c.open || over) return;
+  const was = c.mark;
+  c.mark = was === 0 ? 1 : was === 1 && marks ? 2 : 0;
+  flags += (c.mark === 1) - (was === 1);
+  els[i].className = 'cell' + (c.mark === 1 ? ' flag' : c.mark === 2 ? ' q' : '');
+  led($('#left'), M - flags);
+}
+
+const LOSE_LINES = [
+  'They were baked the whole time.',
+  'You dug up a potato. It was hot.',
+  'Potato located. Unfortunately, by hand.',
+  'That one was fully loaded.',
+];
+function lose(i) {
+  over = true; clearInterval(timer);
+  $('#face').textContent = '😵';
+  const mines = [];
+  cells.forEach((c, k) => {
+    if (c.mine && c.mark !== 1) { els[k].className = 'cell open mine' + (k === i ? ' boom' : ''); mines.push(k); }
+    else if (!c.mine && c.mark === 1) els[k].className = 'cell open wrong';
+  });
+  // one by one, every potato bakes
+  mines.sort(() => Math.random() - .5).forEach((k, n) => setTimeout(() => {
+    els[k].classList.add('baked', 'steam');
+  }, 500 + n * Math.min(90, 2200 / mines.length)));
+  say(LOSE_LINES[Math.floor(Math.random() * LOSE_LINES.length)]);
+}
+
+function win() {
+  over = true; clearInterval(timer);
+  const secs = Math.max(1, Math.floor((Date.now() - t0) / 1000));
+  led($('#clock'), secs);
+  cells.forEach((c, k) => { if (c.mine) { c.mark = 1; els[k].className = 'cell flag'; } });
+  flags = M; led($('#left'), 0);
+  $('#face').textContent = '😎';
+  if (level !== 'custom') {
+    const best = store.get('best', {});
+    if (!best[level] || secs < best[level]) {
+      best[level] = secs; store.set('best', best);
+      say(`New best ${level} time: ${secs}s. The harvest is complete.`);
+      return;
+    }
+  }
+  say(`Every potato found in ${secs}s. The harvest is complete.`);
+}
+
+function say(s) { $('#msg').textContent = s; }
+
+/* ---------- sizing ---------- */
+function fit() {
+  const st = $('#stage').getBoundingClientRect();
+  const c = Math.floor(Math.min((st.width - 40) / W, (st.height - 100) / H));
+  document.documentElement.style.setProperty('--c', Math.max(16, Math.min(34, c)) + 'px');
+}
+addEventListener('resize', () => cells && fit());
+
+/* ---------- input ---------- */
+const board = $('#board');
+let downCell = -1, both = false, pressTimer = 0, longPressed = false, pressed = [];
+const cellAt = e => { const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('.cell'); return el && board.contains(el) ? +el.dataset.i : -1; };
+function showPress(i, chordy) {
+  for (const k of pressed) if (!cells[k].open && !cells[k].mark) els[k].classList.remove('down');
+  pressed = i < 0 || over ? [] : chordy ? [i, ...nbrs(i)] : [i];
+  for (const k of pressed) if (!cells[k].open && !cells[k].mark) els[k].classList.add('down');
+}
+
+board.addEventListener('contextmenu', e => e.preventDefault());
+board.addEventListener('pointerdown', e => {
+  if (over) return;
+  const i = cellAt(e);
+  if (i < 0) return;
+  board.setPointerCapture(e.pointerId);
+  if (e.pointerType === 'touch') {
+    longPressed = false; downCell = i;
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => { longPressed = true; mark(i); navigator.vibrate?.(15); }, 380);
+    showPress(i, false); $('#face').textContent = '😮';
+    return;
+  }
+  if (e.button === 2 && !(e.buttons & 1)) { mark(i); return; }
+  both = e.buttons === 3 || e.button === 1;
+  downCell = i;
+  showPress(i, both || cells[i].open);
+  $('#face').textContent = '😮';
+});
+board.addEventListener('pointermove', e => {
+  if (downCell < 0 || over) return;
+  const i = cellAt(e);
+  if (e.pointerType === 'touch') { if (i !== downCell) { clearTimeout(pressTimer); downCell = -1; showPress(-1); $('#face').textContent = '🙂'; } return; }
+  if (e.buttons === 3) both = true; // the second button of a chord arrives as a move, not a down
+  downCell = i;
+  showPress(i, both || (i >= 0 && cells[i].open));
+});
+board.addEventListener('pointerup', e => {
+  clearTimeout(pressTimer);
+  const i = downCell; downCell = -1;
+  showPress(-1);
+  if (over) return;
+  $('#face').textContent = '🙂';
+  if (i < 0) return;
+  if (e.pointerType === 'touch') {
+    if (longPressed) return;
+    if (cells[i].open) chord(i); else if (flagMode) mark(i); else open(i);
+  } else if (both || cells[i].open) { chord(i); }
+  else if (e.button === 0) open(i);
+  both = false;
+});
+board.addEventListener('pointercancel', () => { clearTimeout(pressTimer); downCell = -1; showPress(-1); if (!over) $('#face').textContent = '🙂'; });
+
+$('#face').onclick = newGame;
+$('#flagMode').onclick = () => { flagMode = !flagMode; $('#flagMode').classList.toggle('on', flagMode); };
+addEventListener('keydown', e => {
+  if (e.key === 'F2') { e.preventDefault(); newGame(); }
+  if (e.key === 'Escape') { closeMenus(); $('#dlg').hidden = true; }
+});
+
+/* ---------- menus & dialogs ---------- */
+function closeMenus() { document.querySelectorAll('.drop').forEach(d => d.hidden = true); document.querySelectorAll('.top').forEach(b => b.classList.remove('open')); }
+document.querySelectorAll('.top').forEach(b => b.addEventListener('click', e => {
+  e.stopPropagation();
+  const m = $('#m-' + b.dataset.menu), was = !m.hidden;
+  closeMenus();
+  if (!was) { m.hidden = false; b.classList.add('open'); }
+}));
+document.querySelectorAll('.top').forEach(b => b.addEventListener('pointerenter', () => {
+  if (document.querySelector('.top.open') && !b.classList.contains('open')) b.click();
+}));
+addEventListener('click', closeMenus);
+function syncMenu() {
+  document.querySelectorAll('[data-level]').forEach(b => b.classList.toggle('on', b.dataset.level === level));
+  $('[data-act="custom"]').classList.toggle('on', level === 'custom');
+  $('#marksItem').classList.toggle('on', marks);
+}
+document.querySelectorAll('[data-level]').forEach(b => b.onclick = () => { level = b.dataset.level; store.set('level', level); newGame(); });
+
+function dialog(title, html, buttons = [['OK']]) {
+  $('#dlgTitle').textContent = title;
+  $('#dlgBody').innerHTML = html + '<div class="actions"></div>';
+  const row = $('#dlgBody .actions');
+  for (const [label, fn] of buttons) {
+    const b = document.createElement('button'); b.className = 'btn out'; b.textContent = label;
+    b.onclick = () => { if (!fn || fn() !== false) $('#dlg').hidden = true; };
+    row.append(b);
+  }
+  $('#dlg').hidden = false;
+  row.querySelector('button').focus();
+}
+
+const ACTS = {
+  new: newGame,
+  marks() { marks = !marks; store.set('marks', marks); syncMenu(); },
+  custom() {
+    dialog('Custom Field', `
+      <label>Width <input type="number" id="cw" min="8" max="40" value="${custom.w}"></label>
+      <label>Height <input type="number" id="ch" min="8" max="30" value="${custom.h}"></label>
+      <label>Potatoes <input type="number" id="cm" min="1" max="600" value="${custom.m}"></label>`,
+      [['OK', () => {
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, Math.round(+v) || a));
+        const w = clamp($('#cw').value, 8, 40), h = clamp($('#ch').value, 8, 30);
+        custom = { w, h, m: clamp($('#cm').value, 1, w * h - 9) };
+        store.set('custom', custom); level = 'custom'; store.set('level', level); newGame();
+      }], ['Cancel']]);
+  },
+  best() {
+    const best = store.get('best', {});
+    const row = (k, t) => `<tr><td>${t}:</td><td>${best[k] ? best[k] + ' seconds' : '999 seconds'}</td><td>${best[k] ? 'You' : 'Anonymous Spud'}</td></tr>`;
+    dialog('Fastest Potato Farmers', `<table>${row('beginner', 'Beginner')}${row('intermediate', 'Intermediate')}${row('expert', 'Expert')}</table>`,
+      [['OK'], ['Reset Scores', () => { store.set('best', {}); ACTS.best(); return false; }]]);
+  },
+  howto() {
+    dialog('How to Play', `<p>Some squares have potatoes buried under them. Numbers tell you how many potatoes touch that square.</p>
+      <p><b>Left-click</b> to dig. <b>Right-click</b> to plant a flag where you think a potato is.
+      Click a number whose flags are all placed to dig around it.</p>
+      <p>On touch screens, tap to dig and long-press to flag.</p>
+      <p>Dig up a potato and, well. They were baked the whole time.</p>`);
+  },
+  about() {
+    dialog('About Tatersweeper', `<p style="font-size:36px;text-align:center">🥔🚩</p>
+      <p>Tatersweeper for TaterOS.<br>No real potatoes were harmed. Several were baked.</p>`);
+  },
+};
+document.querySelectorAll('[data-act]').forEach(b => b.onclick = () => ACTS[b.dataset.act]());
+
+newGame();
+</script>
+</body>
+</html>

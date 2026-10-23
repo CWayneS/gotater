@@ -25,6 +25,7 @@ export default [
   { id: 'out-driving', title: 'Out Driving', blurb: 'High-speed driving action. Sort of', category: 'games', icon: '🏎️', color: '#a83a2a', max: true, added: '2025-01-01' },
   { id: 'sokoban-studio', title: 'Sokoban Studio', blurb: 'Push boxes, build levels', category: 'games', icon: '📦', color: '#8a6a2f', w: 1000, h: 700, added: '2026-10-11' },
   { id: 'typo-kart', title: 'Typo Kart', blurb: 'Type by driving a tiny car onto each key', category: 'games', icon: '🚗', color: '#a8402a', w: 1000, h: 680, added: '2026-10-21' },
+  { id: 'tatersweeper', title: 'Tatersweeper', blurb: 'Find the potatoes. Do not dig them up', category: 'games', icon: '🚩', color: '#5a7a3a', w: 560, h: 640, added: '2026-10-22' },
 
   // learn
   { id: 'math-vocab', title: 'Basic Math Vocab', blurb: 'Chill drag and drop vocabulary', category: 'learn', icon: '➗', color: '#3b7a8a', w: 900, h: 680, added: '2025-01-01' },
