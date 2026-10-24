@@ -139,6 +139,29 @@
   .empty svg{width:34px; height:34px; opacity:.5; margin-bottom:12px}
   footer{max-width:1240px; margin:8px auto 0; padding:18px 20px 0; border-top:1px solid var(--line); color:var(--muted); font-size:12px; display:flex; gap:14px; flex-wrap:wrap}
   @media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important} .ticker{overflow-x:auto}}
+
+  /* Phones: only the slim top bar sticks; filters scroll away and become swipeable rows */
+  @media(max-width:640px){
+    header{display:contents}
+    .bar{position:sticky; top:0; z-index:30; background:color-mix(in srgb,var(--paper) 92%,transparent); backdrop-filter:saturate(1.2) blur(10px); border-bottom:1px solid var(--line); padding:8px 12px; gap:8px}
+    .mark{width:22px; height:22px}
+    .wordmark{font-size:18px}
+    .wordmark .sub,.livepill,.search kbd,.iconbtn span{display:none}
+    .iconbtn{height:34px; width:34px; padding:0}
+    .search{order:9; flex:1 1 100%; max-width:none; min-width:0}
+    .search input{padding:7px 10px 7px 32px; font-size:16px}
+    .ticker{display:none}
+    .controls{padding:10px 0 6px; flex-direction:column; align-items:stretch; gap:8px}
+    .lenses,.rightctl{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding:0 12px; margin:0; max-width:100%}
+    .lenses::-webkit-scrollbar,.rightctl::-webkit-scrollbar{display:none}
+    .lens-label{display:none}
+    .lens,.chip,.seg{flex:0 0 auto; white-space:nowrap}
+    .chips{flex-wrap:nowrap}
+    .pulse{padding:4px 12px 2px; gap:14px; flex-wrap:nowrap}
+    .pulse .stat:nth-child(3),.pulse .stat:nth-child(4),.pulse .stat:last-child .lbl{display:none}
+    .pulse .actbar{min-width:40px}
+    main{padding:12px}
+  }
 </style>
 </head>
 <body>
