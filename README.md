@@ -26,6 +26,22 @@ genuinely useful.
 Every app also works on its own at `/apps/<id>/`, which is handy on phones.
 TaterOS sends phones there automatically.
 
+Click the time in the taskbar to open the **Potato Clock**, a digital clock
+wired to two potatoes, with a calendar and a voltmeter. The potatoes slowly lose
+their freshness the longer you leave it open.
+
+## System requirements
+
+| | Minimum | Recommended |
+|---|---|---|
+| Processor | 1 potato | 2 potatoes, wired in series |
+| Memory | 640K (should be enough for anybody) | 1 sack |
+| Display | 640×480, 16 colors | Any screen you can see a potato on |
+| Storage | 0 bytes free (it lives in your browser) | A cool, dark cupboard |
+| Input | Mouse, keyboard or finger | A steady hand for Tatersweeper |
+| Browser | Anything from this decade | One with localStorage, so your stuff stays put |
+| OS | TaterOS | TaterOS |
+
 ## Running it locally
 
 There's no build step and nothing to install. Serve the folder and open it:
