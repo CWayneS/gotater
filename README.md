@@ -21,7 +21,7 @@ genuinely useful.
 | Sokoban Studio | | Git Guide | |
 | Typo Kart | | MenuCraft | |
 | Tatersweeper | | I Was Framed | |
-| | | Signull | |
+| Zork | | Signull | |
 
 Every app also works on its own at `/apps/<id>/`, which is handy on phones.
 TaterOS sends phones there automatically.

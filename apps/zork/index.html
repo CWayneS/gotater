@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Zork</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --face:#c3bdb2;--face-hi:#f3efe6;--face-lo:#7d766a;--face-dk:#2a2620;
+  --ink:#1d1a16;--select:#6b3d14;--select-ink:#fff8ea;
+  --bg:#140d04;--fg:#ffb340;--dim:#a8701f;--glow:rgba(255,160,40,.45);
+  --fs:22px;
+  --mono:'VT323',ui-monospace,monospace;
+  --pixel:'Pixelify Sans','VT323',ui-monospace,monospace;
+}
+body.green{--bg:#04110a;--fg:#5cff8a;--dim:#2f9a52;--glow:rgba(70,255,130,.4)}
+body.potato{--bg:#2b1d10;--fg:#f3dcae;--dim:#b8955f;--glow:rgba(243,220,174,.25)}
+body.paper{--bg:#f4efe2;--fg:#2a241c;--dim:#8a8070;--glow:transparent}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--face);color:var(--ink);font:13px/1.3 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;display:flex;flex-direction:column}
+button{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.out{box-shadow:inset -1px -1px var(--face-dk),inset 1px 1px var(--face-hi),inset -2px -2px var(--face-lo),inset 2px 2px var(--face)}
+.in{box-shadow:inset -1px -1px var(--face-hi),inset 1px 1px var(--face-lo),inset -2px -2px var(--face),inset 2px 2px var(--face-dk)}
+
+/* menu bar */
+#menubar{flex:none;display:flex;gap:2px;padding:2px;position:relative;z-index:5;user-select:none;-webkit-user-select:none}
+#menubar > div{position:relative}
+#menubar .top{background:none;border:0;padding:3px 8px;cursor:pointer}
+#menubar .top.open,#menubar .top:hover{background:var(--select);color:var(--select-ink)}
+.drop{position:absolute;left:0;top:100%;min-width:200px;background:var(--face);padding:3px;display:flex;flex-direction:column}
+.drop button{background:none;border:0;text-align:left;padding:4px 10px 4px 24px;cursor:pointer;display:flex;gap:16px;position:relative;white-space:nowrap}
+.drop button:hover{background:var(--select);color:var(--select-ink)}
+.drop button.on::before{content:'✓';position:absolute;left:8px}
+.drop button small{margin-left:auto;opacity:.7}
+.drop hr{border:0;border-top:1px solid var(--face-lo);border-bottom:1px solid var(--face-hi);margin:3px 2px}
+#menubar .title{margin-left:auto;padding:3px 8px;font-family:var(--pixel);color:var(--select)}
+
+/* the terminal */
+#crt{flex:1;min-height:0;margin:0 4px 4px;padding:3px;display:flex;flex-direction:column;background:var(--face)}
+#glass{flex:1;min-height:0;position:relative;background:var(--bg);color:var(--fg);display:flex;flex-direction:column;overflow:hidden}
+#glass::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+body.paper #glass::after,body.noscan #glass::after{display:none}
+#status{flex:none;display:flex;gap:18px;padding:2px 12px;background:var(--fg);color:var(--bg);font:var(--fs)/1.1 var(--mono);white-space:nowrap;overflow:hidden}
+#status .room{flex:1;overflow:hidden;text-overflow:ellipsis}
+#screen{flex:1;min-height:0;overflow-y:auto;padding:10px 14px 14px;font:var(--fs)/1.15 var(--mono);text-shadow:0 0 6px var(--glow);
+  white-space:pre-wrap;overflow-wrap:break-word;cursor:text;scrollbar-color:var(--dim) transparent}
+#log .sys{color:var(--dim)}
+#log .cmd{color:var(--fg);opacity:.85}
+#cmdline{display:flex;align-items:baseline}
+#prompt{white-space:pre}
+#cmd{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--fg);font:inherit;text-shadow:inherit;caret-color:var(--fg);padding:0;text-transform:none}
+#cmdline.busy #cmd{visibility:hidden}
+
+/* phone helper buttons */
+#pad{flex:none;display:none;gap:4px;padding:5px 2px 0;overflow-x:auto;scrollbar-width:none}
+#pad::-webkit-scrollbar{display:none}
+#pad button{flex:none;min-width:40px;padding:7px 9px;border:0;background:var(--face);font:16px var(--pixel);cursor:pointer}
+#pad button:active{box-shadow:inset 1px 1px var(--face-dk),inset -1px -1px var(--face-hi)}
+#pad .sep{flex:none;width:6px}
+body.showpad #pad{display:flex}
+
+/* dialogs */
+#veil{position:fixed;inset:0;background:rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px}
+.dlg{background:var(--face);padding:3px;width:min(460px,100%);max-height:100%;display:flex;flex-direction:column}
+.dlg .bar{background:linear-gradient(90deg,#5a2f0e,#b0672a);color:#fff;font:600 13px var(--pixel);padding:3px 6px;display:flex;align-items:center}
+.dlg .bar button{margin-left:auto;width:18px;height:16px;border:0;background:var(--face);font:700 11px/1 system-ui;cursor:pointer;color:var(--ink)}
+.dlg .body{padding:12px 14px;overflow:auto;line-height:1.45}
+.dlg .body p+p,.dlg .body p+ul,.dlg .body ul+p{margin-top:8px}
+.dlg .body ul{padding-left:18px}
+.dlg .body code{font:15px var(--mono);background:#e6e0d4;padding:0 3px}
+.dlg .body a{color:var(--select)}
+.dlg .btns{display:flex;justify-content:flex-end;gap:6px;padding:0 12px 10px}
+.dlg .btns button{min-width:76px;padding:4px 10px;border:0;background:var(--face);cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="menubar" class="out">
+  <div><button class="top" data-menu="game">Game</button>
+    <div class="drop out" id="m-game" hidden>
+      <button data-act="play" data-game="zork1">Zork I: The Great Underground Empire</button>
+      <button data-act="play" data-game="zork2">Zork II: The Wizard of Frobozz</button>
+      <button data-act="play" data-game="zork3">Zork III: The Dungeon Master</button>
+      <hr>
+      <button data-act="save">Save<small>SAVE</small></button>
+      <button data-act="restore">Restore<small>RESTORE</small></button>
+      <button data-act="restart">Start Over…</button>
+    </div>
+  </div>
+  <div><button class="top" data-menu="view">View</button>
+    <div class="drop out" id="m-view" hidden>
+      <button data-act="theme" data-theme="amber">Amber Phosphor</button>
+      <button data-act="theme" data-theme="green">Green Phosphor</button>
+      <button data-act="theme" data-theme="potato">Baked Potato</button>
+      <button data-act="theme" data-theme="paper">Line Printer</button>
+      <hr>
+      <button data-act="scan">Scanlines</button>
+      <button data-act="pad">Command Buttons</button>
+      <hr>
+      <button data-act="bigger">Bigger Text<small>Ctrl +</small></button>
+      <button data-act="smaller">Smaller Text<small>Ctrl −</small></button>
+    </div>
+  </div>
+  <div><button class="top" data-menu="help">Help</button>
+    <div class="drop out" id="m-help" hidden>
+      <button data-act="howto">How to Play</button>
+      <button data-act="about">About Zork</button>
+    </div>
+  </div>
+  <span class="title">ZORK.EXE</span>
+</div>
+
+<div id="crt" class="in">
+  <div id="glass">
+    <div id="status"><span class="room" id="st-room">&nbsp;</span><span id="st-score"></span><span id="st-moves"></span></div>
+    <div id="screen"><div id="log"></div><div id="cmdline" class="busy"><span id="prompt"></span><input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Command"></div></div>
+  </div>
+  <div id="pad"></div>
+</div>
+
+<div id="veil" hidden><div class="dlg out" role="dialog">
+  <div class="bar"><span id="dlg-title"></span><button id="dlg-x" aria-label="Close">✕</button></div>
+  <div class="body" id="dlg-body"></div>
+  <div class="btns" id="dlg-btns"></div>
+</div></div>
+
+<script>
+/* ---------------------------------------------------------------------------
+   A small Z-machine (version 3) interpreter. Enough for Zork I–III, which
+   are the only stories it has to run.
+--------------------------------------------------------------------------- */
+class ZMachine {
+  constructor(story, io) {
+    this.story = new Uint8Array(story);
+    this.io = io;
+    this.reset();
+  }
+
+  reset() {
+    const m = this.m = this.story.slice();
+    if (m[0] !== 3) throw new Error('Only version 3 story files are supported');
+    this.dict = this.rw(0x08);
+    this.objs = this.rw(0x0A);
+    this.globals = this.rw(0x0C);
+    this.staticBase = this.rw(0x0E);
+    this.abbr = this.rw(0x18);
+    m[1] = (m[1] & ~0x70) | 0x20;      // status line on, split screen available, fixed pitch
+    m[0x20] = 255; m[0x21] = 80;
+    this.stack = [];
+    this.frames = [{ ret: 0, locals: [], store: -1, sp: 0 }];
+    this.pc = this.rw(0x06);
+    this.waiting = null;
+    this.done = false;
+    this.streams = [];
+    this.window = 0;
+    this.seed = 0;
+    // dictionary
+    const n = m[this.dict];
+    this.seps = Array.from(m.subarray(this.dict + 1, this.dict + 1 + n));
+    this.dictEntryLen = m[this.dict + 1 + n];
+    this.dictCount = this.s16(this.rw(this.dict + 2 + n));
+    this.dictStart = this.dict + 4 + n;
+  }
+
+  get release() { return this.rw(0x02); }
+  get serial() { return String.fromCharCode(...this.story.subarray(0x12, 0x18)); }
+
+  // --- memory
+  rw(a) { return (this.m[a] << 8) | this.m[a + 1]; }
+  ww(a, v) { this.m[a] = (v >> 8) & 255; this.m[a + 1] = v & 255; }
+  s16(v) { return (v << 16) >> 16; }
+  get frame() { return this.frames[this.frames.length - 1]; }
+
+  getVar(n) {
+    if (n === 0) { if (!this.stack.length) throw new Error('Stack underflow'); return this.stack.pop(); }
+    if (n < 16) return this.frame.locals[n - 1];
+    return this.rw(this.globals + 2 * (n - 16));
+  }
+  setVar(n, v) {
+    v &= 0xffff;
+    if (n === 0) this.stack.push(v);
+    else if (n < 16) this.frame.locals[n - 1] = v;
+    else this.ww(this.globals + 2 * (n - 16), v);
+  }
+  // "indirect" variable references touch the top of the stack in place
+  peekVar(n) { return n === 0 ? this.stack[this.stack.length - 1] : this.getVar(n); }
+  pokeVar(n, v) { if (n === 0) this.stack[this.stack.length - 1] = v & 0xffff; else this.setVar(n, v); }
+
+  // --- text
+  static A = ['abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', ' \n0123456789.,!?_#\'"/\\-:()'];
+
+  decode(addr) {
+    let out = '', alpha = 0, abbr = 0, esc = 0, hi = 0, w;
+    do {
+      w = this.rw(addr); addr += 2;
+      for (const zc of [(w >> 10) & 31, (w >> 5) & 31, w & 31]) {
+        if (abbr) {
+          out += this.decode(this.rw(this.abbr + 2 * (32 * (abbr - 1) + zc)) * 2).text;
+          abbr = 0; continue;
+        }
+        if (esc === 1) { hi = zc; esc = 2; continue; }
+        if (esc === 2) { out += this.zchar((hi << 5) | zc); esc = 0; continue; }
+        if (zc === 4) { alpha = 1; continue; }
+        if (zc === 5) { alpha = 2; continue; }
+        if (zc === 0) out += ' ';
+        else if (zc < 4) abbr = zc;
+        else if (alpha === 2 && zc === 6) esc = 1;
+        else out += ZMachine.A[alpha][zc - 6];
+        alpha = 0;
+      }
+    } while (!(w & 0x8000));
+    return { text: out, end: addr };
+  }
+  zchar(c) {
+    if (c === 13) return '\n';
+    if (c >= 32 && c <= 126) return String.fromCharCode(c);
+    return '';
+  }
+
+  encode(codes) {
+    const z = [];
+    for (const c of codes) {
+      if (z.length >= 6) break;
+      if (c >= 97 && c <= 122) { z.push(c - 97 + 6); continue; }
+      const i = ZMachine.A[2].indexOf(String.fromCharCode(c));
+      if (i >= 2) z.push(5, i + 6);
+      else z.push(5, 6, (c >> 5) & 31, c & 31);
+    }
+    while (z.length < 6) z.push(5);
+    return [(z[0] << 10) | (z[1] << 5) | z[2], 0x8000 | (z[3] << 10) | (z[4] << 5) | z[5]];
+  }
+
+  lookup(codes) {
+    const [a, b] = this.encode(codes);
+    for (let i = 0, p = this.dictStart; i < Math.abs(this.dictCount); i++, p += this.dictEntryLen)
+      if (this.rw(p) === a && this.rw(p + 2) === b) return p;
+    return 0;
+  }
+
+  // --- output
+  print(s) {
+    if (!s) return;
+    const st = this.streams[this.streams.length - 1];
+    if (st) {
+      for (const ch of s) this.m[st.table + 2 + st.n++] = ch === '\n' ? 13 : ch.charCodeAt(0);
+      return;
+    }
+    if (this.window === 0) this.io.print(s);
+  }
+
+  // --- objects
+  obj(o) { return this.objs + 62 + 9 * (o - 1); }
+  attr(o, a) { return (this.m[this.obj(o) + (a >> 3)] & (0x80 >> (a & 7))) !== 0; }
+  setAttr(o, a, on) {
+    const p = this.obj(o) + (a >> 3), bit = 0x80 >> (a & 7);
+    this.m[p] = on ? this.m[p] | bit : this.m[p] & ~bit;
+  }
+  parent(o) { return o ? this.m[this.obj(o) + 4] : 0; }
+  sibling(o) { return o ? this.m[this.obj(o) + 5] : 0; }
+  child(o) { return o ? this.m[this.obj(o) + 6] : 0; }
+  props(o) { return this.rw(this.obj(o) + 7); }
+  objName(o) {
+    if (!o) return '';
+    const p = this.props(o);
+    return this.m[p] ? this.decode(p + 1).text : '';
+  }
+  removeObj(o) {
+    const p = this.parent(o);
+    if (!p) return;
+    const oa = this.obj(o);
+    if (this.child(p) === o) this.m[this.obj(p) + 6] = this.sibling(o);
+    else {
+      let c = this.child(p);
+      while (c && this.sibling(c) !== o) c = this.sibling(c);
+      if (c) this.m[this.obj(c) + 5] = this.sibling(o);
+    }
+    this.m[oa + 4] = 0; this.m[oa + 5] = 0;
+  }
+  insertObj(o, d) {
+    this.removeObj(o);
+    const oa = this.obj(o), da = this.obj(d);
+    this.m[oa + 5] = this.m[da + 6];
+    this.m[da + 6] = o;
+    this.m[oa + 4] = d;
+  }
+  firstProp(o) { const p = this.props(o); return p + 1 + 2 * this.m[p]; }
+  findProp(o, n) {
+    for (let p = this.firstProp(o); this.m[p]; p += 2 + (this.m[p] >> 5)) {
+      const num = this.m[p] & 31;
+      if (num === n) return p;
+      if (num < n) break;
+    }
+    return 0;
+  }
+  getProp(o, n) {
+    const p = this.findProp(o, n);
+    if (!p) return this.rw(this.objs + 2 * (n - 1));
+    return (this.m[p] >> 5) === 0 ? this.m[p + 1] : this.rw(p + 1);
+  }
+  putProp(o, n, v) {
+    const p = this.findProp(o, n);
+    if (!p) throw new Error(`put_prop: object ${o} has no property ${n}`);
+    if ((this.m[p] >> 5) === 0) this.m[p + 1] = v & 255; else this.ww(p + 1, v);
+  }
+  nextProp(o, n) {
+    let p = this.firstProp(o);
+    if (n) { p = this.findProp(o, n); if (!p) throw new Error('get_next_prop: no such property'); p += 2 + (this.m[p] >> 5); }
+    return this.m[p] & 31;
+  }
+
+  // --- control flow
+  operand(t) {
+    if (t === 0) { const v = this.rw(this.pc); this.pc += 2; return v; }
+    if (t === 1) return this.m[this.pc++];
+    return this.getVar(this.m[this.pc++]);
+  }
+  branch(cond) {
+    const b = this.m[this.pc++];
+    let off;
+    if (b & 0x40) off = b & 0x3f;
+    else { off = ((b & 0x3f) << 8) | this.m[this.pc++]; if (off & 0x2000) off -= 0x4000; }
+    if (!!cond !== !!(b & 0x80)) return;
+    if (off === 0 || off === 1) this.ret(off);
+    else this.pc += off - 2;
+  }
+  store(v) { this.setVar(this.m[this.pc++], v); }
+  call(addr, args) {
+    const st = this.m[this.pc++];
+    if (addr === 0) { this.setVar(st, 0); return; }
+    let a = addr * 2;
+    const n = this.m[a++], locals = [];
+    for (let i = 0; i < n; i++, a += 2) locals.push(i < args.length ? args[i] : this.rw(a));
+    this.frames.push({ ret: this.pc, locals, store: st, sp: this.stack.length });
+    this.pc = a;
+  }
+  ret(v) {
+    const f = this.frames.pop();
+    if (!this.frames.length) throw new Error('Returned from main routine');
+    this.stack.length = f.sp;
+    this.pc = f.ret;
+    if (f.store >= 0) this.setVar(f.store, v);
+  }
+  random(n) {
+    n = this.s16(n);
+    if (n <= 0) { this.seed = -n; return 0; }
+    if (this.seed) { this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff; return 1 + (this.seed >> 8) % n; }
+    return 1 + Math.floor(Math.random() * n);
+  }
+
+  status() {
+    const g = i => this.rw(this.globals + 2 * i);
+    const timed = (this.m[1] & 2) !== 0;
+    return { room: this.objName(g(0)), score: this.s16(g(1)), moves: g(2), timed };
+  }
+
+  // --- save state
+  snapshot(pc = this.pc) {
+    let bin = '';
+    const dyn = this.m.subarray(0, this.staticBase);
+    for (let i = 0; i < dyn.length; i += 0x8000) bin += String.fromCharCode(...dyn.subarray(i, i + 0x8000));
+    return {
+      serial: this.serial, release: this.release,
+      mem: btoa(bin), stack: this.stack.slice(),
+      frames: this.frames.map(f => ({ ...f, locals: f.locals.slice() })),
+      pc, waiting: this.waiting,
+    };
+  }
+  load(s) {
+    if (!s || s.serial !== this.serial || s.release !== this.release) return false;
+    const bin = atob(s.mem);
+    if (bin.length !== this.staticBase) return false;
+    const flags2 = this.m[0x11];
+    for (let i = 0; i < bin.length; i++) this.m[i] = bin.charCodeAt(i);
+    this.m[0x11] = flags2;
+    this.m[1] = (this.m[1] & ~0x70) | 0x20;
+    this.stack = s.stack.slice();
+    this.frames = s.frames.map(f => ({ ...f, locals: f.locals.slice() }));
+    this.pc = s.pc;
+    this.waiting = s.waiting || null;
+    this.done = false;
+    this.streams = [];
+    return true;
+  }
+
+  // --- input
+  input(line) {
+    const { text, parse } = this.waiting;
+    this.waiting = null;
+    const max = this.m[text] - 1;
+    const codes = [];
+    for (const ch of line.toLowerCase()) {
+      const c = ch.charCodeAt(0);
+      if (c >= 32 && c <= 126 && codes.length < max) codes.push(c);
+    }
+    codes.forEach((c, i) => { this.m[text + 1 + i] = c; });
+    this.m[text + 1 + codes.length] = 0;
+    // tokenise
+    const words = [];
+    for (let i = 0; i < codes.length;) {
+      const c = codes[i];
+      if (c === 32) { i++; continue; }
+      if (this.seps.includes(c)) { words.push([i, 1]); i++; continue; }
+      let j = i;
+      while (j < codes.length && codes[j] !== 32 && !this.seps.includes(codes[j])) j++;
+      words.push([i, j - i]); i = j;
+    }
+    const list = words.slice(0, this.m[parse]);
+    this.m[parse + 1] = list.length;
+    list.forEach(([st, len], k) => {
+      const e = parse + 2 + 4 * k;
+      this.ww(e, this.lookup(codes.slice(st, st + len)));
+      this.m[e + 2] = len;
+      this.m[e + 3] = st + 1;
+    });
+    this.run();
+  }
+
+  run() {
+    try {
+      for (let n = 0; !this.waiting && !this.done; n++) {
+        this.step();
+        if (n > 500000) { setTimeout(() => this.run(), 0); break; }
+      }
+    } catch (e) {
+      this.done = true;
+      this.io.print(`\n\n*** Interpreter error: ${e.message} ***\n`);
+      console.error(e);
+    }
+    this.io.flush(this);
+  }
+
+  step() {
+    const m = this.m, at = this.pc, op = m[this.pc++];
+    let kind, num, ops = [];
+    if (op < 0x80) {
+      kind = 2; num = op & 31;
+      ops.push(op & 0x40 ? this.getVar(m[this.pc++]) : m[this.pc++]);
+      ops.push(op & 0x20 ? this.getVar(m[this.pc++]) : m[this.pc++]);
+    } else if (op < 0xc0) {
+      const t = (op >> 4) & 3; num = op & 15;
+      if (t === 3) kind = 0; else { kind = 1; ops.push(this.operand(t)); }
+    } else {
+      kind = op & 0x20 ? 3 : 2; num = op & 31;
+      const types = m[this.pc++];
+      for (let s = 6; s >= 0; s -= 2) { const t = (types >> s) & 3; if (t === 3) break; ops.push(this.operand(t)); }
+    }
+    const [a, b] = ops, s = v => this.s16(v);
+
+    if (kind === 2) switch (num) {
+      case 1: return this.branch(ops.slice(1).includes(a));
+      case 2: return this.branch(s(a) < s(b));
+      case 3: return this.branch(s(a) > s(b));
+      case 4: { const v = (s(this.peekVar(a)) - 1) & 0xffff; this.pokeVar(a, v); return this.branch(s(v) < s(b)); }
+      case 5: { const v = (s(this.peekVar(a)) + 1) & 0xffff; this.pokeVar(a, v); return this.branch(s(v) > s(b)); }
+      case 6: return this.branch(this.parent(a) === b);
+      case 7: return this.branch((a & b) === b);
+      case 8: return this.store(a | b);
+      case 9: return this.store(a & b);
+      case 10: return this.branch(this.attr(a, b));
+      case 11: return this.setAttr(a, b, true);
+      case 12: return this.setAttr(a, b, false);
+      case 13: return this.pokeVar(a, b);
+      case 14: return this.insertObj(a, b);
+      case 15: return this.store(this.rw((a + 2 * s(b)) & 0xffff));
+      case 16: return this.store(m[(a + s(b)) & 0xffff]);
+      case 17: return this.store(this.getProp(a, b));
+      case 18: { const p = a ? this.findProp(a, b) : 0; return this.store(p ? p + 1 : 0); }
+      case 19: return this.store(this.nextProp(a, b));
+      case 20: return this.store(s(a) + s(b));
+      case 21: return this.store(s(a) - s(b));
+      case 22: return this.store(Math.imul(s(a), s(b)));
+      case 23: if (!b) throw new Error('Division by zero'); return this.store(Math.trunc(s(a) / s(b)));
+      case 24: if (!b) throw new Error('Division by zero'); return this.store(s(a) % s(b));
+    }
+    else if (kind === 1) switch (num) {
+      case 0: return this.branch(a === 0);
+      case 1: { const v = this.sibling(a); this.store(v); return this.branch(v); }
+      case 2: { const v = this.child(a); this.store(v); return this.branch(v); }
+      case 3: return this.store(this.parent(a));
+      case 4: return this.store(a ? (m[a - 1] >> 5) + 1 : 0);
+      case 5: return this.pokeVar(a, s(this.peekVar(a)) + 1);
+      case 6: return this.pokeVar(a, s(this.peekVar(a)) - 1);
+      case 7: return this.print(this.decode(a).text);
+      case 9: return this.removeObj(a);
+      case 10: return this.print(this.objName(a));
+      case 11: return this.ret(a);
+      case 12: this.pc += s(a) - 2; return;
+      case 13: return this.print(this.decode(a * 2).text);
+      case 14: return this.store(this.peekVar(a));
+      case 15: return this.store(~a);
+    }
+    else if (kind === 0) switch (num) {
+      case 0: return this.ret(1);
+      case 1: return this.ret(0);
+      case 2: case 3: {
+        const t = this.decode(this.pc); this.pc = t.end; this.print(t.text);
+        if (num === 3) { this.print('\n'); this.ret(1); }
+        return;
+      }
+      case 4: return;
+      case 5: return this.branch(this.io.save(this.snapshot(this.pc)));
+      case 6: {
+        const st = this.io.restore();
+        if (st && this.load(st)) { this.waiting = null; return this.branch(true); }
+        return this.branch(false);
+      }
+      case 7: this.reset(); this.io.restarted(); return;
+      case 8: return this.ret(this.getVar(0));
+      case 9: this.getVar(0); return;
+      case 10: this.done = true; return;
+      case 11: return this.print('\n');
+      case 12: return this.io.status(this.status());
+      case 13: return this.branch(true);
+    }
+    else switch (num) {
+      case 0: return this.call(a, ops.slice(1));
+      case 1: return this.ww((a + 2 * s(b)) & 0xffff, ops[2]);
+      case 2: m[(a + s(b)) & 0xffff] = ops[2] & 255; return;
+      case 3: return this.putProp(a, b, ops[2]);
+      case 4: this.io.status(this.status()); this.waiting = { text: a, parse: b }; return;
+      case 5: return this.print(this.zchar(a));
+      case 6: return this.print(String(s(a)));
+      case 7: return this.store(this.random(a));
+      case 8: this.stack.push(a); return;
+      case 9: { const v = this.getVar(0); return this.pokeVar(a, v); }
+      case 10: return;                           // split_window: Zork never draws up there
+      case 11: this.window = a; return;
+      case 19: {
+        const n = s(a);
+        if (n === 3) this.streams.push({ table: b, n: 0 });
+        else if (n === -3) { const st = this.streams.pop(); if (st) this.ww(st.table, st.n); }
+        return;
+      }
+      case 20: case 21: return;
+    }
+    throw new Error(`Unknown opcode ${op.toString(16)} at ${at.toString(16)}`);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The TaterOS side of things
+--------------------------------------------------------------------------- */
+const GAMES = {
+  zork1: { title: 'Zork I', file: 'zork1.z3', sub: 'The Great Underground Empire' },
+  zork2: { title: 'Zork II', file: 'zork2.z3', sub: 'The Wizard of Frobozz' },
+  zork3: { title: 'Zork III', file: 'zork3.z3', sub: 'The Dungeon Master' },
+};
+const BASE = location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/[^/]*$/, '');
+const PREFIX = 'taterZork.';
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(PREFIX + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(PREFIX + k, JSON.stringify(v)); return true; } catch { return false; } },
+  del(k) { try { localStorage.removeItem(PREFIX + k); } catch {} },
+};
+
+const $ = id => document.getElementById(id);
+const logEl = $('log'), screenEl = $('screen'), cmd = $('cmd'), promptEl = $('prompt'), cmdline = $('cmdline');
+const prefs = Object.assign({ theme: 'amber', fs: 22, scan: true, pad: matchMedia('(pointer:coarse)').matches }, store.get('prefs', {}));
+
+let zm = null, gameId = null, pending = '', transcript = '';
+const history = store.get('history', []);
+let histPos = history.length;
+const MAX_TRANSCRIPT = 12000;
+
+function addText(text, cls) {
+  if (!text) return;
+  const last = logEl.lastChild;
+  if (!cls && last && !last.className) last.textContent += text;
+  else {
+    const span = document.createElement('span');
+    if (cls) span.className = cls;
+    span.textContent = text;
+    logEl.appendChild(span);
+  }
+  if (!cls || cls === 'cmd') transcript = (transcript + text).slice(-MAX_TRANSCRIPT);
+  while (logEl.childNodes.length > 600) logEl.firstChild.remove();
+}
+const sys = text => addText(text, 'sys');
+
+const io = {
+  print(s) { pending += s; },
+  flush(z) {
+    // keep the last unfinished line (usually ">") next to the input box
+    const nl = pending.lastIndexOf('\n');
+    addText(promptEl.textContent + pending.slice(0, nl + 1));
+    promptEl.textContent = pending.slice(nl + 1);
+    pending = '';
+    if (z.waiting) {
+      cmdline.classList.remove('busy');
+      autosave();
+    } else if (z.done) {
+      addText(promptEl.textContent); promptEl.textContent = '';
+      sys('\n[The game has ended. Pick a game from the Game menu, or press Enter to play again.]\n');
+      store.del('auto.' + gameId);
+      cmdline.classList.remove('busy');
+    }
+    scrollDown();
+  },
+  status(st) {
+    $('st-room').textContent = st.room || '\u00a0';
+    if (st.timed) { $('st-score').textContent = ''; $('st-moves').textContent = ''; return; }
+    $('st-score').textContent = `Score: ${st.score}`;
+    $('st-moves').textContent = `Moves: ${st.moves}`;
+  },
+  save(state) {
+    const ok = store.set('save.' + gameId, { state, transcript, when: Date.now() });
+    pending += ok ? '[Stashed in the root cellar.]\n' : '[The root cellar is full. Nothing was saved.]\n';
+    return ok;
+  },
+  restore() {
+    const s = store.get('save.' + gameId);
+    if (!s) { pending += '[There is no saved game in the root cellar. Like a potato skin, it is empty.]\n'; return null; }
+    pending += `[Restoring the game you saved ${new Date(s.when).toLocaleString()}.]\n`;
+    return s.state;
+  },
+  restarted() {
+    pending = ''; logEl.textContent = ''; transcript = '';
+    io.status({ room: '', score: 0, moves: 0 });
+  },
+};
+function autosave() {
+  if (!zm || !zm.waiting) return;
+  store.set('auto.' + gameId, { state: zm.snapshot(), transcript: transcript + promptEl.textContent, status: zm.status() });
+}
+
+function scrollDown() { requestAnimationFrame(() => { screenEl.scrollTop = screenEl.scrollHeight; }); }
+
+const storyCache = {};
+async function loadStory(id) {
+  if (!storyCache[id]) {
+    const res = await fetch(BASE + GAMES[id].file);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    storyCache[id] = await res.arrayBuffer();
+  }
+  return storyCache[id];
+}
+
+async function play(id, fresh = false) {
+  if (zm && zm.waiting) autosave();
+  gameId = id;
+  store.set('game', id);
+  document.title = GAMES[id].title;
+  logEl.textContent = ''; promptEl.textContent = ''; transcript = ''; pending = '';
+  cmdline.classList.add('busy');
+  io.status({ room: '', score: 0, moves: 0 });
+  markMenus();
+  let data;
+  try { data = await loadStory(id); }
+  catch (e) { sys(`C:\\TATEROS\\GAMES> ${id.toUpperCase()}\nCould not load ${GAMES[id].file} (${e.message}).\nAbort, Retry, Fry?\n`); return; }
+  if (gameId !== id) return;
+  zm = new ZMachine(data, io);
+  const auto = !fresh && store.get('auto.' + id);
+  if (auto && zm.load(auto.state) && zm.waiting) {
+    const nl = auto.transcript.lastIndexOf('\n');
+    addText(auto.transcript.slice(0, nl + 1));
+    promptEl.textContent = auto.transcript.slice(nl + 1);
+    if (auto.status) io.status(auto.status);
+    sys('[Picked up right where you left off. Pick "Start Over" in the Game menu for a fresh start.]\n');
+    cmdline.classList.remove('busy');
+    scrollDown();
+    focusCmd();
+    return;
+  }
+  zm = new ZMachine(data, io);
+  sys(`C:\\TATEROS\\GAMES> ${id.toUpperCase()}\nTaterOS Z-Machine v3 interpreter. Loading ${GAMES[id].file.toUpperCase()}... OK\n\n`);
+  zm.run();
+  focusCmd();
+}
+
+const EGGS = {
+  potato: 'There is no potato here. The Great Underground Empire is tragically potato-free.',
+  tater: 'A distant voice calls back: "tater... tater... tater..." It is only an echo.',
+  taters: 'Boil \'em, mash \'em, stick \'em in a stew. Not here, though.',
+};
+
+function submit() {
+  if (!zm) return;
+  if (zm.done) { play(gameId, true); return; }
+  if (!zm.waiting) return;
+  const line = cmd.value;
+  cmd.value = '';
+  addText(promptEl.textContent);
+  addText(line + '\n', 'cmd');
+  promptEl.textContent = '';
+  if (line.trim() && history[history.length - 1] !== line) {
+    history.push(line); if (history.length > 100) history.shift();
+    store.set('history', history);
+  }
+  histPos = history.length;
+  const egg = EGGS[line.trim().toLowerCase()];
+  if (egg) {
+    addText(egg + '\n\n'); promptEl.textContent = '>'; scrollDown(); return;
+  }
+  cmdline.classList.add('busy');
+  zm.input(line);
+}
+
+function send(text) {
+  if (!zm || !zm.waiting) return;
+  cmd.value = text; submit();
+}
+
+function focusCmd() {
+  if (matchMedia('(pointer:coarse)').matches && document.activeElement !== cmd) return;
+  cmd.focus({ preventScroll: true });
+}
+
+cmd.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); submit(); }
+  else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (histPos > 0) { histPos--; cmd.value = history[histPos]; }
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (histPos < history.length) { histPos++; cmd.value = history[histPos] || ''; }
+  } else if (e.key === 'PageUp' || e.key === 'PageDown') {
+    e.preventDefault();
+    screenEl.scrollBy(0, (e.key === 'PageUp' ? -1 : 1) * screenEl.clientHeight * .9);
+  }
+});
+screenEl.addEventListener('click', () => { if (!getSelection().toString()) cmd.focus({ preventScroll: true }); });
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) { e.preventDefault(); setFont(prefs.fs + 2); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key === '-') { e.preventDefault(); setFont(prefs.fs - 2); return; }
+  if (e.key === 'Escape') { closeMenus(); closeDialog(); return; }
+  if (!$('veil').hidden || e.target === cmd || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.length === 1 || e.key === 'Enter') cmd.focus({ preventScroll: true });
+});
+window.addEventListener('pagehide', autosave);
+document.addEventListener('visibilitychange', () => { if (document.hidden) autosave(); });
+
+/* phone pad */
+const PAD = [['N', 'n'], ['S', 's'], ['E', 'e'], ['W', 'w'], ['NE', 'ne'], ['NW', 'nw'], ['SE', 'se'], ['SW', 'sw'], ['Up', 'u'], ['Down', 'd'], null,
+  ['Look', 'look'], ['Inv', 'i'], ['Again', 'again'], null,
+  ['Take…', 'take '], ['Drop…', 'drop '], ['Open…', 'open '], ['Examine…', 'examine '], ['Read…', 'read '], ['Attack…', 'attack ']];
+for (const p of PAD) {
+  if (!p) { $('pad').appendChild(Object.assign(document.createElement('span'), { className: 'sep' })); continue; }
+  const b = document.createElement('button');
+  b.className = 'out'; b.textContent = p[0];
+  b.addEventListener('click', () => {
+    if (p[1].endsWith(' ')) { cmd.value = p[1]; cmd.focus(); }
+    else send(p[1]);
+  });
+  $('pad').appendChild(b);
+}
+
+/* menus */
+function closeMenus() {
+  document.querySelectorAll('.drop').forEach(d => { d.hidden = true; });
+  document.querySelectorAll('.top').forEach(t => t.classList.remove('open'));
+}
+document.querySelectorAll('.top').forEach(t => {
+  const open = () => { closeMenus(); $('m-' + t.dataset.menu).hidden = false; t.classList.add('open'); };
+  t.addEventListener('click', e => { e.stopPropagation(); t.classList.contains('open') ? closeMenus() : open(); });
+  t.addEventListener('mouseenter', () => { if (document.querySelector('.top.open') && !t.classList.contains('open')) open(); });
+});
+document.addEventListener('click', closeMenus);
+document.querySelectorAll('.drop button').forEach(b => b.addEventListener('click', e => {
+  e.stopPropagation(); closeMenus();
+  const act = b.dataset.act;
+  if (act === 'play') play(b.dataset.game);
+  else if (act === 'save') send('save');
+  else if (act === 'restore') send('restore');
+  else if (act === 'restart') confirmRestart();
+  else if (act === 'theme') { prefs.theme = b.dataset.theme; applyPrefs(); }
+  else if (act === 'scan') { prefs.scan = !prefs.scan; applyPrefs(); }
+  else if (act === 'pad') { prefs.pad = !prefs.pad; applyPrefs(); scrollDown(); }
+  else if (act === 'bigger') setFont(prefs.fs + 2);
+  else if (act === 'smaller') setFont(prefs.fs - 2);
+  else if (act === 'howto') howTo();
+  else if (act === 'about') about();
+}));
+
+function markMenus() {
+  document.querySelectorAll('[data-game]').forEach(b => b.classList.toggle('on', b.dataset.game === gameId));
+  document.querySelectorAll('[data-theme]').forEach(b => b.classList.toggle('on', b.dataset.theme === prefs.theme));
+  document.querySelector('[data-act=scan]').classList.toggle('on', prefs.scan);
+  document.querySelector('[data-act=pad]').classList.toggle('on', prefs.pad);
+}
+function setFont(px) { prefs.fs = Math.max(14, Math.min(40, px)); applyPrefs(); scrollDown(); }
+function applyPrefs() {
+  document.body.className = [prefs.theme !== 'amber' && prefs.theme, !prefs.scan && 'noscan', prefs.pad && 'showpad'].filter(Boolean).join(' ');
+  document.documentElement.style.setProperty('--fs', prefs.fs + 'px');
+  store.set('prefs', prefs);
+  markMenus();
+}
+
+/* dialogs */
+function dialog(title, html, buttons = [['OK']]) {
+  $('dlg-title').textContent = title;
+  $('dlg-body').innerHTML = html;
+  const btns = $('dlg-btns');
+  btns.textContent = '';
+  for (const [label, fn] of buttons) {
+    const b = document.createElement('button');
+    b.className = 'out'; b.textContent = label;
+    b.addEventListener('click', () => { closeDialog(); if (fn) fn(); });
+    btns.appendChild(b);
+  }
+  $('veil').hidden = false;
+  btns.lastChild.focus();
+}
+function closeDialog() { if ($('veil').hidden) return; $('veil').hidden = true; focusCmd(); }
+$('dlg-x').addEventListener('click', closeDialog);
+$('veil').addEventListener('click', e => { if (e.target === $('veil')) closeDialog(); });
+
+function confirmRestart() {
+  dialog('Start Over', `<p>Abandon this adventure in ${GAMES[gameId].title} and start from the beginning?</p><p>Your saved game in the root cellar stays put.</p>`,
+    [['Start Over', () => { store.del('auto.' + gameId); play(gameId, true); }], ['Cancel']]);
+}
+function howTo() {
+  dialog('How to Play', `
+    <p>Type what you want to do in plain English and press Enter. The game understands short commands best.</p>
+    <ul>
+      <li><code>north</code>, <code>s</code>, <code>ne</code>, <code>up</code>, <code>d</code>: move around</li>
+      <li><code>look</code> (or <code>l</code>): describe where you are</li>
+      <li><code>inventory</code> (or <code>i</code>): see what you're carrying</li>
+      <li><code>take lamp</code>, <code>drop sword</code>, <code>open mailbox</code>, <code>read leaflet</code></li>
+      <li><code>examine</code>, <code>turn on lamp</code>, <code>put coin in case</code>, <code>attack troll with sword</code></li>
+      <li><code>again</code> repeats your last command. <code>score</code>, <code>verbose</code>, <code>brief</code> do what they say.</li>
+      <li><code>save</code> and <code>restore</code> use one slot per game in this browser.</li>
+    </ul>
+    <p>Your progress is kept automatically, so you can close the window and come back. Up and Down arrows recall earlier commands.</p>
+    <p>Draw a map. Seriously. Also: it is dark down there, and you are likely to be eaten by a grue.</p>`);
+}
+function about() {
+  dialog('About Zork', `
+    <p><b>Zork I, II and III</b> were written by Tim Anderson, Marc Blank, Bruce Daniels and Dave Lebling, and published by Infocom from 1980 to 1982.</p>
+    <p>In 2025 Microsoft released the source code and story files under the MIT license. These are the original story files from
+      <a href="https://github.com/historicalsource/zork1" target="_blank" rel="noopener">github.com/historicalsource</a>
+      (<a href="${BASE}LICENSE.txt" target="_blank" rel="noopener">license</a>).</p>
+    <p>The Z-machine interpreter that runs them was baked fresh for TaterOS.</p>
+    <p>${zm ? `Now playing ${GAMES[gameId].title}, release ${zm.release} / serial ${zm.serial}.` : ''}</p>`);
+}
+
+applyPrefs();
+play(GAMES[store.get('game')] ? store.get('game') : 'zork1');
+</script>
+</body>
+</html>
