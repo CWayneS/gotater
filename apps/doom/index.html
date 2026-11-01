@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Freedoom · TaterOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; color: #b8b8b8; overflow: hidden;
+    font: 20px/1.25 'VT323', ui-monospace, monospace; -webkit-user-select: none; user-select: none; }
+  #stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  /* SDL sets inline pixel sizes on the canvas; we just letterbox it to whatever the window is. */
+  #canvas { display: block; width: 100% !important; height: 100% !important; object-fit: contain;
+    image-rendering: pixelated; outline: none; background: #000; }
+  .hidden { display: none !important; }
+
+  /* DOS-style boot screen */
+  #boot { position: fixed; inset: 0; padding: 18px 22px; overflow: auto; z-index: 5; background: #000; cursor: pointer; }
+  #boot pre { margin: 0; font: inherit; white-space: pre-wrap; }
+  .hi { color: #fff; } .red { color: #e04a2a; } .yel { color: #e8c840; } .dim { color: #6a6a6a; }
+  #bar { display: inline-block; width: 24ch; color: #e8c840; }
+  .blink { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  #boot a { color: #6aa8e8; }
+
+  /* end screen */
+  #off { position: fixed; inset: 0; z-index: 6; background: #000; display: flex; align-items: center; justify-content: center;
+    color: #e89030; font-size: 30px; text-align: center; padding: 20px; }
+
+  /* touch controls, only on coarse pointers */
+  #touch { position: fixed; inset: 0; z-index: 3; pointer-events: none; display: none; }
+  body.touch #touch { display: block; }
+  body.touch #canvas { pointer-events: none; }
+  .pad { position: absolute; bottom: 14px; display: grid; gap: 6px; pointer-events: auto; touch-action: none; }
+  .pad button { width: 58px; height: 58px; border-radius: 10px; border: 2px solid rgba(255,255,255,.35);
+    background: rgba(40,40,40,.45); color: #fff; font: 22px 'VT323', monospace; padding: 0; touch-action: none; }
+  .pad button.on { background: rgba(224,74,42,.65); }
+  #dpad { left: 14px; grid-template-columns: repeat(3, 58px); grid-template-areas: ". u ." "l d r"; }
+  #dpad [data-k=KeyW] { grid-area: u; } #dpad [data-k=ArrowLeft] { grid-area: l; }
+  #dpad [data-k=KeyS] { grid-area: d; } #dpad [data-k=ArrowRight] { grid-area: r; }
+  #acts { right: 14px; grid-template-columns: repeat(2, 66px); }
+  #acts button { width: 66px; }
+  #acts .big { height: 74px; font-size: 26px; }
+  #sys { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; pointer-events: auto; }
+  #sys button { height: 34px; padding: 0 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,.35);
+    background: rgba(40,40,40,.55); color: #ddd; font: 18px 'VT323', monospace; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas></div>
+
+<div id="boot">
+<pre><span class="hi">TaterBIOS (C) 1993 Spud Megatrends Inc.</span>
+<span class="dim">Main Processor : Russet 486DX2-66
+Memory Test    : 65536K OK</span>
+
+C:\&gt; <span class="hi">TATERDOOM.EXE</span>
+
+<span class="red">D O O M</span>  <span class="dim">(Chocolate Doom engine, running in WebAssembly)</span>
+IWAD: <span class="hi">freedoom1.wad</span>  <span class="dim">Freedoom: Phase 1, 4 episodes of free levels</span>
+
+Loading WAD <span id="bar">[                    ]</span> <span id="pct">0%</span>
+<span id="status"></span>
+<span id="ready" class="hidden">
+<span class="yel">Controls</span>
+  W / S ............ forward / back      ← → ......... turn
+  A / D ............ strafe              Shift ....... run
+  Ctrl / click ..... fire                Space ....... open doors, switches
+  1-7 .............. weapons             Tab ......... map
+  Esc .............. menu                (click the game to capture the mouse)
+
+Saves stay in this browser. Music is off, sound effects are on.
+
+<span class="hi">Press any key or click to start</span><span class="blink">_</span>
+</span>
+<span class="dim">
+Engine: <a href="https://github.com/cloudflare/doom-wasm" target="_blank" rel="noopener">doom-wasm</a> (Chocolate Doom, GPL v2) · Levels: <a href="https://freedoom.github.io" target="_blank" rel="noopener">Freedoom</a> (BSD) · <a href="LICENSE.txt" target="_blank">LICENSE.txt</a></span></pre>
+</div>
+
+<div id="off" class="hidden"><div>It is now safe to turn off<br>your computer.<br><br><span style="font-size:20px;color:#888">(or reload to rip and tear again)</span></div></div>
+
+<div id="touch">
+  <div id="sys">
+    <button data-k="Escape">MENU</button><button data-k="Enter">OK</button><button data-k="KeyY">YES</button><button data-k="Tab">MAP</button>
+  </div>
+  <div class="pad" id="dpad">
+    <button data-k="KeyW">▲</button><button data-k="ArrowLeft">◀</button><button data-k="KeyS">▼</button><button data-k="ArrowRight">▶</button>
+  </div>
+  <div class="pad" id="acts">
+    <button data-k="KeyQ">WPN</button><button data-k="ShiftLeft">RUN</button>
+    <button data-k="Space" class="big">USE</button><button data-k="ControlLeft" class="big">FIRE</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('canvas');
+const WAD = 'freedoom1.wad.gz';
+
+// Chocolate Doom stores keys as DOS scancodes. These are written once; after
+// that the files live in /saves and keep any changes made in the options menu.
+const DEFAULT_CFG = `key_right 77
+key_left 75
+key_up 17
+key_down 31
+key_strafeleft 30
+key_straferight 32
+key_fire 29
+key_use 57
+key_strafe 56
+key_speed 42
+use_mouse 1
+mouse_sensitivity 5
+sfx_volume 8
+music_volume 0
+show_messages 1
+screenblocks 10
+detaillevel 0
+snd_channels 8
+snd_musicdevice 0
+snd_sfxdevice 3
+usegamma 0
+`;
+const EXTRA_CFG = `fullscreen 0
+window_width 640
+window_height 480
+startup_delay 0
+grabmouse 1
+novert 1
+aspect_ratio_correct 1
+show_endoom 0
+key_nextweapon 16
+vanilla_savegame_limit 0
+`;
+
+let wadBytes = null, ready = false, started = false;
+
+// ---- fetch the (gzipped) WAD with a progress bar ----
+function bar(frac) {
+  const n = Math.round(frac * 20);
+  $('bar').textContent = '[' + '#'.repeat(n) + ' '.repeat(20 - n) + ']';
+  $('pct').textContent = Math.round(frac * 100) + '%';
+}
+async function loadWad() {
+  const res = await fetch(WAD);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const total = +res.headers.get('content-length') || 10278537;
+  const reader = res.body.getReader();
+  const chunks = []; let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value); got += value.length;
+    bar(Math.min(got / total, 1));
+  }
+  let bytes = new Uint8Array(await new Blob(chunks).arrayBuffer());
+  // Some servers decode .gz on the way out; only gunzip if it's still gzip.
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+    $('status').textContent = 'Unpacking potatoes...';
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  return bytes;
+}
+
+loadWad().then(bytes => {
+  wadBytes = bytes; bar(1); ready = true;
+  $('status').textContent = 'WAD OK. ' + (bytes.length / 1048576).toFixed(1) + ' MB of demons, verified fresh.';
+  $('ready').classList.remove('hidden');
+}).catch(err => {
+  $('status').innerHTML = '<span class="red">Bad command or file name.</span> Could not load the WAD (' + err.message + '). Reload to try again.';
+});
+
+// ---- boot the engine on a user gesture (browsers need one for audio) ----
+function start() {
+  if (!ready || started) return;
+  started = true;
+  $('boot').classList.add('hidden');
+  window.Module = {
+    canvas,
+    noInitialRun: true,
+    print: t => console.log(t),
+    printErr: t => console.warn(t),
+    onExit: () => { $('off').classList.remove('hidden'); persist(); },
+    onRuntimeInitialized() {
+      const FS = Module.FS;
+      FS.writeFile('/freedoom1.wad', wadBytes);
+      wadBytes = null;
+      FS.mkdir('/saves');
+      FS.mount(FS.filesystems.IDBFS, { autoPersist: true }, '/saves');
+      FS.syncfs(true, err => {
+        if (err) console.warn('save restore failed', err);
+        if (!FS.analyzePath('/saves/default.cfg').exists) FS.writeFile('/saves/default.cfg', DEFAULT_CFG);
+        if (!FS.analyzePath('/saves/chocolate-doom.cfg').exists) FS.writeFile('/saves/chocolate-doom.cfg', EXTRA_CFG);
+        Module.callMain(['-iwad', '/freedoom1.wad', '-window', '-nogui', '-nomusic',
+          '-config', '/saves/default.cfg', '-extraconfig', '/saves/chocolate-doom.cfg', '-savedir', '/saves/']);
+        canvas.focus();
+      });
+    },
+  };
+  const s = document.createElement('script');
+  s.src = 'doom.js';
+  document.body.append(s);
+}
+function persist() {
+  try { Module.FS.syncfs(false, () => {}); } catch {}
+}
+addEventListener('pagehide', persist);
+document.addEventListener('visibilitychange', () => { if (document.hidden) persist(); });
+
+$('boot').addEventListener('click', start);
+addEventListener('keydown', e => { if (!started && ready) { e.preventDefault(); start(); } });
+canvas.addEventListener('mousedown', () => canvas.focus());
+
+// ---- touch controls: synthesize the same key events a keyboard would ----
+const KEYCODES = { KeyW: 87, KeyS: 83, KeyQ: 81, KeyY: 89, ArrowLeft: 37, ArrowRight: 39, Space: 32,
+  ControlLeft: 17, ShiftLeft: 16, Escape: 27, Enter: 13, Tab: 9 };
+const KEYNAMES = { KeyW: 'w', KeyS: 's', KeyQ: 'q', KeyY: 'y', Space: ' ', ControlLeft: 'Control', ShiftLeft: 'Shift' };
+function sendKey(type, code) {
+  const ev = new KeyboardEvent(type, { code, key: KEYNAMES[code] || code, bubbles: true, cancelable: true });
+  for (const p of ['keyCode', 'which']) Object.defineProperty(ev, p, { get: () => KEYCODES[code] });
+  window.dispatchEvent(ev);
+}
+if (matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
+const held = new Map(); // pointerId -> button
+function press(btn, id) {
+  if (held.get(id) === btn) return;
+  release(id);
+  held.set(id, btn); btn.classList.add('on'); sendKey('keydown', btn.dataset.k);
+}
+function release(id) {
+  const btn = held.get(id); if (!btn) return;
+  held.delete(id); btn.classList.remove('on');
+  if (![...held.values()].includes(btn)) sendKey('keyup', btn.dataset.k);
+}
+const touch = $('touch');
+touch.addEventListener('pointerdown', e => {
+  const btn = e.target.closest('button[data-k]'); if (!btn) return;
+  e.preventDefault();
+  if (!started) { start(); return; }
+  press(btn, e.pointerId);
+});
+// let a thumb slide between d-pad buttons
+touch.addEventListener('pointermove', e => {
+  if (!held.has(e.pointerId)) return;
+  const btn = document.elementFromPoint(e.clientX, e.clientY)?.closest('#dpad button[data-k]');
+  if (btn) press(btn, e.pointerId);
+});
+for (const t of ['pointerup', 'pointercancel', 'pointerleave']) touch.addEventListener(t, e => release(e.pointerId));
+touch.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+</body>
+</html>

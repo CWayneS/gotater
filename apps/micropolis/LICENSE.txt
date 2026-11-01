@@ -1,0 +1,28 @@
+Micropolis for TaterOS
+======================
+
+This folder is a lightly modified build of micropolisJS by Graeme McCutcheon
+and contributors, itself a port of Micropolis, the open-source release of
+the original 1989 SimCity source code.
+
+  Upstream source: https://github.com/graememcc/micropolisJS
+  Built from commit: f13a1624d111d235e804bd80f48ba7c9f66a8e0f
+  Build: `npm ci && npx webpack --mode production --no-optimization-minimize`
+
+src/micropolis.js is the unminified webpack bundle (it includes jQuery 3.7.1,
+MIT licensed). The complete corresponding source is at the commit above.
+
+Changes made for TaterOS (this is a modified version, not the original):
+  - index.html: retitled, Twitter widget removed, text tweaks, license links
+  - tater.css: Win95-style skin layered over the upstream stylesheet
+  - The game code itself is unchanged.
+
+License: GNU GPL v3 with additional terms. See LICENSE (micropolisJS's
+copyright notice and the GPL section 7 terms) and COPYING (full GPL v3 text).
+
+Not affiliated with or endorsed by Electronic Arts. SimCity is a trademark
+of Electronic Arts Inc. and is not used for this program.
+
+Micropolis is a registered trademark of Micropolis Corporation (Micropolis
+GmbH) and is licensed here as a courtesy of the owner under the Micropolis
+Public Name License (see name_license.html, https://www.micropolis.com).
