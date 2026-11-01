@@ -1,0 +1,38 @@
+/* TaterOS skin for micropolisJS: Win95 panels on top of the upstream styles. */
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap');
+
+header, footer {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  background-image: linear-gradient(90deg, #000080, #1084d0);
+}
+header { border-bottom: 2px solid #000; }
+header h1, .chunk { font-family: 'Pixelify Sans', 'Chunk', serif; font-weight: 600; }
+header h1 .tag { font-size: 0.55em; font-weight: 400; opacity: 0.8; }
+
+.mintcream, .neutral, .modal {
+  background-color: #c0c0c0;
+}
+.mintcream, .modal, #monstertv {
+  border: 2px solid;
+  border-color: #fff #404040 #404040 #fff;
+  box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf, 3px 3px 0 rgba(0, 0, 0, 0.35);
+}
+.controlShadow, .shadow { box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf, 3px 3px 0 rgba(0, 0, 0, 0.35); }
+
+button, input[type="submit"] {
+  border-radius: 0;
+  border: 2px solid;
+  border-color: #fff #404040 #404040 #fff;
+  height: 22px;
+}
+button:active, input[type="submit"]:active { border-color: #404040 #fff #fff #404040; }
+button:disabled { opacity: 0.6; }
+.toolButton { height: 22px; }
+
+#splashContainer canvas { border: 2px solid; border-color: #808080 #fff #fff #808080; }
+#tooSmall { background-color: #008080; color: #000; }
+#tooSmallInner { background: #c0c0c0; border: 2px solid; border-color: #fff #404040 #404040 #fff; }
+
+footer { font-family: sans-serif; font-size: 11px; line-height: 1.35; height: auto; padding: 4px 8px; }
+footer #author { display: inline; margin-left: 6px; }
+footer #build { display: none; }
