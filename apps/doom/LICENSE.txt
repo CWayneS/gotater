@@ -1,0 +1,35 @@
+Doom for TaterOS
+================
+
+Two separate pieces live in this folder, under two licenses.
+
+1. The engine: doom.js + doom.wasm
+----------------------------------
+A WebAssembly build of Chocolate Doom, from Cloudflare's doom-wasm port.
+
+  Upstream source: https://github.com/cloudflare/doom-wasm
+  Built from commit: 65e0d3ae2ffa604155eebd96ed40da6567bd08f4
+  Our changes: doom-wasm-tateros.patch (in this folder). It updates the
+    Emscripten flags for a current toolchain, links IDBFS for saves, and
+    fixes `boolean` being two different sizes across files with newer
+    Emscripten headers.
+  Toolchain: Emscripten 3.1.74, `./scripts/build.sh`, then
+    `wasm-opt --strip-debug -O2`.
+
+Chocolate Doom and doom-wasm are free software under the GNU General Public
+License, version 2 or later. See COPYING.md for the full text. The complete
+corresponding source is the upstream commit above plus the patch.
+
+2. The levels: freedoom1.wad.gz
+-------------------------------
+Freedoom: Phase 1, version 0.13.0 (gzip-compressed; the page unpacks it).
+
+  https://freedoom.github.io
+
+Freedoom is Copyright (c) 2001-2024 Contributors to the Freedoom project,
+under a BSD-style license. See FREEDOOM-COPYING.txt for the license and
+FREEDOOM-CREDITS.txt for the people who made it.
+
+Freedoom is not id Software's Doom, and no id Software game data is included.
+DOOM is a trademark of ZeniMax Media / id Software. TaterOS is not affiliated
+with or endorsed by them.

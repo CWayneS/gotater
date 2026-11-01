@@ -28,6 +28,7 @@ export default [
   { id: 'tatersweeper', title: 'Tatersweeper', blurb: 'Find the potatoes. Do not dig them up', category: 'games', icon: '🚩', color: '#5a7a3a', w: 560, h: 640, added: '2026-10-22' },
   { id: 'zork', title: 'Zork', blurb: 'The Great Underground Empire, I through III', category: 'games', icon: '🏚️', color: '#4a3a22', w: 900, h: 640, added: '2026-10-31' },
   { id: 'micropolis', title: 'Micropolis', blurb: 'Be mayor. The original open-source city sim', category: 'games', icon: '🏙️', color: '#2a5a8a', max: true, added: '2026-11-01' },
+  { id: 'doom', title: 'Freedoom', blurb: 'The Doom engine with free levels. Rip and tear', category: 'games', icon: '👹', color: '#7a1a12', max: true, added: '2026-11-01' },
 
   // learn
   { id: 'math-vocab', title: 'Basic Math Vocab', blurb: 'Chill drag and drop vocabulary', category: 'learn', icon: '➗', color: '#3b7a8a', w: 900, h: 680, added: '2025-01-01' },
