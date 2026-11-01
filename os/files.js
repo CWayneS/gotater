@@ -2,6 +2,7 @@
 // folder that opens the site's real files (read-only) in Notepad.
 import { apps, h, iconEl, openApp, dialog, isMobile } from './shell.js';
 import * as wm from './wm.js';
+import { prefs, setPref } from './store.js';
 import { trash } from './fx.js';
 
 const REPO = 'https://github.com/CWayneS/gotater';
@@ -457,6 +458,10 @@ export function openFiles(from) {
   let path = [root];
   const history = [];
   const view = h('div', { class: 'explorer files', role: 'listbox' });
+  // Win98-style Folders pane: folders only, synced with the current folder
+  const tree = h('nav', { class: 'ftree', 'aria-label': 'Folders' });
+  const pane = h('div', { class: 'fpane' + (prefs.filesTree === false ? ' notree' : '') }, tree, view);
+  const expanded = new Set([root]);
   const here = () => path[path.length - 1];
   const addr = () => 'C:\\' + path.slice(1).map(d => d.name.toUpperCase().replace(/ /g, '_')).join('\\');
 
@@ -475,8 +480,32 @@ export function openFiles(from) {
     if (f.kind === 'action') return f.run(rect);
   };
 
+  function renderTree() {
+    for (const d of path) expanded.add(d); // always show the way to where we are
+    const rows = [];
+    const walk = (node, trail) => {
+      const sub = node.kids.filter(k => k.kind === 'dir');
+      const isOpen = expanded.has(node);
+      const row = h('button', { class: 'frow' + (node === here() ? ' on' : ''), title: node.name, onclick: () => node !== here() && go(trail) });
+      row.style.paddingLeft = (4 + (trail.length - 1) * 14) + 'px';
+      const tog = h('span', { class: 'ftog' }, sub.length ? (isOpen ? '▾' : '▸') : '');
+      if (sub.length) tog.addEventListener('click', e => {
+        e.stopPropagation();
+        isOpen ? expanded.delete(node) : expanded.add(node);
+        renderTree();
+      });
+      row.append(tog, h('span', { class: 'fico' }, node.icon), h('span', { class: 'fname' }, node.name));
+      rows.push(row);
+      if (isOpen) for (const k of sub) walk(k, [...trail, k]);
+    };
+    walk(root, [root]);
+    tree.replaceChildren(...rows);
+    tree.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
+  }
+
   let w;
   function render() {
+    renderTree();
     const d = here();
     view.replaceChildren();
     for (const f of d.kids) {
@@ -503,11 +532,12 @@ export function openFiles(from) {
 
   render();
   w = wm.open({
-    id: 'files', title: root.name, icon: root.icon, body: view, w: 600, h: 420, from,
+    id: 'files', title: root.name, icon: root.icon, body: pane, w: 780, h: 460, from,
     menu: [
       { label: '← Back', action: () => history.length && go(history.pop(), false) },
       { label: '↑ Up', action: () => path.length > 1 && go(path.slice(0, -1)) },
       { label: 'Home', action: () => path.length > 1 && go([root]) },
+      ...(isMobile() ? [] : [{ label: '🗂 Folders', action: () => setPref('filesTree', !pane.classList.toggle('notree')) }]),
       '|', { addr: 'C:\\' },
     ],
     status: '0 object(s)', statusRight: 'My Potato',
