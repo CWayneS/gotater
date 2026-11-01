@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Credits &amp; License · Micropolis</title>
+<link rel="stylesheet" href="credits.css">
+</head>
+<body>
+<div class="win">
+  <div class="bar">🏙️ CREDITS.TXT — Micropolis for TaterOS</div>
+  <div class="body">
+    <h1>Credits &amp; License</h1>
+    <p>Micropolis for TaterOS is a lightly modified build of <strong>micropolisJS</strong> by Graeme McCutcheon
+      and contributors. micropolisJS is a port of <cite>Micropolis</cite>, the open-source release of the
+      original 1989 SimCity source code.</p>
+
+    <ul class="links">
+      <li><a href="about.html" target="_blank">About<small>How to play, from micropolisJS</small></a></li>
+      <li><a href="https://github.com/graememcc/micropolisJS" target="_blank" rel="noopener">Source<small>github.com/graememcc/micropolisJS</small></a></li>
+      <li><a href="thanks.html">Thanks<small>Who made it, and a charity they love</small></a></li>
+    </ul>
+
+    <h2>Where this build came from</h2>
+    <div class="panel">
+      <p>Upstream source: <a href="https://github.com/graememcc/micropolisJS" target="_blank" rel="noopener">github.com/graememcc/micropolisJS</a><br>
+        Built from commit <a href="https://github.com/graememcc/micropolisJS/tree/f13a1624d111d235e804bd80f48ba7c9f66a8e0f" target="_blank" rel="noopener"><code>f13a1624d111d235e804bd80f48ba7c9f66a8e0f</code></a><br>
+        Build: <code>npm ci &amp;&amp; npx webpack --mode production --no-optimization-minimize</code></p>
+      <p><code>src/micropolis.js</code> is the unminified webpack bundle. It includes jQuery 3.7.1 (MIT licensed).
+        The complete corresponding source is at the commit above.</p>
+    </div>
+
+    <h2>Changes made for TaterOS</h2>
+    <div class="panel">
+      <p>This is a modified version, not the original:</p>
+      <ul>
+        <li><code>index.html</code>: retitled, Twitter widget removed, text tweaks, and the header links and
+          bottom bar moved to this page and <a href="thanks.html">Thanks</a>.</li>
+        <li><code>tater.css</code>, <code>credits.css</code>: a Win95-style skin layered over the upstream stylesheet.</li>
+        <li><code>credits.html</code>, <code>thanks.html</code>: these pages.</li>
+        <li>The game code itself is unchanged.</li>
+      </ul>
+    </div>
+
+    <h2>License</h2>
+    <div class="panel">
+      <p>GNU General Public License v3, with additional terms. See <a href="LICENSE" target="_blank">LICENSE</a>
+        (micropolisJS's copyright notice and the GPL section 7 terms) and <a href="COPYING" target="_blank">COPYING</a>
+        (the full GPL v3 text).</p>
+      <p>Not affiliated with or endorsed by Electronic Arts. SimCity is a trademark of Electronic Arts Inc. and is
+        not used for this program.</p>
+      <p>Micropolis is a registered trademark of <a href="https://www.micropolis.com" target="_blank" rel="noopener">Micropolis Corporation (Micropolis GmbH)</a>
+        and is licensed here as a courtesy of the owner under the <a href="name_license.html" target="_blank">Micropolis Public Name License</a>.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
