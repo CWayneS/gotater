@@ -16,7 +16,9 @@ at github.com/CWayneS/gotater.
 - `index.html` + `os/` — the TaterOS shell (vanilla ES modules, GSAP from cdnjs).
   - `main.js` boot + `#open=<id>` deep links, `wm.js` window manager (apps load in
     iframes), `shell.js` folders/Run…/about.txt/dialogs, `desktop.js`, `taskbar.js`,
-    `fx.js` wallpapers + screensavers + easter eggs, `store.js` safe localStorage
+    `fx.js` wallpapers + screensavers + easter eggs, `files.js` the My Potato
+    file browser (fake joke files plus a Source Code folder of real files; add new
+    `os/` files to its `OS_FILES` list), `store.js` safe localStorage
     (`taterOS.*` keys), `os.css`.
   - On mobile the shell skips windows and navigates straight to the app URL.
 - `apps.js` — the app manifest. The header comment documents every field.

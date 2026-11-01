@@ -3,6 +3,7 @@ import { apps, categories, newest, openApp, openFolder, openAbout, openRun, open
 import { shutdown, previewSaver } from './fx.js';
 import * as wm from './wm.js';
 import { resetIcons } from './desktop.js';
+import { openFiles } from './files.js';
 
 const btn = document.getElementById('start-btn');
 const menu = document.getElementById('start-menu');
@@ -68,8 +69,9 @@ function buildMenu(applyPrefs) {
   for (const [k, c] of Object.entries(categories)) ul.append(sub(c.icon, c.title, apps.filter(a => a.category === k), k));
   ul.append(sub('✨', 'New!', newest(), 'new'));
   ul.append(h('hr'));
+  ul.append(item('🖥️', 'My Potato', () => openFiles()));
   ul.append(item('📝', 'about.txt', () => openAbout()));
-  ul.append(item('🖥️', 'Display Properties', () => openDisplay(applyPrefs, previewSaver)));
+  ul.append(item('🎨', 'Display Properties', () => openDisplay(applyPrefs, previewSaver)));
   ul.append(item('🧹', 'Tidy Desktop Icons', resetIcons));
   ul.append(item('🔎', 'Run…', openRun));
   ul.append(h('hr'));
