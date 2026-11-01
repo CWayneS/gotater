@@ -2,6 +2,7 @@
 import { apps, categories, appUrl, iconEl, openApp, openFolder, openAbout, newest, h } from './shell.js';
 import { load, save } from './store.js';
 import { trash } from './fx.js';
+import { openFiles } from './files.js';
 
 const desktop = document.getElementById('desktop');
 const COL = 96, ROW = 100, PAD = 12;
@@ -9,6 +10,7 @@ const COL = 96, ROW = 100, PAD = 12;
 const items = () => [
   ...Object.entries(categories).map(([k, c]) => ({ key: 'folder:' + k, title: c.title, icon: '📁', sub: c.icon, open: from => openFolder(k, from) })),
   { key: 'folder:new', title: 'New!', icon: '📁', sub: '✨', badge: newest().length, open: from => openFolder('new', from) },
+  { key: 'files', title: 'My Potato', icon: '🖥️', open: from => openFiles(from) },
   { key: 'app:gotater', title: 'Go Tater.exe', icon: '🥔', open: from => openApp('gotater', from) },
   { key: 'about', title: 'about.txt', icon: '📝', open: from => openAbout(from) },
   { key: 'trash', title: 'Trash', icon: '🗑️', open: from => trash(from) },
@@ -97,6 +99,8 @@ function renderLauncher() {
   about.addEventListener('click', () => openAbout());
   const bin = iconEl({ title: 'Trash', icon: '🗑️' }, { tile: false });
   bin.addEventListener('click', () => trash());
-  extras.append(about, bin);
+  const files = iconEl({ title: 'My Potato', icon: '🖥️' }, { tile: false });
+  files.addEventListener('click', () => openFiles());
+  extras.append(files, about, bin);
   desktop.append(h('h2', { class: 'm-cat' }, '🥔 System'), extras);
 }

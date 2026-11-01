@@ -5,6 +5,7 @@ import { setWallpaper, initIdle } from './fx.js';
 import * as desktop from './desktop.js';
 import * as taskbar from './taskbar.js';
 import { boot } from './boot.js';
+import { openFiles } from './files.js';
 
 const mobileQuery = matchMedia('(max-width: 720px), (pointer: coarse) and (max-width: 1024px)');
 
@@ -23,13 +24,14 @@ function openFromHash() {
   const id = new URLSearchParams(location.hash.slice(1)).get('open');
   if (!id) return;
   if (id === 'about') return openAbout();
+  if (id === 'files') return openFiles();
   const a = appById(id);
   if (a && isMobile()) return location.replace(appUrl(a));
   openApp(id);
 }
 
 wm.setFocusListener(w => {
-  const id = w?.opts.appId || (w?.id === 'about' ? 'about' : null);
+  const id = w?.opts.appId || (w?.id === 'about' || w?.id === 'files' ? w.id : null);
   const hash = id ? '#open=' + id : '';
   if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
 });
