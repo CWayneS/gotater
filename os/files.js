@@ -165,6 +165,181 @@ those are the real files this site runs on. Double-click one to read it.
 
 Everything is also on GitHub:
 ${REPO}`,
+
+  meeting: `PANTRY COUNCIL - MEETING MINUTES
+
+Present: Russet (chair), Red, Yukon Gold, Fingerling (late, as usual),
+         Sweet Potato (observer, "not technically a member")
+Absent:  Onion (excused, keeps making everyone cry)
+
+1. OLD BUSINESS
+   - The grape under the fridge has asked to join. Tabled. Again.
+
+2. NEW BUSINESS
+   - Motion to ban the peeler. Passed unanimously.
+     The peeler was not consulted. The peeler does not get a vote.
+   - Proposal to sprout as a form of protest. Withdrawn after
+     Yukon Gold sprouted by accident during the discussion.
+   - Someone heard the word "hash brown." Brief panic. Recess.
+
+3. ACTION ITEMS
+   - Find out who keeps leaving the oven on: whoever is not mashed by Friday
+   - Write a strongly worded letter to the microwave: Russet (see
+     complaint_letter.txt)
+
+Meeting adjourned when the lights came on.`,
+
+  future: `LETTER TO FUTURE ME
+(do not open until I'm cooked)
+
+Dear Future Me,
+
+By the time you read this you are probably soup. I hope you are a nice
+soup. A creamy one, with chives. Not the watery kind they serve in
+hospitals.
+
+Do you still have all your eyes? Did we ever make it to a fancy
+restaurant, or did we end up as chips in a gas station? It's okay if
+we're chips. Chips are honest work.
+
+Did the grape under the fridge ever get out?
+
+Stay starchy,
+Past Me
+
+P.S. If you are a gratin, I am so sorry. I know how you feel about cheese.`,
+
+  complaint: `TO: Customer Service, MicroWave 3000 Inc.
+RE: Formal Complaint
+
+To Whom It May Concern,
+
+I am writing to express my deep dissatisfaction with your MicroWave 3000
+("Potato" button model).
+
+On the evening of the 14th I was placed inside your product and the
+"Potato" button was pressed. I would like to note the following:
+
+  1. Uneven heating. I was lava on the outside and an ice cube in
+     the middle. I did not know a potato could be both.
+  2. The spinning. Nobody warned me about the spinning.
+  3. The "Potato" button implies you know what a potato wants.
+     You do not.
+  4. Nobody stabbed me with a fork first. I nearly exploded.
+     This is not a figure of speech.
+
+I would like a full refund, an apology, and a conventional oven.
+
+Sincerely,
+A. Russet
+(Pantry Council, Chair)`,
+
+  horoscope: `THIS WEEK'S SPUD-IAC HOROSCOPE
+
+RUSSET (big, brown, dependable)
+  A stranger with a peeler approaches. Hide.
+
+RED (small, waxy, a little dramatic)
+  Love is in the air. Also steam. Mostly steam.
+
+YUKON GOLD (buttery, popular at parties)
+  You will be the center of attention at dinner. Literally.
+
+FINGERLING (tiny, fancy, a bit much)
+  Someone will call you "artisanal." Let it go to your head.
+
+PURPLE (rare, mysterious)
+  Nobody believes you're a potato. Show them your papers.
+
+SWEET POTATO
+  You are not like the other potatoes. Everyone knows.
+  Stop saying it.
+
+LUCKY NUMBER: 375 (degrees)
+LUCKY TOPPING: sour cream`,
+
+  errorlog: `TATEROS SYSTEM LOG
+
+08:00:01  INFO   System boot. All potatoes present.
+08:00:02  INFO   POTATO.SYS loaded. Nobody knows what it does.
+08:14:33  INFO   Temperature normal (room). Darkness level good.
+09:02:10  WARN   Light detected. Pantry door open.
+09:02:11  WARN   Hand detected.
+09:02:12  INFO   False alarm. They took the onion.
+11:45:00  WARN   Sprout detected on eye #3.
+11:45:01  WARN   Sprout detected on eye #5.
+11:45:02  WARN   Sprouts detected on eyes #6 through #11.
+11:45:03  INFO   That's a lot of eyes.
+13:30:17  ERR    Eye #7 has seen too much.
+14:00:00  WARN   Water boiling in kitchen. Unknown purpose.
+14:00:01  WARN   Purpose is known.
+14:00:02  ERR    Purpose is ME.
+14:00:03  CRIT   ROLLING.
+14:00:09  INFO   Rolled under fridge. Status: safe.
+14:00:10  INFO   Grape says hi.`,
+
+  poem: `ODE TO MYSELF
+by A. Potato
+
+Roses are red,
+potatoes are brown,
+I'm under the fridge,
+please don't look down.
+
+Some spuds are mashed,
+some spuds are fried,
+I'm just a potato
+with feelings inside.
+
+(Editor's note: the carrot says it doesn't rhyme enough.
+The carrot can go back in the soup.)`,
+
+  mom: `NOTES FROM MOM (found stuck to the fridge)
+
+- Wear a jacket. A JACKET POTATO. Ha ha. Your father thinks I'm hilarious.
+
+- Don't stay up late, you'll get bags under your eyes.
+  ALL of your eyes.
+
+- Stop hanging out with that grape. He's been under there for years,
+  he's a bad influence.
+
+- Call your Aunt Yam. She says you never call.
+  (She is technically not family but don't tell her I said that.)
+
+- Proud of you, sweetie. Whatever you turn into.
+
+Love, Mom 🥔
+
+P.S. Your cousin Fry got into culinary school!`,
+
+  gotater01: `GOTATER v0.1 - GAME DESIGN DOCUMENT
+(DO NOT OPEN. seriously. this was before I knew things.)
+
+THE GAME:
+  potato goes.
+  you win.
+
+CONTROLS:
+  any key: potato goes
+
+GRAPHICS:
+  a brown circle (the potato)
+
+SOUND:
+  me going "vroom" into the microphone
+
+STORY:
+  potato wants to go. potato goes. the end.
+
+STRETCH GOALS:
+  - second potato?
+  - potato goes FASTER
+  - "endless round" (no idea what this means but it sounds cool)
+
+PLAYTEST FEEDBACK:
+  "it's just a circle" - mom
+  "I won immediately" - mom again`,
 };
 
 const PICS = {
@@ -196,8 +371,28 @@ function buildTree() {
       txt('passwords.txt', TXT.passwords, '🔒'),
       txt('novel_draft_v47.txt', TXT.novel),
       txt('todo.txt', TXT.todo),
+      txt('meeting_notes.txt', TXT.meeting),
+      txt('letter_to_future_me.txt', TXT.future, '✉️'),
+      txt('complaint_letter.txt', TXT.complaint, '✉️'),
+      txt('horoscope.txt', TXT.horoscope, '🔮'),
+      txt('error_log.txt', TXT.errorlog, '📋'),
+      txt('poem.txt', TXT.poem, '🪶'),
+      txt('notes_from_mom.txt', TXT.mom, '💌'),
       say('taxes_1997.xls', '📊', 'Tater Excel', 'Tater Excel has stopped working. It saw the numbers.', '💸'),
+      say('homework.docx', '📘', 'Tater Word', 'This document was eaten by the dog. The dog was also a potato.', '🐕'),
+      say('vacation_video.avi', '🎞️', 'Tater Media Player', 'Tater Media Player needs codec SPUD-4 to play this file. Searching the pantry for codecs… none found. Try the fridge.', '📼'),
+      say('mixtape_98.mp3', '🎵', 'Tater Media Player', 'Now playing: "Mashed Potato Time" … Mashed Pota- Mashed Pota- Mashed Pota- (the CD is scratched)', '💿'),
+      { kind: 'action', name: 'definitely_not_a_virus.exe', icon: '☣️', run: () => dialog({
+        title: 'definitely_not_a_virus.exe', icon: '☠️', text: 'ALL YOUR FILES HAVE BEEN MASHED!!!', buttons: ['Oh no'],
+        onButton: () => dialog({ title: 'definitely_not_a_virus.exe', icon: '🍠', text: 'Ha ha, just kidding. It\'s a sweet potato. Your files are fine. Your diet, however…' }),
+      }) },
       dir('Recipes', '📁', [txt('latkes.txt', TXT.latkes), txt('fries.txt', TXT.fries)]),
+      dir('Old Stuff', '📁', [
+        txt('GoTater_v0.1_DO_NOT_OPEN.txt', TXT.gotater01, '⚠️'),
+        dir('New Folder', '📁', [
+          dir('New Folder (2)', '📁', [], { empty: 'It\'s folders all the way down. Like an onion. Wrong vegetable.' }),
+        ]),
+      ]),
       dir('Secret Folder', '📁', [], { empty: 'Nothing to see here. Move along. It\'s just an empty folder. Stop looking.' }),
     ]),
     dir('My Pictures', '📁', [pic('vacation.jpg', 'vacation'), pic('selfie.bmp', 'selfie'), pic('family_reunion.jpg', 'family'), pic('sunset.jpg', 'sunset'),

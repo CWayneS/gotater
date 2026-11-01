@@ -113,7 +113,9 @@ export function dialog({ title, icon = 'ℹ️', text, buttons = ['OK'], onButto
     actions.append(h('button', { class: 'bevel', onclick: () => { wm.close(id); onButton?.(label); } }, label));
   }
   const w = wm.open({ id, title, icon: '', body, w: 380, h: 190, kind: 'dialog', center: true, resizable: false });
-  actions.firstChild.focus();
+  // focus after the current key event finishes, or the Enter that opened the
+  // dialog (e.g. on a file icon) also "clicks" OK and closes it instantly
+  setTimeout(() => actions.firstChild.focus());
   return w;
 }
 
