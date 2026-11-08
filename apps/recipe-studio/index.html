@@ -564,6 +564,47 @@
   .import-status { font-size:.75rem; margin-top:6px; line-height:1.4; display:none; }
   .import-status.show { display:block; }
   .import-status.ok { color:#8fc98f; } .import-status.err { color:#e08a7a; } .import-status.busy { color:var(--ui-accent); }
+  /* PHOTO (sidebar) */
+  .photo-actions { display:flex; gap:6px; }
+  .photo-btn { flex:1; padding:8px; border:1px solid var(--ui-border); background:var(--ui-bg); color:var(--ui-text); border-radius:7px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:.78rem; transition:all .2s; }
+  .photo-btn:hover { border-color:var(--ui-accent); color:var(--ui-accent); }
+  .photo-btn:disabled { opacity:.4; pointer-events:none; }
+  .photo-btn.danger:hover { border-color:#a04040; color:#e07070; }
+  .photo-hint { font-size:.7rem; color:var(--ui-muted); line-height:1.4; }
+  .frame-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .frame-opt { position:relative; background:#ebe4d8; border:2px solid transparent; border-radius:8px; padding:4px 4px 5px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; transition:all .2s; }
+  .frame-opt .rc-photo-empty { font-size:0; }
+  .frame-opt > div:first-child { height:88px; display:flex; align-items:center; justify-content:center; }
+  .frame-opt:hover { background:#f6f1e8; }
+  .frame-opt.selected { background:#fffaf2; border-color:var(--ui-text); }
+  .frame-opt.selected::after { content:'✓'; position:absolute; top:3px; left:4px; width:16px; height:16px; border-radius:50%; background:var(--ui-text); color:var(--ui-bg); font-size:.6rem; display:flex; align-items:center; justify-content:center; z-index:3; }
+  .frame-opt .rc-photo { float:none; margin:0; cursor:pointer; }
+  .frame-opt span { font-size:.62rem; color:#5a4a3a; text-align:center; line-height:1.1; }
+
+  /* PHOTO (on the card) — float right so the header text wraps around it */
+  .rc-photo { float:right; position:relative; z-index:2; margin:0 0 14px 20px; width:max-content; --acc:#c8955a; }
+  .rc-photo img, .rc-photo .rc-photo-empty { display:block; width:var(--ps); height:var(--ps); object-fit:cover; }
+  .rc-photo .rc-photo-empty { background:repeating-linear-gradient(45deg,#00000008 0 8px,#00000014 8px 16px); border:2px dashed #00000030; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font:500 calc(var(--ps)*.07)/1.2 'DM Sans',sans-serif; color:#00000080; text-align:center; }
+  .rc-photo .rc-photo-empty b { font-size:calc(var(--ps)*.28); line-height:1; }
+  #recipeCard .rc-photo { cursor:pointer; }
+  .recipe-card.has-photo .rc-cols { clear:right; }
+  .theme-editorial > .rc-photo { margin:28px 34px 14px 20px; }
+  .frame-rounded img, .frame-rounded .rc-photo-empty { border-radius:14%; }
+  .frame-circle img, .frame-circle .rc-photo-empty { border-radius:50%; }
+  .frame-accent { border:3px solid var(--acc); padding:5px; border-radius:6px; }
+  .frame-accent img { border-radius:2px; }
+  .frame-fade img { -webkit-mask-image:linear-gradient(to right,#0000,#000 18%,#000 82%,#0000),linear-gradient(#0000,#000 18%,#000 82%,#0000); -webkit-mask-composite:source-in; mask-image:linear-gradient(to right,#0000,#000 18%,#000 82%,#0000),linear-gradient(#0000,#000 18%,#000 82%,#0000); mask-composite:intersect; }
+  .frame-watercolor img { -webkit-mask:var(--wc-mask) center/100% 100% no-repeat; mask:var(--wc-mask) center/100% 100% no-repeat; }
+  .frame-polaroid { background:#fff; padding:7px 7px 26px; box-shadow:0 3px 10px #0003; transform:rotate(2.5deg); }
+  .frame-taped { padding:5px; background:#ffffffcc; box-shadow:0 2px 8px #0002; transform:rotate(-2deg); }
+  .frame-taped::before, .frame-taped::after { content:''; position:absolute; width:38%; height:16%; background:#f3e3b0a8; box-shadow:0 1px 2px #0001; }
+  .frame-taped::before { top:-5%; left:-9%; transform:rotate(-38deg); }
+  .frame-taped::after { bottom:-5%; right:-9%; transform:rotate(-38deg); }
+  .frame-stamp { --r:5px; padding:11px; background:#fffdf7; filter:drop-shadow(0 1px 2px #0003); -webkit-mask:radial-gradient(var(--r),#0000 98%,#000) round calc(-1.5*var(--r)) calc(-1.5*var(--r))/calc(3*var(--r)) calc(3*var(--r)),linear-gradient(#000 0 0) no-repeat 50%/calc(100% - 3*var(--r)) calc(100% - 3*var(--r)); mask:radial-gradient(var(--r),#0000 98%,#000) round calc(-1.5*var(--r)) calc(-1.5*var(--r))/calc(3*var(--r)) calc(3*var(--r)),linear-gradient(#000 0 0) no-repeat 50%/calc(100% - 3*var(--r)) calc(100% - 3*var(--r)); }
+  .frame-torn { padding:9px; background:#fffdf5; clip-path:var(--torn-clip); }
+  .frame-vintage { padding:6px; background:#f6efdf; border-radius:3px; box-shadow:0 2px 6px #0003; }
+  .frame-vintage img { filter:sepia(.55) contrast(1.05) saturate(.85); -webkit-mask-image:radial-gradient(closest-side,#000 72%,#000c 88%,#0008); mask-image:radial-gradient(closest-side,#000 72%,#000c 88%,#0008); }
+  .rc-photo-broken { display:none; }
   .import-undo { background:none; border:none; color:var(--ui-accent); text-decoration:underline; cursor:pointer; font:inherit; padding:0; margin-left:4px; }
 
   /* ============================================================
@@ -596,6 +637,7 @@
     .main { display:block; }
     .print-target { display:block!important; box-shadow:none!important; }
     .recipe-card { page-break-inside:avoid; }
+    .rc-photo.is-empty { display:none; }
   }
   .print-target { display:none; }
 </style>
@@ -672,6 +714,19 @@
       <div class="customizer">
         <div class="custom-row"><span class="custom-label">Accent Color</span><input type="color" id="cust-accent" value="#c8955a" oninput="applyCustom()"></div>
       </div>
+      <div class="section-header" style="margin-top:16px;">📷 Photo</div>
+      <div class="toggle-row"><span class="toggle-label">Show Photo</span><div class="toggle" id="tog-photo" onclick="toggleSection(this,'tog-photo')"></div></div>
+      <div class="customizer">
+        <div class="photo-actions">
+          <button class="photo-btn" onclick="pickPhoto()">🖼 Choose Photo…</button>
+          <button class="photo-btn danger" id="photo-remove" onclick="removePhoto()" disabled>Remove</button>
+        </div>
+        <input type="file" id="photo-file" accept="image/*" hidden>
+        <div class="photo-hint">You can also drop an image onto the card. Imported recipes bring their own photo when the site has one.</div>
+        <div class="custom-row"><span class="custom-label">Photo Size</span><input type="range" id="cust-photosize" min="100" max="300" step="25" value="200" oninput="applyCustom()"><span class="range-val" id="cust-photosize-val">2″</span></div>
+        <div class="custom-label" style="flex:none">Frame</div>
+        <div class="frame-grid" id="frameGrid"></div>
+      </div>
       <div class="section-header" style="margin-top:16px;">📐 Layout</div>
       <div class="customizer">
         <div class="custom-row"><span class="custom-label">Font Scale</span><input type="range" id="cust-fontscale" min="70" max="130" value="100" oninput="applyCustom()"><span class="range-val" id="cust-fontscale-val">100%</span></div>
@@ -721,7 +776,8 @@ const THEMES = [
 let state = {
   theme:'rustic', size:'size-letter', accent:'#c8955a',
   fontScale:100, padding:100, lineSpace:100,
-  sections:{ desc:true, meta:true, notes:true, tags:true, deco:true },
+  sections:{ desc:true, meta:true, notes:true, tags:true, deco:true, photo:false },
+  photo:{ src:'', frame:'polaroid', size:200 },
   ingredientGroups:[
     { name:'Pasta', items:[
       {amount:'400g', name:'fettuccine or pappardelle'},
@@ -770,6 +826,7 @@ function init() {
   renderSteps();
   renderCard();
   bindInputs();
+  initPhoto();
   document.getElementById('import-url').addEventListener('keydown', e => { if (e.key==='Enter') importFromUrl(); });
 }
 function bindInputs() {
@@ -881,6 +938,9 @@ function applyCustom() {
   document.getElementById('cust-fontscale-val').textContent=state.fontScale+'%';
   document.getElementById('cust-padding-val').textContent=state.padding+'%';
   document.getElementById('cust-linespace-val').textContent=state.lineSpace+'%';
+  state.photo.size=parseInt(document.getElementById('cust-photosize').value);
+  document.getElementById('cust-photosize-val').textContent=(state.photo.size/100)+'″';
+  buildFrameGrid();
   renderCard();
 }
 function toggleSection(el,id) {
@@ -1036,6 +1096,12 @@ function renderCard() {
     </div>`;
   }
 
+  const showPhoto = state.sections.photo;
+  card.classList.toggle('has-photo', showPhoto);
+  if (showPhoto) {
+    const px = state.photo.size / 100 * 96 * (PHOTO_SIZE_SCALE[state.size] || 1);
+    body = body.replace(/(<div class="theme-[a-z]+"[^>]*>)/, `$1${photoHTML(px, state.photo.frame, state.photo.src, acc)}`);
+  }
   card.innerHTML = body;
   rescale();
 }
@@ -1155,6 +1221,99 @@ function doPrint() {
   pt.innerHTML=document.getElementById('recipeCard').outerHTML;
   window.print();
   pt.innerHTML='';
+}
+
+// ─── PHOTO ────────────────────────────────────────────────────────────────────
+const FRAMES = [
+  { id:'none',       name:'Plain' },
+  { id:'rounded',    name:'Rounded' },
+  { id:'circle',     name:'Circle' },
+  { id:'accent',     name:'Accent Ring' },
+  { id:'fade',       name:'Soft Fade' },
+  { id:'watercolor', name:'Watercolor' },
+  { id:'vintage',    name:'Vintage' },
+  { id:'polaroid',   name:'Polaroid' },
+  { id:'taped',      name:'Taped' },
+  { id:'stamp',      name:'Stamp' },
+  { id:'torn',       name:'Torn Paper' },
+];
+// photos are 2″ on full pages; the little cards get a proportionally smaller one
+const PHOTO_SIZE_SCALE = { 'size-4x6':.62, 'size-5x7':.72 };
+
+(function setupFrameStyles() {
+  // Watercolor: a turbulence-warped, blurred blob used as an alpha mask
+  const wc = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-10%' y='-10%' width='120%' height='120%'><feTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='3' seed='7'/><feDisplacementMap in='SourceGraphic' scale='14' xChannelSelector='R' yChannelSelector='G'/><feGaussianBlur stdDeviation='1.4'/></filter><rect x='10' y='10' width='80' height='80' rx='6' filter='url(#f)'/></svg>`;
+  // Torn Paper: a jagged polygon from a tiny seeded RNG, so it's the same every render
+  let seed = 42; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pts = [], n = 22, j = () => (rnd() * 3.2).toFixed(1);
+  for (let i = 0; i < n; i++) pts.push(`${(i / n * 100).toFixed(1)}% ${j()}%`);
+  for (let i = 0; i < n; i++) pts.push(`${100 - j()}% ${(i / n * 100).toFixed(1)}%`);
+  for (let i = n; i > 0; i--) pts.push(`${(i / n * 100).toFixed(1)}% ${100 - j()}%`);
+  for (let i = n; i > 0; i--) pts.push(`${j()}% ${(i / n * 100).toFixed(1)}%`);
+  const root = document.documentElement.style;
+  root.setProperty('--wc-mask', `url("data:image/svg+xml,${encodeURIComponent(wc)}")`);
+  root.setProperty('--torn-clip', `polygon(${pts.join(',')})`);
+})();
+
+function photoHTML(px, frame, src, acc) {
+  const inner = src
+    ? `<img src="${escHtml(src)}" alt="" referrerpolicy="no-referrer" onerror="this.closest('.rc-photo').classList.add('rc-photo-broken')">`
+    : `<div class="rc-photo-empty"><b>🥔</b>Click to add<br>a photo</div>`;
+  return `<div class="rc-photo frame-${frame}${src ? '' : ' is-empty'}" style="--ps:${Math.round(px)}px;--acc:${acc}" title="Click to change photo">${inner}</div>`;
+}
+
+function buildFrameGrid() {
+  const grid = document.getElementById('frameGrid');
+  grid.innerHTML = FRAMES.map(f => `
+    <div class="frame-opt${f.id === state.photo.frame ? ' selected' : ''}" data-frame="${f.id}" onclick="selectFrame('${f.id}')">
+      <div>${photoHTML(52, f.id, state.photo.src, state.accent)}</div><span>${f.name}</span>
+    </div>`).join('');
+}
+function selectFrame(id) {
+  state.photo.frame = id;
+  document.querySelectorAll('.frame-opt').forEach(el => el.classList.toggle('selected', el.dataset.frame === id));
+  renderCard();
+}
+function setPhoto(src, show = true) {
+  state.photo.src = src || '';
+  document.getElementById('photo-remove').disabled = !src;
+  if (show && src && !state.sections.photo) {
+    state.sections.photo = true;
+    document.getElementById('tog-photo').classList.add('on');
+  }
+  buildFrameGrid(); renderCard();
+}
+function pickPhoto() { document.getElementById('photo-file').click(); }
+function removePhoto() { setPhoto(''); }
+
+// Shrink big camera photos so the page stays snappy (and printing doesn't choke)
+function loadPhotoFile(file) {
+  if (!file || !/^image\//.test(file.type)) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1000, k = Math.min(1, max / Math.max(img.width, img.height));
+      if (k === 1 && file.size < 1.5e6) return setPhoto(reader.result);
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      setPhoto(/png|webp|gif/.test(file.type) ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', .9));
+    };
+    img.onerror = () => alert("That image wouldn't load. Maybe it's a potato in disguise?");
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function initPhoto() {
+  buildFrameGrid();
+  const file = document.getElementById('photo-file');
+  file.addEventListener('change', () => { loadPhotoFile(file.files[0]); file.value = ''; });
+  document.getElementById('recipeCard').addEventListener('click', e => { if (e.target.closest('.rc-photo')) pickPhoto(); });
+  const area = document.getElementById('previewArea');
+  area.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
+  area.addEventListener('drop', e => { e.preventDefault(); loadPhotoFile(e.dataTransfer.files[0]); });
 }
 
 // ─── IMPORT FROM URL ──────────────────────────────────────────────────────────
@@ -1314,13 +1473,15 @@ function snapshotRecipe() {
     fields: Object.fromEntries(ids.map(id => [id, document.getElementById(id).value])),
     groups: JSON.parse(JSON.stringify(state.ingredientGroups)),
     steps: [...state.steps],
+    photo: state.photo.src,
   };
 }
 function restoreRecipe(snap) {
   Object.entries(snap.fields).forEach(([id, v]) => { document.getElementById(id).value = v; });
   state.ingredientGroups = snap.groups;
   state.steps = snap.steps;
-  renderIngredientGroups(); renderSteps(); renderCard();
+  renderIngredientGroups(); renderSteps();
+  setPhoto(snap.photo, false);
 }
 function undoImport() {
   if (!importUndo) return;
@@ -1365,9 +1526,15 @@ async function importFromUrl() {
     set('f-tags', tags.join(', '));
     state.ingredientGroups = [{ name: '', items: ingredients.length ? ingredients : [{ amount: '', name: '' }] }];
     state.steps = steps.length ? steps : [''];
-    renderIngredientGroups(); renderSteps(); renderCard();
+    renderIngredientGroups(); renderSteps();
+    const bits = [];
+    let image = [].concat(r.image || [])[0];
+    if (image && typeof image === 'object') image = image.url || image.contentUrl || image['@id'];
+    image = /^https?:\/\//i.test(image || '') ? image : (page.meta?.['og:image'] || '');
+    setPhoto(image ? new URL(image, page.url || url).toString() : '', false);
+    if (image) bits.push('a photo');
 
-    const bits = [`${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'}`, `${steps.length} step${steps.length === 1 ? '' : 's'}`];
+    bits.unshift(`${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'}`, `${steps.length} step${steps.length === 1 ? '' : 's'}`);
     setImportStatus('ok', `✓ Imported ${escText(bits.join(', '))} from ${escText(host)}. Give it a once-over. <button class="import-undo" onclick="undoImport()">Undo</button>`);
   } catch (e) {
     setImportStatus('err', escText(e.message || 'Import failed.'));

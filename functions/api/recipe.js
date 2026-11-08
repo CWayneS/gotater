@@ -60,7 +60,7 @@ export async function onRequestGet({ request }) {
       element(e) {
         const key = (e.getAttribute('property') || e.getAttribute('name') || '').toLowerCase();
         const val = e.getAttribute('content');
-        if (val && ['og:title', 'og:description', 'og:site_name', 'description', 'author'].includes(key))
+        if (val && ['og:title', 'og:description', 'og:site_name', 'og:image', 'description', 'author'].includes(key))
           out.meta[key] = val.slice(0, 2000);
       },
     })
