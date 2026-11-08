@@ -25,6 +25,10 @@ at github.com/CWayneS/gotater.
 - `apps/<id>/index.html` — one self-contained app per folder (HTML, CSS and JS
   inline, no build step). Apps don't talk to the shell; they just run in an iframe
   and must also work standalone in their own tab and on phones.
+- `functions/` — Cloudflare Pages Functions (plain JS, Pages deploys them with no
+  build step). `functions/api/recipe.js` fetches recipe pages for Recipe Studio's
+  Import from URL, since most sites block cross-origin requests. Not served by
+  `python3 -m http.server`; the app falls back to a public CORS proxy locally.
 - `_redirects` — Cloudflare 301s from the old flat URLs (e.g. `/Swindler.html`).
   Only needs touching if an app's id changes.
 

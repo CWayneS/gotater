@@ -553,6 +553,19 @@
   .add-group-btn { width:100%; padding:9px; border:1px dashed var(--ui-accent); background:rgba(200,149,90,.06); color:var(--ui-accent); border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:.8rem; font-weight:500; transition:all .2s; margin-top:6px; }
   .add-group-btn:hover { background:rgba(200,149,90,.14); }
 
+  /* IMPORT FROM URL */
+  .import-box { background:var(--ui-bg); border:1px solid var(--ui-border); border-radius:8px; padding:10px; margin-bottom:14px; }
+  .import-row { display:flex; gap:6px; }
+  .import-row .field-input { flex:1; min-width:0; }
+  .import-btn { padding:0 14px; background:var(--ui-accent); color:#fff; border:none; border-radius:7px; font-family:'DM Sans',sans-serif; font-size:.8rem; font-weight:500; cursor:pointer; white-space:nowrap; transition:all .2s; }
+  .import-btn:hover:not(:disabled) { background:#d4a468; }
+  .import-btn:disabled { opacity:.6; cursor:wait; }
+  .import-hint { font-size:.7rem; color:var(--ui-muted); margin-top:6px; line-height:1.4; }
+  .import-status { font-size:.75rem; margin-top:6px; line-height:1.4; display:none; }
+  .import-status.show { display:block; }
+  .import-status.ok { color:#8fc98f; } .import-status.err { color:#e08a7a; } .import-status.busy { color:var(--ui-accent); }
+  .import-undo { background:none; border:none; color:var(--ui-accent); text-decoration:underline; cursor:pointer; font:inherit; padding:0; margin-left:4px; }
+
   /* ============================================================
      SIZE OVERRIDES (compact for cards)
   ============================================================ */
@@ -614,6 +627,15 @@
 
     <!-- RECIPE TAB -->
     <div class="sidebar-content tab-panel active" id="tab-recipe">
+      <div class="section-header">🌐 Import from URL</div>
+      <div class="import-box">
+        <div class="import-row">
+          <input type="url" class="field-input" id="import-url" placeholder="https://somefoodblog.com/best-potato-soup" autocomplete="off" spellcheck="false">
+          <button class="import-btn" id="import-btn" onclick="importFromUrl()">Import</button>
+        </div>
+        <div class="import-hint">Paste a recipe link and skip the 4,000-word story about someone's grandmother's farm. Works with most sites that publish recipe data.</div>
+        <div class="import-status" id="import-status"></div>
+      </div>
       <div class="section-header">📝 Basic Info</div>
       <div class="field-group"><label class="field-label">Recipe Title</label><input type="text" class="field-input" id="f-title" value="Brown Butter Sage Pasta"></div>
       <div class="field-group"><label class="field-label">Subtitle / Tagline</label><input type="text" class="field-input" id="f-subtitle" value="A cozy, nutty Italian classic"></div>
@@ -748,6 +770,7 @@ function init() {
   renderSteps();
   renderCard();
   bindInputs();
+  document.getElementById('import-url').addEventListener('keydown', e => { if (e.key==='Enter') importFromUrl(); });
 }
 function bindInputs() {
   ['f-title','f-subtitle','f-desc','f-prep','f-cook','f-servings','f-difficulty','f-cuisine','f-notes','f-tags']
@@ -791,6 +814,7 @@ function renderIngredientGroups() {
 }
 
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function escText(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function addGroup() {
   state.ingredientGroups.push({ name:'', items:[{amount:'',name:''}] });
@@ -813,7 +837,7 @@ function renderSteps() {
   const list=document.getElementById('steps-list'); list.innerHTML='';
   state.steps.forEach((step,i)=>{
     const row=document.createElement('div'); row.className='dyn-item';
-    row.innerHTML=`<textarea placeholder="Step ${i+1}..." oninput="state.steps[${i}]=this.value;renderCard()">${step}</textarea>
+    row.innerHTML=`<textarea placeholder="Step ${i+1}..." oninput="state.steps[${i}]=this.value;renderCard()">${escHtml(step)}</textarea>
       <button class="del-btn" onclick="removeStep(${i})">×</button>`;
     const ta=row.querySelector('textarea');
     setTimeout(()=>{ ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; },0);
@@ -871,16 +895,17 @@ function darken(h,a){ const{r,g,b}=hexToRgb(h); const m=v=>Math.round(v*(1-a)); 
 // ─── RENDER CARD ──────────────────────────────────────────────────────────────
 function renderCard() {
   const card=document.getElementById('recipeCard');
-  const title=document.getElementById('f-title').value||'Untitled Recipe';
-  const subtitle=document.getElementById('f-subtitle').value;
-  const desc=document.getElementById('f-desc').value;
-  const prep=document.getElementById('f-prep').value;
-  const cook=document.getElementById('f-cook').value;
-  const servings=document.getElementById('f-servings').value;
-  const difficulty=document.getElementById('f-difficulty').value;
-  const cuisine=document.getElementById('f-cuisine').value;
-  const notes=document.getElementById('f-notes').value;
-  const tags=(document.getElementById('f-tags').value||'').split(',').map(t=>t.trim()).filter(Boolean);
+  const val=id=>escText(document.getElementById(id).value);
+  const title=val('f-title')||'Untitled Recipe';
+  const subtitle=val('f-subtitle');
+  const desc=val('f-desc');
+  const prep=val('f-prep');
+  const cook=val('f-cook');
+  const servings=val('f-servings');
+  const difficulty=val('f-difficulty');
+  const cuisine=val('f-cuisine');
+  const notes=val('f-notes');
+  const tags=(document.getElementById('f-tags').value||'').split(',').map(t=>escText(t.trim())).filter(Boolean);
 
   card.className='recipe-card '+state.size;
 
@@ -900,14 +925,14 @@ function renderCard() {
   // Build grouped ingredients HTML
   const ingHTML = state.ingredientGroups.map(group => {
     const hasName = group.name && group.name.trim();
-    const groupTitle = hasName ? `<div class="rc-ing-group-title">${group.name.trim()}</div>` : '';
+    const groupTitle = hasName ? `<div class="rc-ing-group-title">${escText(group.name.trim())}</div>` : '';
     const items = group.items.map(i =>
-      `<div class="rc-ingredient"><span class="rc-ing-amount">${i.amount}</span><span>${i.name}</span></div>`
+      `<div class="rc-ingredient"><span class="rc-ing-amount">${escText(i.amount)}</span><span>${escText(i.name)}</span></div>`
     ).join('');
     return groupTitle + items;
   }).join('');
 
-  const stepsHTML= state.steps.map((s,i)=>`<div class="rc-step"><div class="rc-step-num">${i+1}</div><div>${s}</div></div>`).join('');
+  const stepsHTML= state.steps.map((s,i)=>`<div class="rc-step"><div class="rc-step-num">${i+1}</div><div>${escText(s)}</div></div>`).join('');
   const notesHTML= state.sections.notes && notes ? `<div class="rc-notes">📌 ${notes}</div>` : '';
   const tagsHTML = state.sections.tags && tags.length ? `<div class="rc-tags">${tags.map(t=>`<span class="rc-tag">${t}</span>`).join('')}</div>` : '';
   const decoHTML = state.sections.deco ? '<div class="rc-deco">✦ ✦ ✦</div>' : '';
@@ -1130,6 +1155,225 @@ function doPrint() {
   pt.innerHTML=document.getElementById('recipeCard').outerHTML;
   window.print();
   pt.innerHTML='';
+}
+
+// ─── IMPORT FROM URL ──────────────────────────────────────────────────────────
+// Recipe sites embed schema.org/Recipe JSON-LD for search engines; we read that.
+// On Cloudflare Pages the fetch goes through /api/recipe (functions/api/recipe.js).
+// When that isn't there (e.g. python http.server locally) we fall back to a
+// public CORS proxy and pull the JSON-LD out of the HTML ourselves.
+let importUndo = null;
+
+function setImportStatus(kind, html) {
+  const el = document.getElementById('import-status');
+  el.className = 'import-status show ' + kind;
+  el.innerHTML = html;
+}
+
+// HTML snippets / entities -> plain text, whitespace tidied
+function plainText(v) {
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[0];
+  if (typeof v === 'object') v = v.text || v.name || v['@value'] || '';
+  const s = String(v);
+  let txt = s;
+  if (/[<&]/.test(s)) {
+    const body = new DOMParser().parseFromString(s, 'text/html').body;
+    body.querySelectorAll('script,style').forEach(n => n.remove());
+    txt = body.textContent;
+  }
+  return txt.replace(/\s+/g, ' ').trim();
+}
+
+// "PT1H30M" -> "1 hr 30 min"
+function isoDuration(v) {
+  const s = plainText(v);
+  const m = /^P(?:(\d+)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i.exec(s);
+  if (!m) return s;
+  const mins = Math.round((+m[1] || 0) * 1440 + (+m[2] || 0) * 60 + (+m[3] || 0) + (+m[4] || 0) / 60);
+  if (!mins) return '';
+  const h = Math.floor(mins / 60), mm = mins % 60;
+  return h ? `${h} hr${mm ? ` ${mm} min` : ''}` : `${mm} min`;
+}
+
+function recipeYield(v) {
+  const list = (Array.isArray(v) ? v : [v]).map(plainText).filter(Boolean);
+  if (!list.length) return '';
+  const pick = list.find(x => /^\d+(\s*[-–]\s*\d+)?$/.test(x)) || list[0];
+  return pick.replace(/^(serves|makes|yield:?)\s+/i, '').replace(/\s+(servings?|people|portions)$/i, '');
+}
+
+function textList(v) {
+  if (!v) return [];
+  const arr = Array.isArray(v) ? v : String(v).split(',');
+  return arr.map(plainText).filter(Boolean);
+}
+
+const FRAC = '¼½¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘⅙⅚';
+const QTY = `(?:\\d+(?:[.,]\\d+)?(?:\\s+\\d+\\/\\d+|\\s*[${FRAC}])?|\\d+\\/\\d+|[${FRAC}])`;
+const UNITS = [
+  'cups?','c\\.?','tablespoons?','tbsps?\\.?','tbs\\.?','tbl\\.?','teaspoons?','tsps?\\.?',
+  'kilograms?','kgs?','grams?','g','milligrams?','mg','millilit(?:er|re)s?','mls?','lit(?:er|re)s?','l',
+  'fl\\.?\\s?oz\\.?','fluid\\s+ounces?','ounces?','oz\\.?','pounds?','lbs?\\.?',
+  'pinch(?:es)?','dash(?:es)?','cloves?','cans?','tins?','jars?','packages?','pkgs?\\.?','packets?',
+  'sticks?','slices?','pieces?','quarts?','qts?\\.?','pints?','pts?\\.?','gallons?','gal\\.?',
+  'bunch(?:es)?','handfuls?','sprigs?','heads?','stalks?','drops?','cm','inch(?:es)?',
+].join('|');
+const ING_RE = new RegExp(
+  `^(${QTY}(?:\\s*(?:-|–|to)\\s*${QTY})?(?:\\s*\\([^)]*\\))?(?:\\s*(?:${UNITS})(?=[\\s,.)]|$))?)(?:\\s+of\\b)?[\\s,]*(.*)$`, 'i');
+
+// "1 (14 oz) can diced tomatoes" -> { amount:"1 (14 oz) can", name:"diced tomatoes" }
+function splitIngredient(line) {
+  const s = plainText(line).replace(/^[^\w¼-¾⅐-⅞(]+/, '');
+  const m = ING_RE.exec(s);
+  if (m && m[2]) return { amount: m[1].trim(), name: m[2].trim() };
+  return { amount: '', name: s };
+}
+
+function flattenSteps(v, out = []) {
+  if (!v) return out;
+  if (typeof v === 'string') {
+    let parts = v.split(/\n+|<br\s*\/?>|<\/p>|<\/li>/i).map(plainText).filter(Boolean);
+    if (parts.length === 1) parts = parts[0].split(/\s+(?=(?:step\s*)?\d+[.:)]\s)/i);
+    parts.forEach(p => out.push(p));
+  } else if (Array.isArray(v)) {
+    v.forEach(x => flattenSteps(x, out));
+  } else if (typeof v === 'object') {
+    const kids = v.itemListElement || v.steps;
+    if (kids) {
+      const start = out.length;
+      flattenSteps(kids, out);
+      const label = plainText(v.name);
+      if (label && out.length > start) out[start] = `${label}: ${out[start]}`;
+    } else {
+      const t = plainText(v.text) || plainText(v.name) || plainText(v.description);
+      if (t) out.push(t);
+    }
+  }
+  return out;
+}
+
+function findRecipe(node, depth = 0) {
+  if (!node || typeof node !== 'object' || depth > 8) return null;
+  if (Array.isArray(node)) {
+    for (const n of node) { const r = findRecipe(n, depth + 1); if (r) return r; }
+    return null;
+  }
+  const type = [].concat(node['@type'] || []).map(String);
+  if (type.some(t => /(^|[/:])Recipe$/i.test(t))) return node;
+  for (const k of ['@graph', 'mainEntity', 'mainEntityOfPage', 'itemListElement', 'item']) {
+    const r = findRecipe(node[k], depth + 1); if (r) return r;
+  }
+  return null;
+}
+
+function parseJsonLd(blocks) {
+  for (const raw of blocks || []) {
+    let data;
+    try { data = JSON.parse(raw); }
+    catch { try { data = JSON.parse(raw.replace(/[\u0000-\u001f]+/g, ' ')); } catch { continue; } }
+    const r = findRecipe(data);
+    if (r) return r;
+  }
+  return null;
+}
+
+async function fetchRecipePage(url) {
+  let res;
+  try { res = await fetch('/api/recipe?url=' + encodeURIComponent(url)); } catch { res = null; }
+  if (res && /json/.test(res.headers.get('content-type') || '')) {
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Import failed.');
+    return data;
+  }
+  // No /api/recipe here (local dev, or a static host): try a public CORS proxy.
+  let html;
+  try {
+    const r = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+    if (!r.ok) throw 0;
+    html = await r.text();
+  } catch {
+    throw new Error("Couldn't fetch that page. The site may block outside requests.");
+  }
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const meta = {};
+  doc.querySelectorAll('meta[property],meta[name]').forEach(m => {
+    meta[(m.getAttribute('property') || m.getAttribute('name')).toLowerCase()] = m.content;
+  });
+  return {
+    url,
+    jsonld: [...doc.querySelectorAll('script[type*="ld+json"]')].map(s => s.textContent),
+    title: doc.title,
+    meta,
+  };
+}
+
+function snapshotRecipe() {
+  const ids = ['f-title','f-subtitle','f-desc','f-prep','f-cook','f-servings','f-difficulty','f-cuisine','f-notes','f-tags'];
+  return {
+    fields: Object.fromEntries(ids.map(id => [id, document.getElementById(id).value])),
+    groups: JSON.parse(JSON.stringify(state.ingredientGroups)),
+    steps: [...state.steps],
+  };
+}
+function restoreRecipe(snap) {
+  Object.entries(snap.fields).forEach(([id, v]) => { document.getElementById(id).value = v; });
+  state.ingredientGroups = snap.groups;
+  state.steps = snap.steps;
+  renderIngredientGroups(); renderSteps(); renderCard();
+}
+function undoImport() {
+  if (!importUndo) return;
+  restoreRecipe(importUndo); importUndo = null;
+  setImportStatus('ok', 'Un-imported. Your old recipe is back, safe and sound.');
+}
+
+async function importFromUrl() {
+  const input = document.getElementById('import-url');
+  const btn = document.getElementById('import-btn');
+  let url = input.value.trim();
+  if (!url) { setImportStatus('err', 'Paste a recipe link first. This field is empty, like a potato skin.'); input.focus(); return; }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  try { url = new URL(url).toString(); } catch { setImportStatus('err', "That doesn't look like a link."); return; }
+
+  btn.disabled = true; btn.textContent = '…';
+  setImportStatus('busy', '🥔 Digging up the recipe…');
+  try {
+    const page = await fetchRecipePage(url);
+    const r = parseJsonLd(page.jsonld);
+    if (!r) throw new Error("No recipe data found on that page. It might not use standard recipe markup, so you'll have to type this one in.");
+
+    const host = new URL(page.url || url).hostname.replace(/^www\./, '');
+    const ingredients = textList(r.recipeIngredient || r.ingredients).map(splitIngredient);
+    const steps = flattenSteps(r.recipeInstructions)
+      .map(s => s.replace(/^(?:step\s*)?\d+[.:)]\s+/i, '').trim()).filter(Boolean);
+    const author = plainText([].concat(r.author || [])[0]);
+    const site = page.meta?.['og:site_name'] || host;
+    const tags = [...new Set([...textList(r.recipeCategory), ...textList(r.keywords)].map(t => t.toLowerCase()))].slice(0, 8);
+    const prep = isoDuration(r.prepTime), cook = isoDuration(r.cookTime);
+
+    importUndo = snapshotRecipe();
+    const set = (id, v) => { document.getElementById(id).value = v || ''; };
+    set('f-title', plainText(r.name) || plainText(page.meta?.['og:title']) || plainText(page.title));
+    set('f-subtitle', author && author !== site ? `by ${author} · ${site}` : `from ${site}`);
+    set('f-desc', plainText(r.description) || plainText(page.meta?.['og:description'] || page.meta?.description));
+    set('f-prep', prep);
+    set('f-cook', cook || (!prep ? isoDuration(r.totalTime) : ''));
+    set('f-servings', recipeYield(r.recipeYield || r.yield));
+    set('f-cuisine', textList(r.recipeCuisine).join(', '));
+    set('f-notes', `Source: ${page.url || url}`);
+    set('f-tags', tags.join(', '));
+    state.ingredientGroups = [{ name: '', items: ingredients.length ? ingredients : [{ amount: '', name: '' }] }];
+    state.steps = steps.length ? steps : [''];
+    renderIngredientGroups(); renderSteps(); renderCard();
+
+    const bits = [`${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'}`, `${steps.length} step${steps.length === 1 ? '' : 's'}`];
+    setImportStatus('ok', `✓ Imported ${escText(bits.join(', '))} from ${escText(host)}. Give it a once-over. <button class="import-undo" onclick="undoImport()">Undo</button>`);
+  } catch (e) {
+    setImportStatus('err', escText(e.message || 'Import failed.'));
+  } finally {
+    btn.disabled = false; btn.textContent = 'Import';
+  }
 }
 
 window.addEventListener('resize', rescale);
